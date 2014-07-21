@@ -7,6 +7,7 @@ import django
 
 DEFAULT_SETTINGS = {
     'INSTALLED_APPS': (
+        'django.contrib.gis',
         'spillway',
         'tests',
     ),
