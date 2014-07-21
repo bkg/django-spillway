@@ -1,4 +1,4 @@
-PKGNAME = django-spillway
+PKGNAME = spillway
 PYTHON ?= python
 
 check:
