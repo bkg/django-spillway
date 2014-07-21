@@ -16,9 +16,9 @@ class GeoJSONRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """Returns *data* encoded as GeoJSON."""
+        geom_key = 'geometry'
         pageinfo = ''
         seps = (',', ':')
-        geom_key = self._geom_field(renderer_context)
         results_field = self._results_field(renderer_context)
         try:
             results = data.pop(results_field, [data])
@@ -26,11 +26,11 @@ class GeoJSONRenderer(BaseRenderer):
             results = data
         else:
             if geom_key not in data:
-                pageinfo  = json.dumps(data, separators=seps).strip('{}') + ','
+                pageinfo = json.dumps(data, separators=seps).strip('{}') + ','
         collection = '{"type":"FeatureCollection",%s"features":[' % pageinfo
-        feature = '{"type":"Feature","geometry":%s,"properties":%s}'
-        features = ','.join([feature % (rec.pop(geom_key, '{}'),
-                             json.dumps(rec, separators=seps),) for rec in results])
+        feature = '{"geometry":%s,%s}'
+        features = ','.join([feature % (rec.pop('geometry', '{}'),
+                             json.dumps(rec, separators=seps)[1:-1]) for rec in results])
         # str.join is faster than string interp via '%' or str.format
         return ''.join([collection, features, ']}'])
 
@@ -43,13 +43,6 @@ class GeoJSONRenderer(BaseRenderer):
             return view.pagination_serializer_class.results_field
         except AttributeError:
             return PaginationSerializer.results_field
-
-    def _geom_field(self, context):
-        try:
-            view = context.get('view')
-            return view.object_list.query._geo_field().name
-        except AttributeError:
-            return 'geometry'
 
 
 class KMLRenderer(BaseRenderer):

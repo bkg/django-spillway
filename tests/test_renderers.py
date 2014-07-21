@@ -5,21 +5,23 @@ from django.core.paginator import Paginator
 from django.test import TestCase
 from rest_framework.pagination import PaginationSerializer
 
-from spillway.renderers import GeoJSONRenderer
+from spillway.renderers import GeoJSONRenderer, KMLRenderer
 from .models import _geom
 
 
 class GeoJSONRendererTestCase(TestCase):
     def setUp(self):
-        self.data = {'id': 1,
-                     'name': 'San Francisco',
+        self.data = {'type': 'Feature',
+                     'id': 1,
+                     'properties': {'name': 'San Francisco'},
                      'geometry': json.dumps(_geom)}
         self.collection = """{
             "type": "FeatureCollection",
             "features": [{
                 "type": "Feature",
                 "geometry": %s,
-                "properties": {"id": 1, "name": "San Francisco"}
+                "id": 1,
+                "properties": {"name": "San Francisco"}
             }]
         }""" % json.dumps(_geom)
         self.expected = json.loads(self.collection)
@@ -45,3 +47,16 @@ class GeoJSONRendererTestCase(TestCase):
         data = json.loads(self.r.render(serializer.data))
         self.assertEqual(data['count'], count)
         self.assertTrue(*map(data.has_key, ('previous', 'next')))
+
+
+class KMLRendererTestCase(TestCase):
+    def setUp(self):
+        self.data = {'id': 1,
+                     'properties': {'name': 'playground',
+                                    'notes': 'epic slide'},
+                     'geometry': GEOSGeometry(json.dumps(_geom)).kml}
+
+    def test_render(self):
+        rkml = KMLRenderer()
+        resp = rkml.render(self.data)
+        self.assertIn(self.data['geometry'], resp.content)

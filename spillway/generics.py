@@ -6,7 +6,7 @@ from spillway import filters, forms, mixins, renderers, serializers
 
 class BaseGeoView(mixins.FormMixin):
     """Base view for models with geometry fields."""
-    serializer_class = serializers.GeoModelSerializer
+    serializer_class = serializers.FeatureSerializer
     form_class = forms.GeometryQueryForm
     # Set in subclasses or via as_view()
     model = None
