@@ -16,9 +16,9 @@ class GeoJSONRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """Returns *data* encoded as GeoJSON."""
-        geom_key = 'geometry'
         pageinfo = ''
         seps = (',', ':')
+        geom_key = self._geom_field(renderer_context)
         results_field = self._results_field(renderer_context)
         try:
             results = data.pop(results_field, [data])
@@ -44,23 +44,23 @@ class GeoJSONRenderer(BaseRenderer):
         except AttributeError:
             return PaginationSerializer.results_field
 
-    #def _geom_field(self, context):
-        #try:
-            #view = context.get('view')
-            #return view.serializer_class.geom_field
-        #except AttributeError:
-            #return 'geometry'
+    def _geom_field(self, context):
+        try:
+            view = context.get('view')
+            return view.object_list.query._geo_field().name
+        except AttributeError:
+            return 'geometry'
 
 
 class KMLRenderer(BaseRenderer):
     """Renderer which encodes to KML."""
     media_type = 'application/vnd.google-earth.kml+xml'
     format = 'kml'
-    template = 'coredata/placemarks.kml'
+    template = 'spillway/placemarks.kml'
 
     def _results(self, data):
         try:
-            results = data.pop('results', data)
+            results = data.pop('results', [data])
         except TypeError:
             results = data
         return results
@@ -70,17 +70,13 @@ class KMLRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return self.get_render_callable()(
-            self.template, {'places' : self._results(data)})
+            self.template, {'places': self._results(data)})
 
 
 class KMZRenderer(KMLRenderer):
-    """Renderer which encodes to GeoJSON."""
+    """Renderer which encodes to KMZ."""
     media_type = 'application/vnd.google-earth.kmz'
     format = 'kmz'
-    rendercallable = render_to_kmz
 
     def get_render_callable(self):
         return render_to_kmz
-
-
-#class SVGRenderer
