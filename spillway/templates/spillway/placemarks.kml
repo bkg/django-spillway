@@ -3,5 +3,11 @@
   <Placemark>
     <name>{% firstof place.name place.id %}</name>
     <description>{{ place.description }}</description>
+    <ExtendedData>
+    {% for key, val in place.properties.items %}
+      <Data name="{{ key }}">
+        <value>{{ val }}</value>
+      </Data>{% endfor %}
+    </ExtendedData>
     {{ place.geometry|safe }}
   </Placemark>{% endfor %}{% endblock %}
