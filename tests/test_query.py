@@ -32,3 +32,7 @@ class GeoQuerySetTestCase(TestCase):
         self.assertNotEqual(geom, self.qs[0].geom)
         self.assertIsNotNone(geom.srid)
         self.assertNotEqual(geom.srid, self.qs[0].geom.srid)
+
+    @no_spatialite
+    def test_extent(self):
+        self.assertEqual(len(self.qs.extent(3857)), 4)
