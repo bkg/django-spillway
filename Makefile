@@ -13,7 +13,6 @@ clean:
 
 coverage:
 	coverage run --source=$(PKGNAME) setup.py test
-#TRAVIS=true will be present for travis builds
 	[ -n $$DISPLAY ] && \
 		coverage report -m && \
 		coverage html && \

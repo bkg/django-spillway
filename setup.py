@@ -7,7 +7,7 @@ except ImportError:
 
 setup(name='django-spillway',
       version='0.1.0',
-      description='Geodata extensions for Django Rest Framework',
+      description='Geodata extensions for Django REST Framework',
       long_description=open('README.rst').read(),
       author='Brian Galey',
       author_email='bkgaley@gmail.com',
@@ -16,7 +16,7 @@ setup(name='django-spillway',
       install_requires=['djangorestframework'],
       license='BSD',
       classifiers=[
-          'Development Status :: 4 - Beta',
+          'Development Status :: 3 - Alpha',
           'Intended Audience :: Developers',
           'License :: OSI Approved :: BSD License',
           'Natural Language :: English',
@@ -24,5 +24,4 @@ setup(name='django-spillway',
           'Programming Language :: Python :: 2.6',
           'Programming Language :: Python :: 2.7',
       ],
-      #test_suite='tests')
       test_suite='runtests.runtests')
