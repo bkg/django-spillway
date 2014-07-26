@@ -3,7 +3,6 @@ import json
 from spillway.query import GeoQuerySet
 from spillway.models import GeoManager
 from django.contrib.gis.db import models
-from model_utils.managers import PassThroughManager
 
 _geom = {
     'type': 'Polygon',
@@ -19,8 +18,6 @@ _geom = {
 class Location(models.Model):
     name = models.CharField(max_length=30)
     geom = models.GeometryField()
-    #objects = models.GeoManager()
-    #objects = PassThroughManager.for_queryset_class(GeoQuerySet)()
     objects = GeoManager()
 
     def __str__(self):
@@ -28,7 +25,7 @@ class Location(models.Model):
 
     @classmethod
     def create(cls, **defaults):
-        data = {'name': 'Valhalla',
+        data = {'name': 'Vancouver',
                 'geom': json.dumps(defaults.pop('geom', _geom))}
         data.update(**defaults)
         obj = cls(**data)
