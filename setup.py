@@ -13,7 +13,7 @@ setup(name='django-spillway',
       author_email='bkgaley@gmail.com',
       url='https://github.com/bkg/django-spillway',
       packages=['spillway'],
-      install_requires=['djangorestframework'],
+      install_requires=['django', 'djangorestframework'],
       license='BSD',
       classifiers=[
           'Development Status :: 3 - Alpha',
