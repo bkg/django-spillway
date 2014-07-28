@@ -1,6 +1,5 @@
 from django.contrib.gis import forms
 from django.contrib.gis.db import models
-from django.contrib.gis.geos import geometry
 from rest_framework import serializers
 from rest_framework.settings import api_settings
 
@@ -14,11 +13,17 @@ class GeometryField(serializers.WritableField):
     form_field_class = forms.GeometryField
 
     def to_native(self, value):
+        # Create a dict from the GEOSGeometry when the value is not previously
+        # serialized from the spatial db.
         try:
             return {'type': value.geom_type, 'coordinates': value.coords}
         # Value is already serialized as geojson, kml, etc.
         except AttributeError:
             return value
+
+# Add GeometryField to default model-serializer field mappings.
+serializers.ModelSerializer.field_mapping.update(
+    {models.GeometryField: GeometryField})
 
 
 class GeoModelSerializerOptions(serializers.ModelSerializerOptions):
@@ -38,18 +43,16 @@ class GeoModelSerializer(serializers.ModelSerializer):
         fields = super(GeoModelSerializer, self).get_default_fields()
         renderer = getattr(self.context.get('request'),
                            'accepted_renderer', None)
-        kwargs = {}
-        # Alter the geometry field source based on format.
-        if renderer and not isinstance(
-                renderer, tuple(api_settings.DEFAULT_RENDERER_CLASSES)):
-            kwargs.update(source=renderer.format)
         # Go hunting for a geometry field when it's undeclared.
         if not self.opts.geom_field:
             meta = self.opts.model._meta
             for field in meta.fields:
-                if hasattr(field, 'srid'):
+                if isinstance(field, models.GeometryField):
                     self.opts.geom_field = field.name
-        fields[self.opts.geom_field] = GeometryField(**kwargs)
+        # Alter the geometry field source based on format.
+        if renderer and not isinstance(
+                renderer, tuple(api_settings.DEFAULT_RENDERER_CLASSES)):
+            fields[self.opts.geom_field].source = renderer.format
         return fields
 
 
