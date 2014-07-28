@@ -76,3 +76,13 @@ class FeatureSerializerTestCase(ModelTestCase):
         serializer = LocationFeatureSerializer(data=features)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.object[0].geom, self.obj.geom)
+
+    def test_feature(self):
+        exp = self.expected.copy()
+        exp.pop('type')
+        feat = serializers.Feature(**exp)
+        self.assertJSONEqual(str(feat), json.dumps(self.expected))
+        # Test handling of pre-serialized geometry
+        exp['geometry'] = json.dumps(exp['geometry'])
+        feat = serializers.Feature(**exp)
+        self.assertJSONEqual(str(feat), json.dumps(self.expected))

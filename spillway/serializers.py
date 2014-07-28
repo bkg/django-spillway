@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.settings import api_settings
 
 from spillway.compat import json
+from spillway.collections import Feature
 
 
 class GeometryField(serializers.WritableField):
@@ -55,12 +56,9 @@ class GeoModelSerializer(serializers.ModelSerializer):
 class FeatureSerializer(GeoModelSerializer):
     def to_native(self, obj):
         native = super(FeatureSerializer, self).to_native(obj)
-        geomfield = getattr(obj, self.opts.geom_field)
         geometry = native.pop(self.opts.geom_field)
-        return {'type': 'Feature',
-                'id': native.pop(obj._meta.pk.name, None),
-                'geometry': geometry,
-                'properties': native}
+        pk = native.pop(obj._meta.pk.name, None)
+        return Feature(pk, geometry, native)
 
     def from_native(self, obj, files=None):
         data = {self.opts.geom_field: obj.get('geometry')}
