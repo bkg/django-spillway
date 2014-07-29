@@ -21,10 +21,6 @@ class GeometryField(serializers.WritableField):
         except AttributeError:
             return value
 
-# Add GeometryField to default model-serializer field mappings.
-serializers.ModelSerializer.field_mapping.update(
-    {models.GeometryField: GeometryField})
-
 
 class GeoModelSerializerOptions(serializers.ModelSerializerOptions):
     def __init__(self, meta):
@@ -35,6 +31,8 @@ class GeoModelSerializerOptions(serializers.ModelSerializerOptions):
 class GeoModelSerializer(serializers.ModelSerializer):
     """Serializer class for GeoModels."""
     _options_class = GeoModelSerializerOptions
+    field_mapping = dict({models.GeometryField: GeometryField},
+                         **serializers.ModelSerializer.field_mapping)
 
     def get_default_fields(self):
         """Returns a fields dict for this serializer with a 'geometry' field
