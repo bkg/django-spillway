@@ -31,6 +31,6 @@ class SpatialLookupFilter(BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         modelfield = queryset.query._geo_field()
-        query = {'%s__%s' % (modelfield.name, key.split('__')[-1]): val
+        query = {'%s__%s' % (modelfield.name, key): val
                  for key, val in view.form.cleaned_geodata.items()}
         return queryset.filter(**query)

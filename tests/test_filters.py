@@ -52,13 +52,13 @@ class FilterTestCase(TestCase):
 
     def test_spatial_lookup(self):
         centroid = Location.objects.centroid()[0].centroid.geojson
-        params = {'geom_intersects': centroid}
+        params = {'intersects': centroid}
         request = factory.get('/', params)
         response = self.view(request)
         self.assertEqual(len(response.data), 1)
 
     def test_spatial_lookup_notfound(self):
-        params = {'geom_intersects': 'POINT(0 0)'}
+        params = {'intersects': 'POINT(0 0)'}
         request = factory.get('/', params)
         response = self.view(request)
         self.assertEqual(len(response.data), 0)

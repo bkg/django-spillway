@@ -25,22 +25,12 @@ class GeometryQueryForm(SpatialQueryForm):
     def _set_spatial_lookup(self):
         geom_field = self['geom']
         fieldname = geom_field.name
-        for k in self.data:
-            if k.startswith(fieldname):
-                name, lookup = k.split('_')
-                if lookup in models.sql.query.ALL_TERMS:
-                    slkey = '%s__%s' % (name, lookup)
-                    self._spatial_lookup = slkey
-                    field = self.fields.pop(fieldname)
-                    self.fields.update({slkey: field})
-                    # QueryDict is immutable, get a mutable copy.
-                    try:
-                        data = self.data.dict()
-                    except AttributeError:
-                        data = self.data
-                    data[slkey] = data.pop(k)
-                    self.data = data
-                    break
+        for lookup in self.data:
+            if lookup in models.sql.query.ALL_TERMS:
+                self._spatial_lookup = lookup
+                field = self.fields.pop(fieldname)
+                self.fields.update({lookup: field})
+                break
 
     @property
     def cleaned_geodata(self):
