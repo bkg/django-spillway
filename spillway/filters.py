@@ -30,13 +30,7 @@ class SpatialLookupFilter(BaseFilterBackend):
     """
 
     def filter_queryset(self, request, queryset, view):
-        query = {}
         modelfield = queryset.query._geo_field()
-        geom_field = view.form[modelfield.name]
-        for k in request.QUERY_PARAMS:
-            if k.startswith(modelfield.name):
-                name, lookup = k.split('_')
-                if lookup in models.sql.query.ALL_TERMS:
-                    val = geom_field.field.to_python(request.QUERY_PARAMS[k])
-                    query = {'%s__%s' % (name, lookup): val}
+        query = {'%s__%s' % (modelfield.name, key.split('__')[-1]): val
+                 for key, val in view.form.cleaned_geodata.items()}
         return queryset.filter(**query)
