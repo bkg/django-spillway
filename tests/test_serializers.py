@@ -26,12 +26,39 @@ class ModelTestCase(TestCase):
         self.obj = Location(**self.data)
         # GEOSGeometry is not instantiated until save() is called.
         self.obj.save()
+        Location.create()
+        self.coords = ()
+        for poly in _geom['coordinates']:
+            self.coords += (tuple(map(tuple, poly)),)
+        self.expected = {'id': 1,
+                         'name': 'Argentina',
+                         'geom': {'type': 'Polygon',
+                                  'coordinates': self.coords}}
 
 
 class GeoModelSerializerTestCase(ModelTestCase):
     def test_data(self):
         serializer = LocationSerializer(self.data)
         self.assertEqual(serializer.data, self.data)
+
+    def test_get_default_fields(self):
+        serializer = LocationSerializer()
+        fields = serializer.get_default_fields()
+        self.assertEqual(*map(sorted, (self.data, fields)))
+
+    def test_list(self):
+        data = [self.data.copy() for i in range(3)]
+        serializer = LocationSerializer(data)
+        self.assertEqual(serializer.data, data)
+
+    def test_queryset(self):
+        qs = Location.objects.all()
+        serializer = LocationSerializer(qs)
+        expected = [self.expected,
+                    {'name': 'Vancouver',
+                     'id': 2,
+                     'geom': self.expected['geom']}]
+        self.assertEqual(serializer.data, expected)
 
     def test_restore_object(self):
         serializer = LocationSerializer(data=self.data)
@@ -40,32 +67,25 @@ class GeoModelSerializerTestCase(ModelTestCase):
         self.assertEqual(serializer.object.geom, self.obj.geom)
         self.assertEqual(serializer.restore_object(self.data), self.obj)
 
-    def test_list(self):
-        data = [self.data.copy() for i in range(3)]
-        serializer = LocationSerializer(data)
-        self.assertEqual(serializer.data, data)
-
-    def test_get_default_fields(self):
-        serializer = LocationSerializer()
-        fields = serializer.get_default_fields()
-        self.assertEqual(*map(sorted, (self.data, fields)))
+    def test_serialize_object(self):
+        serializer = LocationSerializer(self.obj)
+        self.assertEqual(serializer.data, self.expected)
 
 
 class FeatureSerializerTestCase(ModelTestCase):
     def setUp(self):
         super(FeatureSerializerTestCase, self).setUp()
-        coords = ()
-        for poly in _geom['coordinates']:
-            coords += (tuple(map(tuple, poly)),)
         self.expected = {'type': 'Feature',
                          'id': 1,
-                         'geometry':  {'type': 'Polygon',
-                                       'coordinates': coords},
+                         'geometry': {'type': 'Polygon',
+                                      'coordinates': self.coords},
                          'properties': {'name': 'Argentina'}}
 
     def test_serialize(self):
         serializer = LocationFeatureSerializer(self.obj)
         self.assertEqual(serializer.data, self.expected)
+        serializer = LocationFeatureSerializer([self.obj])
+        self.assertEqual(serializer.data, [self.expected])
 
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)
