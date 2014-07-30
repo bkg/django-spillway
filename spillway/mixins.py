@@ -9,7 +9,8 @@ class FormMixin(object):
         """Returns a validated form dict or an empty dict."""
         _form = getattr(self, '_form', False)
         if not _form:
-            self._form = self.form_class(self.request.GET or self.request.POST,
-                                         self.request.FILES or None)
+            self._form = self.form_class(
+                self.request.QUERY_PARAMS or self.request.DATA,
+                self.request.FILES or None)
             valid = self._form.is_valid()
         return self._form
