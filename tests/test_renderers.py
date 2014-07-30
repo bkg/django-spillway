@@ -28,6 +28,7 @@ class GeoJSONRendererTestCase(SimpleTestCase):
             }]
         }""" % json.dumps(_geom)
         self.expected = json.loads(self.collection)
+        self.empty = '{"type": "FeatureCollection", "features": []}'
         self.r = GeoJSONRenderer()
 
     def test_render_dict(self):
@@ -37,10 +38,12 @@ class GeoJSONRendererTestCase(SimpleTestCase):
         self.assertIsInstance(GEOSGeometry(geom), GEOSGeometry)
         self.assertEqual(geom, self.data['geometry'])
         self.assertEqual(data, self.expected)
+        self.assertEqual(self.r.render({}), self.empty)
 
     def test_render_list(self):
         data = json.loads(self.r.render([self.data]))
         self.assertEqual(data, self.expected)
+        self.assertEqual(self.r.render([]), self.empty)
 
     def test_render_paginated(self):
         count = 4
