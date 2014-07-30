@@ -36,8 +36,8 @@ class BoundingBoxField(CommaSepFloatField):
         # Return an empty list if no input was given.
         value = super(BoundingBoxField, self).to_python(value)
         try:
-            bbox = gdal.OGRGeometry.from_bbox(value)
-        except ValueError:
+            bbox = gdal.OGRGeometry.from_bbox(value).geos
+        except (ValueError, AttributeError):
             #raise forms.ValidationError('Not a valid bounding box.')
             return []
         bbox.srid = self.default_srid

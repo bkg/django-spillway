@@ -57,6 +57,13 @@ class FilterTestCase(TestCase):
         response = self.view(request)
         self.assertEqual(len(response.data), 1)
 
+    def test_bounding_box(self):
+        bbox = self.qs[0].geom.extent
+        params = {'bbox': ','.join(map(str, bbox))}
+        request = factory.get('/', params)
+        response = self.view(request)
+        self.assertEqual(len(response.data), 1)
+
     def test_spatial_lookup_notfound(self):
         params = {'intersects': 'POINT(0 0)'}
         request = factory.get('/', params)

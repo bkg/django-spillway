@@ -32,6 +32,15 @@ class GeometryQueryForm(SpatialQueryForm):
                 self.fields.update({lookup: field})
                 break
 
+    def clean(self):
+        cleaned_data = super(GeometryQueryForm, self).clean()
+        # Look for "bbox" which is just an alias to "bboverlaps".
+        if cleaned_data.get('bbox'):
+            cleaned_data.pop(self._spatial_lookup, None)
+            self._spatial_lookup = 'bboverlaps'
+            cleaned_data[self._spatial_lookup] = cleaned_data.pop('bbox')
+        return cleaned_data
+
     @property
     def cleaned_geodata(self):
         if not (self.is_valid() and self._spatial_lookup):
