@@ -20,6 +20,12 @@ class GeometryField(serializers.WritableField):
         except AttributeError:
             return value
 
+    def from_native(self, value):
+        # forms.GeometryField cannot handle geojson dicts.
+        if isinstance(value, dict):
+            value = json.dumps(value)
+        return super(GeometryField, self).from_native(value)
+
 
 class GeoModelSerializerOptions(serializers.ModelSerializerOptions):
     def __init__(self, meta):
@@ -63,10 +69,3 @@ class FeatureSerializer(GeoModelSerializer):
         data = {self.opts.geom_field: obj.get('geometry')}
         data.update(obj.get('properties'))
         return super(FeatureSerializer, self).from_native(data, files)
-
-    def restore_object(self, attrs, instance=None):
-        geom_field = self.opts.geom_field
-        g = attrs[geom_field]
-        if isinstance(g, dict):
-            attrs.update({geom_field: json.dumps(g)})
-        return super(FeatureSerializer, self).restore_object(attrs, instance)
