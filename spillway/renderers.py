@@ -1,4 +1,5 @@
-from django.contrib.gis.shortcuts import render_to_kml, render_to_kmz
+from django.contrib.gis.shortcuts import compress_kml
+from django.template import loader, Context
 from rest_framework.renderers import BaseRenderer
 from rest_framework.pagination import PaginationSerializer
 
@@ -12,7 +13,7 @@ class BaseGeoRenderer(BaseRenderer):
         pageinfo = {}
         results_field = self._results_field(renderer_context)
         results = data
-        if isinstance(data, dict):
+        if data and isinstance(data, dict):
             if results_field in data:
                 results = data.pop(results_field)
                 pageinfo = data
@@ -32,7 +33,7 @@ class BaseGeoRenderer(BaseRenderer):
 
 
 class GeoJSONRenderer(BaseGeoRenderer):
-    """Renderer which encodes to GeoJSON.
+    """Renderer which serializes to GeoJSON.
 
     This renderer purposefully avoids reserialization of GeoJSON from the
     spatial backend which greatly improves performance.
@@ -45,25 +46,35 @@ class GeoJSONRenderer(BaseGeoRenderer):
         return str(self._collection(data, renderer_context))
 
 
-class KMLRenderer(BaseGeoRenderer):
-    """Renderer which encodes to KML."""
-    media_type = 'application/vnd.google-earth.kml+xml'
-    format = 'kml'
-    template = 'spillway/placemarks.kml'
-
-    def get_render_callable(self):
-        return render_to_kml
+class TemplateRenderer(BaseGeoRenderer):
+    """Template based feature renderer."""
+    template_name = None
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         collection = self._collection(data, renderer_context)
-        return self.get_render_callable()(
-            self.template, {'places': collection['features']})
+        template = loader.get_template(self.template_name)
+        return template.render(Context({'features': collection['features']}))
+
+
+class KMLRenderer(TemplateRenderer):
+    """Renderer which serializes to KML."""
+    media_type = 'application/vnd.google-earth.kml+xml'
+    format = 'kml'
+    template_name = 'spillway/placemarks.kml'
 
 
 class KMZRenderer(KMLRenderer):
-    """Renderer which encodes to KMZ."""
+    """Renderer which serializes to KMZ."""
     media_type = 'application/vnd.google-earth.kmz'
     format = 'kmz'
 
-    def get_render_callable(self):
-        return render_to_kmz
+    def render(self, *args, **kwargs):
+        kmldata = super(KMZRenderer, self).render(*args, **kwargs)
+        return compress_kml(kmldata)
+
+
+class SVGRenderer(TemplateRenderer):
+    """Renderer which serializes to SVG."""
+    media_type = 'image/svg+xml'
+    format = 'svg'
+    template_name = 'spillway/features.svg'

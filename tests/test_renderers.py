@@ -1,15 +1,18 @@
+import io
 import json
+import zipfile
 
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.paginator import Paginator
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from rest_framework.pagination import PaginationSerializer
 
-from spillway.renderers import GeoJSONRenderer, KMLRenderer
-from .models import _geom
+from spillway.renderers import (GeoJSONRenderer, KMLRenderer,
+    KMZRenderer, SVGRenderer)
+from .models import Location, _geom
 
 
-class GeoJSONRendererTestCase(TestCase):
+class GeoJSONRendererTestCase(SimpleTestCase):
     def setUp(self):
         self.data = {'type': 'Feature',
                      'id': 1,
@@ -49,7 +52,7 @@ class GeoJSONRendererTestCase(TestCase):
         self.assertTrue(*map(data.has_key, ('previous', 'next')))
 
 
-class KMLRendererTestCase(TestCase):
+class KMLRendererTestCase(SimpleTestCase):
     def setUp(self):
         self.data = {'id': 1,
                      'properties': {'name': 'playground',
@@ -58,5 +61,25 @@ class KMLRendererTestCase(TestCase):
 
     def test_render(self):
         rkml = KMLRenderer()
-        resp = rkml.render(self.data)
-        self.assertIn(self.data['geometry'], resp.content)
+        self.assertIn(self.data['geometry'], rkml.render(self.data))
+
+    def test_render_kmz(self):
+        rkmz = KMZRenderer()
+        stream = io.BytesIO(rkmz.render(self.data))
+        self.assertTrue(zipfile.is_zipfile(stream))
+        zf = zipfile.ZipFile(stream)
+        self.assertIn(self.data['geometry'], zf.read('doc.kml'))
+
+
+class SVGRendererTestCase(TestCase):
+    def setUp(self):
+        Location.create()
+        self.qs = Location.objects.svg()
+        self.svg = self.qs[0].svg
+        self.data = {'id': 1,
+                     'geometry': self.svg}
+
+    def test_render(self):
+        rsvg = SVGRenderer()
+        svgdoc = rsvg.render(self.data)
+        self.assertIn(self.data['geometry'], svgdoc)

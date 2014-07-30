@@ -1,0 +1,9 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg SYSTEM "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:cm="http://cloudmade.com/" width="250" height="250">
+  {% block collection %}
+  <g>{% for feature in features %}
+    <path id="{{ feature.id }}" d="{{ feature.geometry|safe }}"></path>
+  {% endfor %}</g>
+  {% endblock %}
+</svg>
