@@ -1,7 +1,6 @@
 from django.contrib.gis import forms
 from django.contrib.gis.db import models
 from rest_framework import serializers
-from rest_framework.settings import api_settings
 
 from spillway.compat import json
 from spillway.collections import Feature
@@ -39,8 +38,7 @@ class GeoModelSerializer(serializers.ModelSerializer):
         added.
         """
         fields = super(GeoModelSerializer, self).get_default_fields()
-        renderer = getattr(self.context.get('request'),
-                           'accepted_renderer', None)
+        view = self.context.get('view')
         # Go hunting for a geometry field when it's undeclared.
         if not self.opts.geom_field:
             meta = self.opts.model._meta
@@ -48,8 +46,8 @@ class GeoModelSerializer(serializers.ModelSerializer):
                 if isinstance(field, models.GeometryField):
                     self.opts.geom_field = field.name
         # Alter the geometry field source based on format.
-        if renderer and not isinstance(
-                renderer, tuple(api_settings.DEFAULT_RENDERER_CLASSES)):
+        if view and not view.wants_default_renderer():
+            renderer = view.request.accepted_renderer
             fields[self.opts.geom_field].source = renderer.format
         return fields
 

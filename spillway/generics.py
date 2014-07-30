@@ -1,5 +1,6 @@
 from rest_framework.filters import DjangoFilterBackend
 from rest_framework.generics import ListAPIView
+from rest_framework.settings import api_settings
 
 from spillway import filters, forms, mixins, renderers, serializers
 
@@ -25,6 +26,11 @@ class BaseGeoView(mixins.FormMixin):
         if not getattr(cls.Meta, 'model', False):
             cls.Meta.model = self.model
         return cls
+
+    def wants_default_renderer(self):
+        """Returns true when using a default renderer class."""
+        return isinstance(self.request.accepted_renderer,
+                          tuple(api_settings.DEFAULT_RENDERER_CLASSES))
 
 
 class GeoListView(BaseGeoView, ListAPIView):

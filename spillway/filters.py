@@ -1,7 +1,6 @@
 from django.contrib.gis.db import models
 from django.utils import six
 
-from rest_framework.settings import api_settings
 from rest_framework.filters import BaseFilterBackend
 
 
@@ -17,8 +16,7 @@ class GeoQuerySetFilter(BaseFilterBackend):
         tolerance, srs = map(params.get, ('simplify', 'srs'))
         srid = getattr(srs, 'srid', None)
         kwargs = {}
-        if not isinstance(request.accepted_renderer,
-                          tuple(api_settings.DEFAULT_RENDERER_CLASSES)):
+        if not view.wants_default_renderer():
             kwargs.update(precision=self.precision,
                           format=request.accepted_renderer.format)
         return queryset.simplify(tolerance, srid, **kwargs)
