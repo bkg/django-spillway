@@ -2,7 +2,7 @@ from django.test import TestCase
 from rest_framework.compat import django_filters
 from rest_framework.test import APIRequestFactory
 
-from spillway import filters, generics
+from spillway import generics
 from .models import Location
 
 factory = APIRequestFactory()

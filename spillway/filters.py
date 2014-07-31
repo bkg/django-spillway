@@ -1,6 +1,4 @@
 from django.contrib.gis.db import models
-from django.utils import six
-
 from rest_framework.filters import BaseFilterBackend
 
 

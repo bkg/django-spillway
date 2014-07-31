@@ -1,5 +1,4 @@
-from django.contrib.gis import forms
-from django.contrib.gis import gdal
+from django.contrib.gis import forms, gdal
 from django.utils.translation import ugettext_lazy as _
 
 from spillway.compat import json
