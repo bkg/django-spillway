@@ -1,16 +1,9 @@
-class FormMixin(object):
-    """Mixin to provide form validation and data cleaning of GET or POST
-    requests.
-    """
-    form_class = None
+class QueryFormMixin(object):
+    """Mixin to provide form based handling of GET or POST requests."""
+    query_form_class = None
 
-    @property
-    def form(self):
+    def get_query_form(self):
         """Returns a validated form dict or an empty dict."""
-        _form = getattr(self, '_form', False)
-        if not _form:
-            self._form = self.form_class(
-                self.request.QUERY_PARAMS or self.request.DATA,
-                self.request.FILES or None)
-            valid = self._form.is_valid()
-        return self._form
+        return self.query_form_class(
+            self.request.QUERY_PARAMS or self.request.DATA,
+            self.request.FILES or None)

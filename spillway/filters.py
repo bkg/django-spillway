@@ -7,10 +7,9 @@ class GeoQuerySetFilter(BaseFilterBackend):
     precision = 4
 
     def filter_queryset(self, request, queryset, view):
-        # Should we let other filters handle this?
-        if view.kwargs:
-            queryset = queryset.filter(**view.kwargs)
-        params = view.form.cleaned_data
+        #params = view.form.cleaned_data
+        form = view.get_query_form()
+        params = form.cleaned_data if form.is_valid() else {}
         tolerance, srs = map(params.get, ('simplify', 'srs'))
         srid = getattr(srs, 'srid', None)
         kwargs = {}
@@ -26,7 +25,9 @@ class SpatialLookupFilter(BaseFilterBackend):
     """
 
     def filter_queryset(self, request, queryset, view):
+        form = view.get_query_form()
+        params = form.cleaned_geodata if form.is_valid() else {}
         modelfield = queryset.query._geo_field()
         query = {'%s__%s' % (modelfield.name, key): val
-                 for key, val in view.form.cleaned_geodata.items()}
+                 for key, val in params.items()}
         return queryset.filter(**query)

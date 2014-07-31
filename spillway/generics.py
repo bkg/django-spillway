@@ -5,10 +5,10 @@ from rest_framework.settings import api_settings
 from spillway import filters, forms, mixins, renderers, serializers
 
 
-class BaseGeoView(mixins.FormMixin):
+class BaseGeoView(mixins.QueryFormMixin):
     """Base view for models with geometry fields."""
     serializer_class = serializers.FeatureSerializer
-    form_class = forms.GeometryQueryForm
+    query_form_class = forms.GeometryQueryForm
     # Set in subclasses or via as_view()
     model = None
 
