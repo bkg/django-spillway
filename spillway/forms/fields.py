@@ -1,4 +1,6 @@
-from django.contrib.gis import forms, gdal
+from django.contrib.gis import forms
+from django.contrib.gis.gdal import OGRGeometry, OGRException
+from django.contrib.gis.gdal.srs import SpatialReference, SRSException
 from django.utils.translation import ugettext_lazy as _
 
 from spillway.compat import json
@@ -35,7 +37,7 @@ class BoundingBoxField(CommaSepFloatField):
         # Return an empty list if no input was given.
         value = super(BoundingBoxField, self).to_python(value)
         try:
-            bbox = gdal.OGRGeometry.from_bbox(value).geos
+            bbox = OGRGeometry.from_bbox(value).geos
         except (ValueError, AttributeError):
             #raise forms.ValidationError('Not a valid bounding box.')
             return []
@@ -56,8 +58,8 @@ class OGRGeometryField(forms.GeometryField):
             d = json.loads(value)
             value = json.dumps(d.get('geometry'))
         try:
-            geom = gdal.OGRGeometry(value)
-        except (gdal.OGRException, TypeError, ValueError):
+            geom = OGRGeometry(value)
+        except (OGRException, TypeError, ValueError):
             raise forms.ValidationError(self.error_messages['invalid_geom'])
         # When no projection info is present, try a guess of 4326 which is
         # fairly common, this also sets geom.srs properly.
@@ -72,6 +74,6 @@ class SpatialReferenceField(forms.IntegerField):
     def to_python(self, value):
         value = super(SpatialReferenceField, self).to_python(value)
         try:
-            return gdal.srs.SpatialReference(value)
-        except (gdal.srs.SRSException, TypeError):
+            return SpatialReference(value)
+        except (SRSException, TypeError):
             return None

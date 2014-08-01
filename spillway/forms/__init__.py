@@ -1,2 +1,4 @@
-from spillway.forms.fields import *
-from spillway.forms.forms import *
+from spillway.forms.fields import (
+    BoundingBoxField, CommaSepFloatField,
+    OGRGeometryField, SpatialReferenceField)
+from spillway.forms.forms import GeometryQueryForm, SpatialQueryForm

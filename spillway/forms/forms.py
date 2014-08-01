@@ -1,5 +1,5 @@
 from django.contrib.gis import forms
-from django.contrib.gis.db import models
+from django.contrib.gis.db.models.sql.query import ALL_TERMS
 
 from spillway.forms.fields import BoundingBoxField, SpatialReferenceField
 
@@ -27,7 +27,7 @@ class GeometryQueryForm(SpatialQueryForm):
         geom_field = self['geom']
         fieldname = geom_field.name
         for lookup in self.data:
-            if lookup in models.sql.query.ALL_TERMS:
+            if lookup in ALL_TERMS:
                 self._spatial_lookup = lookup
                 field = self.fields.pop(fieldname)
                 self.fields.update({lookup: field})
