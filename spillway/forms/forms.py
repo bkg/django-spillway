@@ -1,6 +1,7 @@
 from django.contrib.gis import forms
 from django.contrib.gis.db import models
-from spillway.fields import BoundingBoxField, SpatialReferenceField
+
+from spillway.forms.fields import BoundingBoxField, SpatialReferenceField
 
 
 class SpatialQueryForm(forms.Form):
