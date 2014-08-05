@@ -102,22 +102,29 @@ class BaseGDALRenderer(BaseRenderer):
         """Returns the output filename.
 
         Arguments:
-        item -- dict containing 'source' url
+        item -- dict containing 'path'
         """
-        fname = os.path.basename(item['source'])
+        fname = os.path.basename(item['path'])
         return os.path.splitext(fname)[0] + self.file_ext
+
+    def get_context(self, renderer_context):
+        view = renderer_context.get('view')
+        try:
+            form = view.get_query_form()
+        except AttributeError:
+            return {}
+        return form.cleaned_data if form.is_valid() else {}
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         renderer_context = renderer_context or {}
-        view = renderer_context.get('view')
-        params = view.cleaned_data() if hasattr(view, 'cleaned_data') else {}
-        geom = params.get('g')
+        ctx = self.get_context(renderer_context)
+        geom = ctx.get('g')
         if isinstance(data, dict):
             self.set_filename(self.basename(data), renderer_context)
             # No conversion is needed if the original format without clipping
             # is requested.
-            if not geom and data['source'].endswith(self.format):
-                path = data['source']
+            if not geom and data['path'].endswith(self.format):
+                path = data['path']
                 self.set_response_length(os.path.getsize(path), renderer_context)
                 return FileWrapper(open(path))
             data = [data]
@@ -130,11 +137,11 @@ class BaseGDALRenderer(BaseRenderer):
             if geom:
                 # Convert to wkb for ogr.Geometry
                 geom = Geometry(wkb=bytes(geom.wkb), srs=geom.srs.wkt)
-                with Raster(item['source']) as r:
+                with Raster(item['path']) as r:
                     with r.clip(geom) as clipped:
                         clipped.save(memio, driver)
             else:
-                driver.copy(item['source'], memio.name)
+                driver.copy(item['path'], memio.name)
             imgdata.append(memio.read())
             memio.close()
         return imgdata
