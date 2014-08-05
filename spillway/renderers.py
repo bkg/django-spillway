@@ -1,7 +1,15 @@
+import os
+import tempfile
+from wsgiref.util import FileWrapper
+import zipfile
+
 from django.contrib.gis.shortcuts import compress_kml
 from django.template import loader, Context
-from rest_framework.renderers import BaseRenderer
 from rest_framework.pagination import PaginationSerializer
+from rest_framework.renderers import BaseRenderer
+from greenwich.geometry import Geometry
+from greenwich.io import MemFileIO
+from greenwich.raster import Raster, driver_for_path
 
 from spillway.collections import FeatureCollection
 
@@ -78,3 +86,111 @@ class SVGRenderer(TemplateRenderer):
     media_type = 'image/svg+xml'
     format = 'svg'
     template_name = 'spillway/features.svg'
+
+
+class BaseGDALRenderer(BaseRenderer):
+    """Abstract renderer which encodes to a GDAL supported raster format."""
+    media_type = 'application/octet-stream'
+    format = None
+    arcdirname = 'data'
+
+    @property
+    def file_ext(self):
+        return os.extsep + os.path.splitext(self.format)[0]
+
+    def basename(self, item):
+        """Returns the output filename.
+
+        Arguments:
+        item -- dict containing 'source' url
+        """
+        fname = os.path.basename(item['source'])
+        return os.path.splitext(fname)[0] + self.file_ext
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        renderer_context = renderer_context or {}
+        view = renderer_context.get('view')
+        params = view.cleaned_data() if hasattr(view, 'cleaned_data') else {}
+        geom = params.get('g')
+        if isinstance(data, dict):
+            self.set_filename(self.basename(data), renderer_context)
+            # No conversion is needed if the original format without clipping
+            # is requested.
+            if not geom and data['source'].endswith(self.format):
+                path = data['source']
+                self.set_response_length(os.path.getsize(path), renderer_context)
+                return FileWrapper(open(path))
+            data = [data]
+        else:
+            self.set_filename(self.arcdirname, renderer_context)
+        driver = driver_for_path(self.file_ext.replace(os.extsep, ''))
+        imgdata = []
+        for item in data:
+            memio = MemFileIO()
+            if geom:
+                # Convert to wkb for ogr.Geometry
+                geom = Geometry(wkb=bytes(geom.wkb), srs=geom.srs.wkt)
+                with Raster(item['source']) as r:
+                    with r.clip(geom) as clipped:
+                        clipped.save(memio, driver)
+            else:
+                driver.copy(item['source'], memio.name)
+            imgdata.append(memio.read())
+            memio.close()
+        return imgdata
+
+    def set_filename(self, name, renderer_context):
+        type_name = 'attachment; filename=%s.%s' % (name, self.format)
+        try:
+            renderer_context['response']['Content-Disposition'] = type_name
+        except KeyError:
+            pass
+
+    def set_response_length(self, length, renderer_context):
+        try:
+            renderer_context['response']['Content-Length'] = length
+        except (TypeError, KeyError):
+            pass
+
+
+class HFARenderer(BaseGDALRenderer):
+    """Renders a raster to Erdas Imagine (.img) format."""
+    format = 'img'
+
+
+class GeoTIFFRenderer(BaseGDALRenderer):
+    """Renders a raster to GeoTIFF (.tif) format."""
+    media_type = 'image/tiff'
+    format = 'tif'
+
+
+class GeoTIFFZipRenderer(BaseGDALRenderer):
+    """Bundles GeoTIFF rasters in a zip archive."""
+    media_type = 'application/zip'
+    format = 'tif.zip'
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        if not data:
+            return data
+        rendered = super(GeoTIFFZipRenderer, self).render(
+            data, accepted_media_type, renderer_context)
+        fp = tempfile.TemporaryFile(suffix=os.extsep + self.format)
+        zf = zipfile.ZipFile(fp, mode='w')
+        fname = None
+        for raster, attrs in zip(rendered, data):
+            fname = os.path.join(self.arcdirname, self.basename(attrs))
+            # Write the raster buffer if it exists, or fall back to the GeoTIFF
+            # path for the full raster.
+            try:
+                zf.writestr(fname, raster)
+            except TypeError:
+                zf.write(raster, arcname=fname)
+        zf.close()
+        self.set_response_length(fp.tell(), renderer_context)
+        fp.seek(0)
+        return FileWrapper(fp)
+
+
+class HFAZipRenderer(GeoTIFFZipRenderer):
+    """Bundles Erdas Imagine rasters in a zip archive."""
+    format = 'img.zip'
