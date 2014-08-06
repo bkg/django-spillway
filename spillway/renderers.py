@@ -92,7 +92,6 @@ class BaseGDALRenderer(BaseRenderer):
     """Abstract renderer which encodes to a GDAL supported raster format."""
     media_type = 'application/octet-stream'
     format = None
-    arcdirname = 'data'
 
     @property
     def file_ext(self):
@@ -108,32 +107,43 @@ class BaseGDALRenderer(BaseRenderer):
         return os.path.splitext(fname)[0] + self.file_ext
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
+        if isinstance(data, dict):
+            data = [data]
+        self.set_filename(self.basename(data[0]), renderer_context)
+        img = self._render_items(data, renderer_context)[0]
+        # File contents could contain null bytes but not file names.
+        try:
+            isfile = os.path.isfile(img)
+        except TypeError:
+            isfile = False
+        if isfile:
+            self.set_response_length(os.path.getsize(img), renderer_context)
+            img = open(img)
+        return FileWrapper(img)
+
+    def _render_items(self, items, renderer_context):
         renderer_context = renderer_context or {}
         view = renderer_context.get('view')
         geom = view and view.clean_params().get('g')
-        if isinstance(data, dict):
-            self.set_filename(self.basename(data), renderer_context)
+        driver = driver_for_path(self.file_ext.replace(os.extsep, ''))
+        if geom:
+            # Convert to wkb for ogr.Geometry
+            geom = Geometry(wkb=bytes(geom.wkb), srs=geom.srs.wkt)
+        imgdata = []
+        for item in items:
+            imgpath = item['path']
             # No conversion is needed if the original format without clipping
             # is requested.
-            if not geom and data['path'].endswith(self.format):
-                path = data['path']
-                self.set_response_length(os.path.getsize(path), renderer_context)
-                return FileWrapper(open(path))
-            data = [data]
-        else:
-            self.set_filename(self.arcdirname, renderer_context)
-        driver = driver_for_path(self.file_ext.replace(os.extsep, ''))
-        imgdata = []
-        for item in data:
+            if not geom and imgpath.endswith(self.file_ext):
+                imgdata.append(imgpath)
+                continue
             memio = MemFileIO()
             if geom:
-                # Convert to wkb for ogr.Geometry
-                geom = Geometry(wkb=bytes(geom.wkb), srs=geom.srs.wkt)
-                with Raster(item['path']) as r:
+                with Raster(imgpath) as r:
                     with r.clip(geom) as clipped:
                         clipped.save(memio, driver)
             else:
-                driver.copy(item['path'], memio.name)
+                driver.copy(imgpath, memio.name)
             imgdata.append(memio.read())
             memio.close()
         return imgdata
@@ -142,13 +152,13 @@ class BaseGDALRenderer(BaseRenderer):
         type_name = 'attachment; filename=%s.%s' % (name, self.format)
         try:
             renderer_context['response']['Content-Disposition'] = type_name
-        except KeyError:
+        except (KeyError, TypeError):
             pass
 
     def set_response_length(self, length, renderer_context):
         try:
             renderer_context['response']['Content-Length'] = length
-        except (TypeError, KeyError):
+        except (KeyError, TypeError):
             pass
 
 
@@ -167,24 +177,23 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
     """Bundles GeoTIFF rasters in a zip archive."""
     media_type = 'application/zip'
     format = 'tif.zip'
+    arcdirname = 'data'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        if not data:
-            return data
-        rendered = super(GeoTIFFZipRenderer, self).render(
-            data, accepted_media_type, renderer_context)
+        if isinstance(data, dict):
+            data = [data]
+        rendered = self._render_items(data, renderer_context)
+        self.set_filename(self.arcdirname, renderer_context)
         fp = tempfile.TemporaryFile(suffix=os.extsep + self.format)
-        zf = zipfile.ZipFile(fp, mode='w')
-        fname = None
-        for raster, attrs in zip(rendered, data):
-            fname = os.path.join(self.arcdirname, self.basename(attrs))
-            # Write the raster buffer if it exists, or fall back to the GeoTIFF
-            # path for the full raster.
-            try:
-                zf.writestr(fname, raster)
-            except TypeError:
-                zf.write(raster, arcname=fname)
-        zf.close()
+        with zipfile.ZipFile(fp, mode='w') as zf:
+            for raster, attrs in zip(rendered, data):
+                arcname = os.path.join(self.arcdirname, self.basename(attrs))
+                # Attempt to write from the filename first, or fall back to the
+                # file contents.
+                try:
+                    zf.write(raster, arcname=arcname)
+                except TypeError:
+                    zf.writestr(arcname, raster)
         self.set_response_length(fp.tell(), renderer_context)
         fp.seek(0)
         return FileWrapper(fp)
