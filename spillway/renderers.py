@@ -107,18 +107,10 @@ class BaseGDALRenderer(BaseRenderer):
         fname = os.path.basename(item['path'])
         return os.path.splitext(fname)[0] + self.file_ext
 
-    def get_context(self, renderer_context):
-        view = renderer_context.get('view')
-        try:
-            form = view.get_query_form()
-        except AttributeError:
-            return {}
-        return form.cleaned_data if form.is_valid() else {}
-
     def render(self, data, accepted_media_type=None, renderer_context=None):
         renderer_context = renderer_context or {}
-        ctx = self.get_context(renderer_context)
-        geom = ctx.get('g')
+        view = renderer_context.get('view')
+        geom = view and view.clean_params().get('g')
         if isinstance(data, dict):
             self.set_filename(self.basename(data), renderer_context)
             # No conversion is needed if the original format without clipping

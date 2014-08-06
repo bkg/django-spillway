@@ -7,3 +7,7 @@ class QueryFormMixin(object):
         return self.query_form_class(
             self.request.QUERY_PARAMS or self.request.DATA,
             self.request.FILES or None)
+
+    def clean_params(self):
+        form = self.get_query_form()
+        return form.cleaned_data if form.is_valid() else {}

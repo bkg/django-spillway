@@ -7,9 +7,7 @@ class GeoQuerySetFilter(BaseFilterBackend):
     precision = 4
 
     def filter_queryset(self, request, queryset, view):
-        #params = view.form.cleaned_data
-        form = view.get_query_form()
-        params = form.cleaned_data if form.is_valid() else {}
+        params = view.clean_params()
         tolerance, srs = map(params.get, ('simplify', 'srs'))
         srid = getattr(srs, 'srid', None)
         kwargs = {}
