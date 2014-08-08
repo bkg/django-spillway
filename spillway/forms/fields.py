@@ -89,8 +89,8 @@ class OGRGeometryField(forms.GeometryField):
     default_srid = 4326
 
     def to_python(self, value):
-        if not value:
-            return
+        if value is None:
+            return value
         # Work with a single GeoJSON geometry or a Feature. Avoid parsing
         # overhead unless we have a true "Feature".
         if '"Feature",' in value:

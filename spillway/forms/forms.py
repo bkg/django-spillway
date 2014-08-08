@@ -5,19 +5,12 @@ from spillway.forms import fields
 
 
 class SpatialQueryForm(forms.Form):
-    """Base spatial query form."""
+    """A Form for spatial lookup queries."""
+    geom = forms.GeometryField(required=False)
     bbox = fields.BoundingBoxField(required=False)
 
-
-class GeometryQueryForm(SpatialQueryForm):
-    """Geometry filter and spatial lookup query form."""
-    geom = forms.GeometryField(required=False)
-    # Tolerance value for geometry simplification
-    simplify = forms.FloatField(required=False)
-    srs = fields.SpatialReferenceField(required=False)
-
     def __init__(self, *args, **kwargs):
-        super(GeometryQueryForm, self).__init__(*args, **kwargs)
+        super(SpatialQueryForm, self).__init__(*args, **kwargs)
         self._spatial_lookup = None
         self._set_spatial_lookup()
 
@@ -32,7 +25,7 @@ class GeometryQueryForm(SpatialQueryForm):
                 break
 
     def clean(self):
-        cleaned_data = super(GeometryQueryForm, self).clean()
+        cleaned_data = super(SpatialQueryForm, self).clean()
         # Look for "bbox" which is just an alias to "bboverlaps".
         if cleaned_data.get('bbox'):
             cleaned_data.pop(self._spatial_lookup, None)
@@ -41,10 +34,18 @@ class GeometryQueryForm(SpatialQueryForm):
         return cleaned_data
 
     @property
-    def cleaned_geodata(self):
+    def spatial_lookup(self):
+        """Returns a spatial lookup query dict."""
         if not (self.is_valid() and self._spatial_lookup):
             return {}
         return {self._spatial_lookup: self.cleaned_data[self._spatial_lookup]}
+
+
+class GeometryQueryForm(forms.Form):
+    """A form providing GeoQuerySet method arguments."""
+    # Tolerance value for geometry simplification
+    simplify = forms.FloatField(required=False)
+    srs = fields.SpatialReferenceField(required=False)
 
 
 class RasterQueryForm(SpatialQueryForm):

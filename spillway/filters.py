@@ -1,6 +1,8 @@
 from django.contrib.gis.db import models
 from rest_framework.filters import BaseFilterBackend
 
+from spillway import forms
+
 
 class GeoQuerySetFilter(BaseFilterBackend):
     """A Filter for calling GeoQuerySet methods."""
@@ -23,8 +25,8 @@ class SpatialLookupFilter(BaseFilterBackend):
     """
 
     def filter_queryset(self, request, queryset, view):
-        form = view.get_query_form()
-        params = form.cleaned_geodata if form.is_valid() else {}
+        form = forms.SpatialQueryForm(request.QUERY_PARAMS)
+        params = form.spatial_lookup if form.is_valid() else {}
         modelfield = queryset.query._geo_field()
         query = {'%s__%s' % (modelfield.name, key): val
                  for key, val in params.items()}
