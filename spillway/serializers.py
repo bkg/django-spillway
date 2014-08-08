@@ -3,7 +3,6 @@ from rest_framework import serializers
 
 from spillway.collections import Feature
 from spillway.fields import GeometryField, NDArrayField
-from spillway.models import RasterStore
 
 
 class GeoModelSerializerOptions(serializers.ModelSerializerOptions):
@@ -29,8 +28,6 @@ class GeoModelSerializer(serializers.ModelSerializer):
             for field in meta.fields:
                 if isinstance(field, models.GeometryField):
                     self.opts.geom_field = field.name
-                elif isinstance(field, models.FileField):
-                    setattr(self.opts, 'raster_field', field.name)
         return fields
 
 
@@ -47,13 +44,32 @@ class FeatureSerializer(GeoModelSerializer):
         return super(FeatureSerializer, self).from_native(data, files)
 
 
+class RasterModelSerializerOptions(GeoModelSerializerOptions):
+    def __init__(self, meta):
+        super(RasterModelSerializerOptions, self).__init__(meta)
+        self.raster_field = getattr(meta, 'raster_field', None)
+
+
 class RasterModelSerializer(GeoModelSerializer):
+    _options_class = RasterModelSerializerOptions
+
     def get_default_fields(self):
         fields = super(RasterModelSerializer, self).get_default_fields()
+        if not self.opts.raster_field:
+            meta = self.opts.model._meta
+            for field in meta.fields:
+                if isinstance(field, models.FileField):
+                    self.opts.raster_field = field.name
         view = self.context.get('view')
+        # Serialize image data as arrays when json is requested.
         if view and view.request.accepted_renderer.format == 'json':
             try:
                 fields[self.opts.raster_field] = NDArrayField()
             except AttributeError:
                 pass
+        elif self.opts.raster_field and 'path' not in fields:
+            # Add a filepath field for GDAL based renderers.
+            field = serializers.CharField(
+                source='%s.path' % self.opts.raster_field)
+            fields['path'] = field
         return fields
