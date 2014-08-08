@@ -1,19 +1,12 @@
-import os
-import shutil
-import zipfile
-import tempfile
-
 from django.contrib.gis import forms
-from django.contrib.gis import gdal
 from django.contrib.gis.db.models.sql.query import ALL_TERMS
 
-from spillway.forms.fields import (BoundingBoxField, OGRGeometryField,
-    SpatialReferenceField)
+from spillway.forms import fields
 
 
 class SpatialQueryForm(forms.Form):
     """Base spatial query form."""
-    bbox = BoundingBoxField(required=False)
+    bbox = fields.BoundingBoxField(required=False)
 
 
 class GeometryQueryForm(SpatialQueryForm):
@@ -21,7 +14,7 @@ class GeometryQueryForm(SpatialQueryForm):
     geom = forms.GeometryField(required=False)
     # Tolerance value for geometry simplification
     simplify = forms.FloatField(required=False)
-    srs = SpatialReferenceField(required=False)
+    srs = fields.SpatialReferenceField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(GeometryQueryForm, self).__init__(*args, **kwargs)
@@ -56,40 +49,8 @@ class GeometryQueryForm(SpatialQueryForm):
 
 class RasterQueryForm(SpatialQueryForm):
     """Validates format options for raster data."""
-    g = OGRGeometryField(required=False)
-    upload = forms.FileField(required=False)
-
-    def clean_upload(self):
-        """Returns an OGR Polygon geometry from the FileField."""
-        field = self.cleaned_data.get('upload')
-        if not field:
-            return None
-        filename = field.name
-        tmpdir = None
-        if zipfile.is_zipfile(field):
-            tmpdir = tempfile.mkdtemp()
-            zf = zipfile.ZipFile(field)
-            # Extract all files from the temporary directory using only the
-            # base file name, avoids security issues with relative paths in the
-            # zip.
-            for item in zf.namelist():
-                tmpname = os.path.join(tmpdir, os.path.basename(item))
-                with open(tmpname, 'wb') as f:
-                    f.write(zf.read(item))
-                    #shutil.copyfileobj(zf.open(item), f)
-                if tmpname.endswith('.shp'):
-                    filename = tmpname
-        # Attempt to union all geometries from GDAL data source.
-        try:
-            geoms = gdal.DataSource(filename)[0].get_geoms()
-            geom = reduce(lambda g1, g2: g1.union(g2), geoms)
-            if not geom.srs:
-                raise gdal.OGRException('Cannot determine SRS')
-        except (gdal.OGRException, gdal.OGRIndexError):
-            geom = None
-        if tmpdir and os.path.isdir(tmpdir):
-            shutil.rmtree(tmpdir)
-        return geom
+    g = fields.OGRGeometryField(required=False)
+    upload = fields.GeometryFileField(required=False)
 
     def clean(self):
         """Return cleaned fields as a dict, determine which geom takes

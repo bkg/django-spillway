@@ -1,5 +1,10 @@
+import os
+import shutil
+import zipfile
+import tempfile
+
 from django.contrib.gis import forms
-from django.contrib.gis.gdal import OGRGeometry, OGRException
+from django.contrib.gis import gdal
 from django.contrib.gis.gdal.srs import SpatialReference, SRSException
 from django.utils.translation import ugettext_lazy as _
 
@@ -37,7 +42,7 @@ class BoundingBoxField(CommaSepFloatField):
         # Return an empty list if no input was given.
         value = super(BoundingBoxField, self).to_python(value)
         try:
-            bbox = OGRGeometry.from_bbox(value).geos
+            bbox = gdal.OGRGeometry.from_bbox(value).geos
         except (ValueError, AttributeError):
             #raise forms.ValidationError('Not a valid bounding box.')
             return []
@@ -45,21 +50,55 @@ class BoundingBoxField(CommaSepFloatField):
         return bbox
 
 
+class GeometryFileField(forms.FileField):
+    """A Field for creating OGR geometries from file based sources."""
+
+    def to_python(self, value):
+        if value is None:
+            return value
+        filename = value.name
+        tmpdir = None
+        if zipfile.is_zipfile(value):
+            tmpdir = tempfile.mkdtemp()
+            zf = zipfile.ZipFile(value)
+            # Extract all files from the temporary directory using only the
+            # base file name, avoids security issues with relative paths in the
+            # zip.
+            for item in zf.namelist():
+                tmpname = os.path.join(tmpdir, os.path.basename(item))
+                with open(tmpname, 'wb') as f:
+                    f.write(zf.read(item))
+                if tmpname.endswith('.shp'):
+                    filename = tmpname
+        # Attempt to union all geometries from GDAL data source.
+        try:
+            geoms = gdal.DataSource(filename)[0].get_geoms()
+            geom = reduce(lambda g1, g2: g1.union(g2), geoms)
+            if not geom.srs:
+                raise gdal.OGRException('Cannot determine SRS')
+        except (gdal.OGRException, gdal.OGRIndexError):
+            geom = None
+        finally:
+            if tmpdir and os.path.isdir(tmpdir):
+                shutil.rmtree(tmpdir)
+        return geom
+
+
 class OGRGeometryField(forms.GeometryField):
     """A Field for creating OGR geometries."""
     default_srid = 4326
 
     def to_python(self, value):
-        # Work with a single GeoJSON geometry or a Feature. Avoid parsing
-        # overhead unless we have a true "Feature".
         if not value:
             return
+        # Work with a single GeoJSON geometry or a Feature. Avoid parsing
+        # overhead unless we have a true "Feature".
         if '"Feature",' in value:
             d = json.loads(value)
             value = json.dumps(d.get('geometry'))
         try:
-            geom = OGRGeometry(value)
-        except (OGRException, TypeError, ValueError):
+            geom = gdal.OGRGeometry(value)
+        except (gdal.OGRException, TypeError, ValueError):
             raise forms.ValidationError(self.error_messages['invalid_geom'])
         # When no projection info is present, try a guess of 4326 which is
         # fairly common, this also sets geom.srs properly.
