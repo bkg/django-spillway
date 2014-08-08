@@ -23,7 +23,6 @@ class GeoModelSerializer(serializers.ModelSerializer):
         added.
         """
         fields = super(GeoModelSerializer, self).get_default_fields()
-        view = self.context.get('view')
         # Go hunting for a geometry field when it's undeclared.
         if not self.opts.geom_field:
             meta = self.opts.model._meta
@@ -32,10 +31,6 @@ class GeoModelSerializer(serializers.ModelSerializer):
                     self.opts.geom_field = field.name
                 elif isinstance(field, models.FileField):
                     setattr(self.opts, 'raster_field', field.name)
-        # Alter the geometry field source based on format.
-        if view and not view.wants_default_renderer():
-            renderer = view.request.accepted_renderer
-            fields[self.opts.geom_field].source = renderer.format
         return fields
 
 

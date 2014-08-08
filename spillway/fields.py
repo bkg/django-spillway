@@ -11,6 +11,14 @@ class GeometryField(WritableField):
     type_label = 'geometry'
     form_field_class = forms.GeometryField
 
+    def initialize(self, *args, **kwargs):
+        super(GeometryField, self).initialize(*args, **kwargs)
+        view = self.context.get('view')
+        # Alter the field source based on geometry output format.
+        if view and not view.wants_default_renderer():
+            renderer = view.request.accepted_renderer
+            self.source = renderer.format
+
     def to_native(self, value):
         # Create a dict from the GEOSGeometry when the value is not previously
         # serialized from the spatial db.
