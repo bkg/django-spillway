@@ -1,6 +1,7 @@
 """Serializer fields"""
 from django.contrib.gis import forms
-from rest_framework.fields import WritableField
+from rest_framework.fields import FileField, WritableField
+from greenwich.raster import Raster
 
 from spillway.compat import json
 
@@ -24,3 +25,15 @@ class GeometryField(WritableField):
         if isinstance(value, dict):
             value = json.dumps(value)
         return super(GeometryField, self).from_native(value)
+
+
+class NDArrayField(FileField):
+    type_name = 'NDArrayField'
+    type_label = 'ndarray'
+
+    def to_native(self, value):
+        params = self.context.get('params', {})
+        geom = params.get('g')
+        with Raster(getattr(value, 'path', value)) as r:
+            arr = r.clip(geom).masked_array() if geom else r.array()
+        return arr.tolist()
