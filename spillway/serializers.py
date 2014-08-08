@@ -2,7 +2,8 @@ from django.contrib.gis.db import models
 from rest_framework import serializers
 
 from spillway.collections import Feature
-from spillway.fields import GeometryField
+from spillway.fields import GeometryField, NDArrayField
+from spillway.models import RasterStore
 
 
 class GeoModelSerializerOptions(serializers.ModelSerializerOptions):
@@ -29,6 +30,8 @@ class GeoModelSerializer(serializers.ModelSerializer):
             for field in meta.fields:
                 if isinstance(field, models.GeometryField):
                     self.opts.geom_field = field.name
+                elif isinstance(field, models.FileField):
+                    setattr(self.opts, 'raster_field', field.name)
         # Alter the geometry field source based on format.
         if view and not view.wants_default_renderer():
             renderer = view.request.accepted_renderer
@@ -47,3 +50,15 @@ class FeatureSerializer(GeoModelSerializer):
         data = {self.opts.geom_field: obj.get('geometry')}
         data.update(obj.get('properties'))
         return super(FeatureSerializer, self).from_native(data, files)
+
+
+class RasterModelSerializer(GeoModelSerializer):
+    def get_default_fields(self):
+        fields = super(RasterModelSerializer, self).get_default_fields()
+        view = self.context.get('view')
+        if view and view.request.accepted_renderer.format == 'json':
+            try:
+                fields[self.opts.raster_field] = NDArrayField()
+            except AttributeError:
+                pass
+        return fields
