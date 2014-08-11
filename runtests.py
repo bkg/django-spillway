@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 import os
 import sys
+import shutil
+import tempfile
 
 from django.conf import settings
 import django
+
+TMPDIR = tempfile.mkdtemp(prefix='spillway_')
 
 DEFAULT_SETTINGS = {
     'INSTALLED_APPS': (
@@ -17,7 +21,14 @@ DEFAULT_SETTINGS = {
             'NAME': ':memory:'
         }
     },
+    'MEDIA_ROOT': TMPDIR
 }
+
+def teardown():
+    try:
+        shutil.rmtree(TMPDIR)
+    except OSError:
+        print('Failed to remove {}'.format(TMPDIR))
 
 def runtests():
     if not settings.configured:
@@ -35,6 +46,7 @@ def runtests():
         runner_class = DjangoTestSuiteRunner
     failures = runner_class(
         verbosity=1, interactive=True, failfast=False).run_tests(['tests'])
+    teardown()
     sys.exit(failures)
 
 if __name__ == '__main__':
