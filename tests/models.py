@@ -31,3 +31,9 @@ class Location(models.Model):
         obj = cls(**data)
         obj.save()
         return obj
+
+
+class RasterStore(models.Model):
+    image = models.FileField(upload_to='img')
+    geom = models.GeometryField()
+    objects = GeoManager()

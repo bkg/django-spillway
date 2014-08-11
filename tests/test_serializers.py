@@ -1,9 +1,13 @@
 import json
+import tempfile
 
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
+from rest_framework.serializers import Serializer, ModelSerializer
+from PIL import Image
+from greenwich.raster import Raster
 
-from spillway import serializers
-from .models import Location, _geom
+from spillway import serializers, fields
+from .models import Location, RasterStore, _geom
 
 
 class LocationSerializer(serializers.GeoModelSerializer):
@@ -16,6 +20,29 @@ class LocationFeatureSerializer(serializers.FeatureSerializer):
     class Meta:
         model = Location
         geom_field = 'geom'
+
+
+class ArraySerializer(Serializer):
+    path = fields.NDArrayField()
+
+
+class RasterModelSerializer(ModelSerializer):
+    image = fields.NDArrayField()
+
+    class Meta:
+        model = RasterStore
+
+
+class RasterTestBase(SimpleTestCase):
+    def setUp(self):
+        self.f = tempfile.NamedTemporaryFile(suffix='.tif')
+        img = Image.frombytes('L', (5,5), bytes(bytearray(range(25))))
+        img.save(self.f)
+        self.f.seek(0)
+        self.data = {'path': self.f.name}
+
+    def tearDown(self):
+        self.f.close()
 
 
 class ModelTestCase(TestCase):
@@ -106,3 +133,10 @@ class FeatureSerializerTestCase(ModelTestCase):
         exp['geometry'] = json.dumps(exp['geometry'])
         feat = serializers.Feature(**exp)
         self.assertJSONEqual(str(feat), json.dumps(self.expected))
+
+
+class RasterSerializerTestCase(RasterTestBase):
+    def test_array_serializer(self):
+        serializer = ArraySerializer(self.data)
+        arr = serializer.data['path']
+        self.assertEqual(arr, Raster(self.data['path']).array().tolist())

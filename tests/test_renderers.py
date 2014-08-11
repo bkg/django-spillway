@@ -8,8 +8,10 @@ from django.test import SimpleTestCase, TestCase
 from rest_framework.pagination import PaginationSerializer
 
 from spillway.renderers import (GeoJSONRenderer, KMLRenderer,
-    KMZRenderer, SVGRenderer)
+    KMZRenderer, SVGRenderer, GeoTIFFRenderer, GeoTIFFZipRenderer, HFARenderer, HFAZipRenderer)
+from spillway.serializers import FeatureSerializer
 from .models import Location, _geom
+from .test_serializers import RasterTestBase
 
 
 class GeoJSONRendererTestCase(SimpleTestCase):
@@ -80,9 +82,33 @@ class SVGRendererTestCase(TestCase):
         self.qs = Location.objects.svg()
         self.svg = self.qs[0].svg
         self.data = {'id': 1,
+                     'properties': {'name': 'playground',
+                                    'notes': 'epic slide'},
                      'geometry': self.svg}
 
     def test_render(self):
         rsvg = SVGRenderer()
         svgdoc = rsvg.render(self.data)
         self.assertIn(self.data['geometry'], svgdoc)
+
+
+class RasterRendererTestCase(RasterTestBase):
+    def test_render_geotiff(self):
+        f = GeoTIFFRenderer().render(self.data)
+        self.assertEqual(f.filelike.read(), self.f.read())
+
+    def test_render_imagine(self):
+        data = HFARenderer().render(self.data)
+        img_header = 'EHFA_HEADER_TAG'
+        # Read the image header.
+        self.assertEqual(data.filelike[:15], img_header)
+
+    def test_render_hfazip(self):
+        data = HFAZipRenderer().render(self.data)
+        #data = HFAZipRenderer().render([self.data])
+        self.assertTrue(zipfile.is_zipfile(data.filelike))
+
+    def test_render_tifzip(self):
+        f = GeoTIFFZipRenderer().render([self.data, self.data])
+        #self.assertEqual(f.filelike.read(), self.f.read())
+        self.assertTrue(zipfile.is_zipfile(f.filelike))
