@@ -26,7 +26,7 @@ class SpatialLookupFilter(BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         form = forms.SpatialQueryForm(request.QUERY_PARAMS)
-        params = form.spatial_lookup if form.is_valid() else {}
+        params = form.cleaned_data if form.is_valid() else {}
         modelfield = queryset.query._geo_field()
         query = {'%s__%s' % (modelfield.name, key): val
                  for key, val in params.items()}
