@@ -93,22 +93,26 @@ class SVGRendererTestCase(TestCase):
 
 
 class RasterRendererTestCase(RasterTestBase):
+    img_header = 'EHFA_HEADER_TAG'
+
     def test_render_geotiff(self):
         f = GeoTIFFRenderer().render(self.data)
         self.assertEqual(f.filelike.read(), self.f.read())
 
     def test_render_imagine(self):
         data = HFARenderer().render(self.data)
-        img_header = 'EHFA_HEADER_TAG'
         # Read the image header.
-        self.assertEqual(data.filelike[:15], img_header)
+        self.assertEqual(data.filelike[:15], self.img_header)
 
     def test_render_hfazip(self):
-        data = HFAZipRenderer().render(self.data)
-        #data = HFAZipRenderer().render([self.data])
-        self.assertTrue(zipfile.is_zipfile(data.filelike))
+        f = HFAZipRenderer().render(self.data)
+        zf = zipfile.ZipFile(f.filelike)
+        self.assertTrue(all(name.endswith('.img') for name in zf.namelist()))
+        self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
 
     def test_render_tifzip(self):
-        f = GeoTIFFZipRenderer().render([self.data, self.data])
-        #self.assertEqual(f.filelike.read(), self.f.read())
-        self.assertTrue(zipfile.is_zipfile(f.filelike))
+        tifs = [self.data, self.data]
+        f = GeoTIFFZipRenderer().render(tifs)
+        zf = zipfile.ZipFile(f.filelike)
+        self.assertEqual(len(zf.filelist), len(tifs))
+        self.assertTrue(all(name.endswith('.tif') for name in zf.namelist()))
