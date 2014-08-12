@@ -36,14 +36,6 @@ class GeoListView(BaseGeoView, ListAPIView):
         renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
     filter_backends = (filters.SpatialLookupFilter, filters.GeoQuerySetFilter)
 
-    def get_paginate_by(self, queryset=None):
-        """Return the size of pages to use or None to skip pagination."""
-        # Do not paginate unless we are explicitly told to do so, avoids an
-        # unecessary LIMIT query.
-        if self.page_kwarg in self.request.QUERY_PARAMS:
-            return super(GeoListView, self).get_paginate_by(queryset)
-        return None
-
 
 class BaseRasterView(BaseGeoView):
     """Base view for raster models."""
