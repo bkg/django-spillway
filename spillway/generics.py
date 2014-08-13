@@ -4,9 +4,9 @@ from rest_framework.settings import api_settings
 from spillway import filters, forms, mixins, renderers, serializers
 
 
-class BaseGeoView(mixins.QueryFormMixin, mixins.GenericSerializerMixin):
+class BaseGeoView(mixins.QueryFormMixin):
     """Base view for models with geometry fields."""
-    serializer_class = serializers.FeatureSerializer
+    model_serializer_class = serializers.FeatureSerializer
     query_form_class = forms.GeometryQueryForm
 
     def wants_default_renderer(self):
@@ -24,7 +24,7 @@ class GeoListView(BaseGeoView, ListAPIView):
 
 class BaseRasterView(BaseGeoView):
     """Base view for raster models."""
-    serializer_class = serializers.RasterModelSerializer
+    model_serializer_class = serializers.RasterModelSerializer
     query_form_class = forms.RasterQueryForm
 
     def get_serializer_context(self):
