@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(name='django-spillway',
       version='0.1.0',
@@ -12,7 +9,7 @@ setup(name='django-spillway',
       author='Brian Galey',
       author_email='bkgaley@gmail.com',
       url='https://github.com/bkg/django-spillway',
-      packages=['spillway'],
+      packages=find_packages(exclude=['tests*']),
       install_requires=['django', 'djangorestframework', 'greenwich'],
       license='BSD',
       classifiers=[
