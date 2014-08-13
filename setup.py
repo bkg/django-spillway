@@ -10,6 +10,7 @@ setup(name='django-spillway',
       author_email='bkgaley@gmail.com',
       url='https://github.com/bkg/django-spillway',
       packages=find_packages(exclude=['tests*']),
+      include_package_data=True,
       install_requires=['django', 'djangorestframework', 'greenwich'],
       license='BSD',
       classifiers=[
