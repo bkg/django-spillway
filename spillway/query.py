@@ -34,6 +34,10 @@ class GeoQuerySet(query.GeoQuerySet):
         return ('ST_Simplify(%s, %s)' % (colname, tolerance)
                 if tolerance else colname)
 
+    def _wkb(self, sql):
+        # Convert spatialite wkb-esque geometries to true wkb.
+        return 'AsBinary(%s)' % sql if connection.ops.spatialite else sql
+
     def extent(self, srid=None):
         """Returns the GeoQuerySet extent as a 4-tuple.
 
@@ -56,6 +60,16 @@ class GeoQuerySet(query.GeoQuerySet):
         except IndexError:
             return ()
 
+    def filter_geometry(self, **kwargs):
+        """Convenience method for providing spatial lookup types as keywords
+        without underscores instead of the usual "geometryfield__lookuptype"
+        format.
+        """
+        modelfield = self.query._geo_field()
+        query = {'%s__%s' % (modelfield.name, key): val
+                 for key, val in kwargs.items()}
+        return self.filter(**query)
+
     def scale(self, x, y, z=0.0, tolerance=0.0, precision=6, srid=None,
               format=None, **kwargs):
         """Returns a GeoQuerySet with scaled and optionally reprojected and
@@ -67,10 +81,6 @@ class GeoQuerySet(query.GeoQuerySet):
         scale = self._scale % (transform, x, y)
         simplify = self._simplify(scale, tolerance)
         return self._as_format(simplify, format, precision)
-
-    def _wkb(self, sql):
-        # Convert spatialite wkb-esque geometries to true wkb.
-        return 'AsBinary(%s)' % sql if connection.ops.spatialite else sql
 
     def simplify(self, tolerance=0.0, srid=None, format=None, precision=6):
         """Returns a GeoQuerySet with simplified geometries serialized to
