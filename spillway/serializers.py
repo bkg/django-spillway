@@ -60,9 +60,9 @@ class RasterModelSerializer(GeoModelSerializer):
             for field in meta.fields:
                 if isinstance(field, models.FileField):
                     self.opts.raster_field = field.name
-        view = self.context.get('view')
+        request = self.context.get('request')
         # Serialize image data as arrays when json is requested.
-        if view and view.request.accepted_renderer.format == 'json':
+        if request and request.accepted_renderer.format == 'json':
             try:
                 fields[self.opts.raster_field] = NDArrayField()
             except AttributeError:
