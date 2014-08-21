@@ -1,13 +1,28 @@
 import json
 import tempfile
 
+from django.core.files import File
+from django.core.files.storage import default_storage
 from django.test import SimpleTestCase, TestCase
 from rest_framework.serializers import Serializer, ModelSerializer
 from PIL import Image
-from greenwich.raster import Raster
+from greenwich.raster import Raster, frombytes
 
 from spillway import serializers, fields
 from .models import Location, RasterStore, _geom
+
+# Store tempfiles in the temp media root.
+tempfile.tempdir = default_storage.location
+
+def create_image():
+    fp = tempfile.NamedTemporaryFile(suffix='.tif')
+    ras = frombytes(bytes(bytearray(range(25))), (5, 5))
+    ras.affine = (-120, 2, 0, 38, 0, -2)
+    ras.sref = 4326
+    ras.save(fp)
+    ras.close()
+    fp.seek(0)
+    return fp
 
 
 class LocationSerializer(serializers.GeoModelSerializer):
@@ -26,8 +41,15 @@ class ArraySerializer(Serializer):
     path = fields.NDArrayField()
 
 
-class RasterModelSerializer(ModelSerializer):
-    image = fields.NDArrayField()
+class RasterStoreSerializer(serializers.RasterModelSerializer):
+    #image = fields.NDArrayField()
+
+    class Meta:
+        model = RasterStore
+
+
+class GDALModelSerializer(serializers.RasterModelSerializer):
+    image = fields.GDALField()
 
     class Meta:
         model = RasterStore
@@ -35,10 +57,7 @@ class RasterModelSerializer(ModelSerializer):
 
 class RasterTestBase(SimpleTestCase):
     def setUp(self):
-        self.f = tempfile.NamedTemporaryFile(suffix='.tif')
-        img = Image.frombytes('L', (5,5), bytes(bytearray(range(25))))
-        img.save(self.f)
-        self.f.seek(0)
+        self.f = create_image()
         self.data = {'path': self.f.name}
 
     def tearDown(self):

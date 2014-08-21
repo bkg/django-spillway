@@ -1,8 +1,7 @@
 import json
 
-from spillway.query import GeoQuerySet
-from spillway.models import GeoManager
 from django.contrib.gis.db import models
+from spillway.models import GeoManager, AbstractRasterStore
 
 _geom = {
     'type': 'Polygon',
@@ -33,7 +32,5 @@ class Location(models.Model):
         return obj
 
 
-class RasterStore(models.Model):
-    image = models.FileField(upload_to='img')
-    geom = models.GeometryField()
+class RasterStore(AbstractRasterStore):
     objects = GeoManager()

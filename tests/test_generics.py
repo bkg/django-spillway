@@ -42,7 +42,6 @@ class GeoListViewTestCase(TestCase):
         for request in (factory.get('/', {'format': 'geojson'}),
                         factory.get('/', HTTP_ACCEPT=GeoJSONRenderer.media_type)):
             response = self.view(request).render()
-            #self.assertEqual(response.data['features'],
             d = json.loads(response.content)
             self.assertEqual(d['features'][0]['geometry'],
                              json.loads(self.qs[0].geom.geojson))
@@ -51,15 +50,17 @@ class GeoListViewTestCase(TestCase):
 class RasterListViewTestCase(RasterTestBase):
     def setUp(self):
         super(RasterListViewTestCase, self).setUp()
-        RasterStore.objects.create(image=File(self.f), geom='POINT(0 0)')
+        RasterStore.objects.create(image=File(self.f))
         self.qs = RasterStore.objects.all()
         self.view = generics.RasterListView.as_view(model=RasterStore)
 
     def test_list_json(self):
         with Raster(self.qs[0].image.path) as r:
             imdata = r.array().tolist()
-        self.expected = [{'image': imdata,
-            'geom': {'type': 'Point', 'coordinates': [0.0, 0.0]}, 'id': 1}]
+            g = r.envelope.to_geom().__geo_interface__
+            sref_wkt = str(r.sref)
+        self.expected = [{'image': imdata, 'geom': g,
+                          'srs': sref_wkt, 'id': 1}]
         request = factory.get('/')
         response = self.view(request).render()
         d = json.loads(response.content)

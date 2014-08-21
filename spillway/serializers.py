@@ -69,7 +69,6 @@ class RasterModelSerializer(GeoModelSerializer):
                 pass
         elif self.opts.raster_field and 'path' not in fields:
             # Add a filepath field for GDAL based renderers.
-            field = serializers.CharField(
+            fields['path'] = serializers.CharField(
                 source='%s.path' % self.opts.raster_field)
-            fields['path'] = field
         return fields
