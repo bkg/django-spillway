@@ -44,10 +44,14 @@ def runtests():
     except ImportError:
         from django.test.simple import DjangoTestSuiteRunner
         runner_class = DjangoTestSuiteRunner
-    failures = runner_class(
-        verbosity=1, interactive=True, failfast=False).run_tests(['tests'])
-    teardown()
-    sys.exit(failures)
+    try:
+        status = runner_class(
+            verbosity=1, interactive=True, failfast=False).run_tests(['tests'])
+    except:
+        status = 1
+    finally:
+        teardown()
+    sys.exit(status)
 
 if __name__ == '__main__':
     runtests()
