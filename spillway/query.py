@@ -22,9 +22,6 @@ class GeoQuerySet(query.GeoQuerySet):
         val = self._formats.get(format, self._formats['geojson'])
         return self.extra(select={format: val % (sql, precision)})
 
-    def _geo_fieldname(self):
-        return self.query._geo_field().column
-
     def _transform(self, colname, srid=None):
         return ('%s(%s, %s)' % (connection.ops.transform, colname, srid)
                 if srid else colname)
@@ -50,7 +47,7 @@ class GeoQuerySet(query.GeoQuerySet):
         """
         if not srid:
             return super(GeoQuerySet, self).extent()
-        transform = self._transform(self._geo_fieldname(), srid)
+        transform = self._transform(self.geo_field.column, srid)
         ext = {'extent': '%s(%s)' % (connection.ops.extent, transform)}
         # The bare order_by() is needed to remove the default sort field which
         # is not present in this aggregation.
@@ -65,10 +62,14 @@ class GeoQuerySet(query.GeoQuerySet):
         without underscores instead of the usual "geometryfield__lookuptype"
         format.
         """
-        modelfield = self.query._geo_field()
-        query = {'%s__%s' % (modelfield.name, key): val
+        fieldname = self.geo_field.name
+        query = {'%s__%s' % (fieldname, key): val
                  for key, val in kwargs.items()}
         return self.filter(**query)
+
+    @property
+    def geo_field(self):
+        return self.query._geo_field()
 
     def scale(self, x, y, z=0.0, tolerance=0.0, precision=6, srid=None,
               format=None, **kwargs):
@@ -77,7 +78,7 @@ class GeoQuerySet(query.GeoQuerySet):
         """
         if not any((tolerance, srid, format)):
             return super(GeoQuerySet, self).scale(x, y, z, **kwargs)
-        transform = self._transform(self._geo_fieldname(), srid)
+        transform = self._transform(self.geo_field.column, srid)
         scale = self._scale % (transform, x, y)
         simplify = self._simplify(scale, tolerance)
         return self._as_format(simplify, format, precision)
@@ -86,10 +87,10 @@ class GeoQuerySet(query.GeoQuerySet):
         """Returns a GeoQuerySet with simplified geometries serialized to
         a supported geometry format.
         """
-        transform = self._transform(self._geo_fieldname(), srid)
+        transform = self._transform(self.geo_field.column, srid)
         if format:
             simplify = (self._simplify(transform, tolerance)
                         if tolerance else transform)
             return self._as_format(simplify, format, precision)
         simplify = self._simplify(transform, tolerance)
-        return self.extra(select={self._geo_fieldname(): self._wkb(simplify)})
+        return self.extra(select={self.geo_field.column: self._wkb(simplify)})
