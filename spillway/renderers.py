@@ -4,12 +4,14 @@ from wsgiref.util import FileWrapper
 import zipfile
 
 from django.contrib.gis.shortcuts import compress_kml
+from django.conf import settings
 from django.template import loader, Context
 from rest_framework.pagination import PaginationSerializer
 from rest_framework.renderers import BaseRenderer
 from greenwich.geometry import Geometry
 from greenwich.io import MemFileIO
 from greenwich.raster import Raster, driver_for_path
+import mapnik
 
 from spillway.collections import FeatureCollection
 
@@ -202,3 +204,29 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
 class HFAZipRenderer(GeoTIFFZipRenderer):
     """Bundles Erdas Imagine rasters in a zip archive."""
     format = 'img.zip'
+
+
+class MapnikRenderer(BaseRenderer):
+    mapfile = os.path.join(settings.MEDIA_ROOT, 'maptest.xml')
+    media_type = 'image/png'
+    format = 'png'
+
+    def __init__(self, *args, **kwargs):
+        super(MapnikRenderer, self).__init__(*args, **kwargs)
+        m = mapnik.Map(256, 256)
+        m.buffer_size = 128
+        mapnik.load_map(m, self.mapfile)
+        self.map = m
+
+    def render(self, object, accepted_media_type=None, renderer_context=None):
+        try:
+            object.draw(self.map)
+        except AttributeError:
+            pass
+        bbox = renderer_context.get('bbox')
+        if bbox:
+            bbox.transform(self.map.srs)
+            self.map.zoom_to_box(mapnik.Box2d(*bbox.extent))
+        img = mapnik.Image(self.map.width, self.map.height)
+        mapnik.render(self.map, img)
+        return img.tostring(self.format)

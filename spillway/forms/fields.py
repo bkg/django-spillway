@@ -7,6 +7,7 @@ from django.contrib.gis import forms
 from django.contrib.gis import gdal
 from django.contrib.gis.gdal.srs import SpatialReference, SRSException
 from django.utils.translation import ugettext_lazy as _
+from greenwich.geometry import Envelope
 
 from spillway.compat import json
 
@@ -96,12 +97,14 @@ class OGRGeometryField(forms.GeometryField):
         if '"Feature",' in value:
             d = json.loads(value)
             value = json.dumps(d.get('geometry'))
+        # Handle extent as a four-tuple.
+        elif len(value) == 4:
+            value = Envelope(value).polygon.ExportToWkt()
         try:
             geom = gdal.OGRGeometry(value)
         except (gdal.OGRException, TypeError, ValueError):
             raise forms.ValidationError(self.error_messages['invalid_geom'])
-        # When no projection info is present, try a guess of 4326 which is
-        # fairly common, this also sets geom.srs properly.
+        # When no projection info is present, try 4326 which is fairly common.
         if not geom.srs:
             geom.srid = self.default_srid
         return geom

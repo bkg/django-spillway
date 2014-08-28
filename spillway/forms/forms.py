@@ -2,6 +2,7 @@ from django.contrib.gis import forms
 from django.contrib.gis.db.models.sql.query import ALL_TERMS
 
 from spillway.forms import fields
+from greenwich.srs import transform_tile
 
 
 class SpatialQueryForm(forms.Form):
@@ -49,4 +50,21 @@ class RasterQueryForm(forms.Form):
         cleaned = super(RasterQueryForm, self).clean()
         cleaned['g'] = (cleaned.pop('upload') or cleaned.pop('g') or
                         cleaned.pop('bbox'))
+        return cleaned
+
+
+class MapTile(forms.Form):
+    """Validates requested map tiling parameters."""
+    bbox = fields.OGRGeometryField(required=False)
+    x = forms.IntegerField()
+    y = forms.IntegerField()
+    z = forms.IntegerField()
+    size = forms.IntegerField(required=False, initial=256)
+
+    def clean(self):
+        cleaned = super(MapTile, self).clean()
+        x, y, z = map(cleaned.get, ('x', 'y', 'z'))
+        # Create bbox from NW and SE tile corners.
+        cleaned['bbox'] = self.fields['bbox'].clean(
+            transform_tile(x, y, z) + transform_tile(x + 1, y + 1, z))
         return cleaned
