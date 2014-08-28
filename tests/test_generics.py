@@ -57,7 +57,7 @@ class RasterListViewTestCase(RasterTestBase):
     def test_list_json(self):
         with Raster(self.qs[0].image.path) as r:
             imdata = r.array().tolist()
-            g = r.envelope.to_geom().__geo_interface__
+            g = r.envelope.polygon.__geo_interface__
             sref_wkt = str(r.sref)
         self.expected = [{'image': imdata, 'geom': g,
                           'srs': sref_wkt, 'id': 1}]

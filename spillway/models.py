@@ -41,7 +41,7 @@ class AbstractRasterStore(models.Model):
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
             if bmin is None or bmax is None:
                 bmin, bmax = band.ComputeRasterMinMax()
-            self.geom = buffer(r.envelope.to_geom().ExportToWkb())
+            self.geom = buffer(r.envelope.polygon.ExportToWkb())
             self.minval = bmin
             self.maxval = bmax
             self.nodata = r.nodata
