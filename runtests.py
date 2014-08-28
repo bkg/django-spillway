@@ -21,7 +21,8 @@ DEFAULT_SETTINGS = {
             'NAME': ':memory:'
         }
     },
-    'MEDIA_ROOT': TMPDIR
+    'MEDIA_ROOT': TMPDIR,
+    'ROOT_URLCONF': 'tests.urls'
 }
 
 def teardown():
