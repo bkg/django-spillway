@@ -94,6 +94,8 @@ class BaseGDALRenderer(BaseRenderer):
     """Abstract renderer which encodes to a GDAL supported raster format."""
     media_type = 'application/octet-stream'
     format = None
+    charset = None
+    render_style = 'binary'
 
     @property
     def file_ext(self):
@@ -210,6 +212,8 @@ class MapnikRenderer(BaseRenderer):
     mapfile = os.path.join(settings.MEDIA_ROOT, 'maptest.xml')
     media_type = 'image/png'
     format = 'png'
+    charset = None
+    render_style = 'binary'
 
     def __init__(self, *args, **kwargs):
         super(MapnikRenderer, self).__init__(*args, **kwargs)
