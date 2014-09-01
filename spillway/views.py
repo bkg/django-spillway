@@ -9,7 +9,7 @@ from spillway.generics import BaseGeoView
 
 class MapView(GenericAPIView):
     """View for rendering map tiles from /{z}/{x}/{y}/ tile coordinates."""
-    renderer_classes = (renderers.MapnikRenderer,)
+    renderer_classes = (renderers.MapnikRenderer, renderers.MapnikJPEGRenderer)
 
     def get_renderer_context(self):
         context = super(MapView, self).get_renderer_context()

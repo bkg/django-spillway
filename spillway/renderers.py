@@ -234,3 +234,9 @@ class MapnikRenderer(BaseRenderer):
         img = mapnik.Image(self.map.width, self.map.height)
         mapnik.render(self.map, img)
         return img.tostring(self.format)
+
+
+class MapnikJPEGRenderer(MapnikRenderer):
+    """Renders Mapnik stylesheets to tiled JPEG."""
+    media_type = 'image/jpeg'
+    format = 'jpeg'
