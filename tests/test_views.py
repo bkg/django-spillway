@@ -7,7 +7,7 @@ from PIL import Image
 
 from spillway import views
 from .models import Location, RasterStore
-from .test_serializers import RasterTestBase
+from .test_serializers import RasterStoreTestBase
 
 
 class TileViewTestCase(APITestCase):
@@ -27,11 +27,7 @@ class TileViewTestCase(APITestCase):
                          len(self.geometry['coordinates'][0]) + 1)
 
 
-class MapViewTestCase(RasterTestBase, APITestCase):
-    def setUp(self):
-        super(MapViewTestCase, self).setUp()
-        RasterStore.objects.create(image=File(self.f))
-
+class MapViewTestCase(RasterStoreTestBase, APITestCase):
     def test_response(self):
         response = self.client.get('/maptiles/1/11/342/790/')
         self.assertEqual(response['content-type'], 'image/png')

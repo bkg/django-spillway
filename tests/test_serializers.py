@@ -64,6 +64,13 @@ class RasterTestBase(SimpleTestCase):
         self.f.close()
 
 
+class RasterStoreTestBase(RasterTestBase, TestCase):
+    def setUp(self):
+        super(RasterStoreTestBase, self).setUp()
+        self.object = RasterStore.objects.create(image=File(self.f))
+        self.qs = RasterStore.objects.all()
+
+
 class ModelTestCase(TestCase):
     def setUp(self):
         self.data = {'id': 1,

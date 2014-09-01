@@ -10,7 +10,7 @@ from rest_framework.test import APIRequestFactory
 from spillway import generics
 from spillway.renderers import GeoJSONRenderer
 from .models import Location, RasterStore
-from .test_serializers import RasterTestBase
+from .test_serializers import RasterStoreTestBase
 
 factory = APIRequestFactory()
 
@@ -47,11 +47,9 @@ class GeoListViewTestCase(TestCase):
                              json.loads(self.qs[0].geom.geojson))
 
 
-class RasterListViewTestCase(RasterTestBase):
+class RasterListViewTestCase(RasterStoreTestBase):
     def setUp(self):
         super(RasterListViewTestCase, self).setUp()
-        RasterStore.objects.create(image=File(self.f))
-        self.qs = RasterStore.objects.all()
         self.view = generics.RasterListView.as_view(model=RasterStore)
 
     def test_list_json(self):
