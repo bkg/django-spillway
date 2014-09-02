@@ -42,8 +42,6 @@ class ArraySerializer(Serializer):
 
 
 class RasterStoreSerializer(serializers.RasterModelSerializer):
-    #image = fields.NDArrayField()
-
     class Meta:
         model = RasterStore
 
@@ -161,8 +159,23 @@ class FeatureSerializerTestCase(ModelTestCase):
         self.assertJSONEqual(str(feat), json.dumps(self.expected))
 
 
-class RasterSerializerTestCase(RasterTestBase):
+class RasterSerializerTestCase(RasterStoreTestBase):
     def test_array_serializer(self):
         serializer = ArraySerializer(self.data)
         arr = serializer.data['path']
         self.assertEqual(arr, Raster(self.data['path']).array().tolist())
+
+    def test_serialize_queryset(self):
+        serializer = RasterStoreSerializer(self.qs)
+        path = serializer.data[0]['path']
+        self.assertEqual(path, self.qs[0].image.path)
+        expected = {
+          'geom': {'type': 'Polygon',
+                   'coordinates': (((-120.0, 28.0), (-110.0, 28.0),
+                                    (-110.0, 38.0), (-120.0, 38.0), (-120.0, 28.0)),)},
+          'minval': 0.0, 'maxval': 24.0, 'nodata': None
+        }
+        data = serializer.data[0]
+        self.assertEqual(SpatialReference(data['srs']), SpatialReference(4326))
+        for key in ('geom', 'minval', 'maxval'):
+            self.assertEqual(data[key], expected[key])
