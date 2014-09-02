@@ -177,5 +177,4 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         }
         data = serializer.data[0]
         self.assertEqual(SpatialReference(data['srs']), SpatialReference(4326))
-        for key in ('geom', 'minval', 'maxval'):
-            self.assertEqual(data[key], expected[key])
+        self.assertDictContainsSubset(expected, data)

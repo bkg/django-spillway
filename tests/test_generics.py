@@ -57,12 +57,12 @@ class RasterListViewTestCase(RasterStoreTestBase):
             imdata = r.array().tolist()
             g = r.envelope.polygon.__geo_interface__
             sref_wkt = str(r.sref)
-        self.expected = [{'image': imdata, 'geom': g,
-                          'srs': sref_wkt, 'id': 1}]
         request = factory.get('/')
         response = self.view(request).render()
         d = json.loads(response.content)
-        self.assertEquals(d, self.expected)
+        expected = [{'image': imdata, 'geom': g, 'srs': sref_wkt}]
+        self.assertEquals(*map(len, (d, expected)))
+        self.assertDictContainsSubset(expected[0], d[0])
 
     def test_list_zip(self):
         request = factory.get('/', {'format': 'img.zip'})
