@@ -33,18 +33,18 @@ class BaseRasterView(BaseGeoView):
         return context
 
 
+class RasterDetailView(BaseRasterView, RetrieveAPIView):
+    """View providing access to a Raster model instance."""
+    renderer_classes = tuple(RetrieveAPIView.renderer_classes) + (
+        renderers.HFARenderer,
+        renderers.GeoTIFFRenderer
+    )
+
+
 class RasterListView(BaseRasterView, ListAPIView):
-    """View for read only access to a Raster model QuerySet."""
+    """View providing access to a Raster model QuerySet."""
     filter_backends = (filters.SpatialLookupFilter,)
     renderer_classes = tuple(ListAPIView.renderer_classes) + (
         renderers.HFAZipRenderer,
         renderers.GeoTIFFZipRenderer,
-    )
-
-
-class RasterDetailView(BaseRasterView, RetrieveAPIView):
-    """View for read only access to a Raster model instance."""
-    renderer_classes = tuple(RetrieveAPIView.renderer_classes) + (
-        renderers.HFARenderer,
-        renderers.GeoTIFFRenderer
     )
