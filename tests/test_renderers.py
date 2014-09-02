@@ -6,12 +6,11 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.core.paginator import Paginator
 from django.test import SimpleTestCase, TestCase
 from rest_framework.pagination import PaginationSerializer
+from PIL import Image
 
-from spillway.renderers import (GeoJSONRenderer, KMLRenderer,
-    KMZRenderer, SVGRenderer, GeoTIFFRenderer, GeoTIFFZipRenderer, HFARenderer, HFAZipRenderer)
-from spillway.serializers import FeatureSerializer
+from spillway import renderers
 from .models import Location, _geom
-from .test_serializers import RasterTestBase
+from .test_serializers import RasterTestBase, RasterStoreTestBase
 
 
 class GeoJSONRendererTestCase(SimpleTestCase):
@@ -31,7 +30,7 @@ class GeoJSONRendererTestCase(SimpleTestCase):
         }""" % json.dumps(_geom)
         self.expected = json.loads(self.collection)
         self.empty = '{"type": "FeatureCollection", "features": []}'
-        self.r = GeoJSONRenderer()
+        self.r = renderers.GeoJSONRenderer()
 
     def test_render_dict(self):
         data = json.loads(self.r.render(self.data.copy()))
@@ -65,11 +64,11 @@ class KMLRendererTestCase(SimpleTestCase):
                      'geometry': GEOSGeometry(json.dumps(_geom)).kml}
 
     def test_render(self):
-        rkml = KMLRenderer()
+        rkml = renderers.KMLRenderer()
         self.assertIn(self.data['geometry'], rkml.render(self.data))
 
     def test_render_kmz(self):
-        rkmz = KMZRenderer()
+        rkmz = renderers.KMZRenderer()
         stream = io.BytesIO(rkmz.render(self.data))
         self.assertTrue(zipfile.is_zipfile(stream))
         zf = zipfile.ZipFile(stream)
@@ -87,32 +86,46 @@ class SVGRendererTestCase(TestCase):
                      'geometry': self.svg}
 
     def test_render(self):
-        rsvg = SVGRenderer()
+        rsvg = renderers.SVGRenderer()
         svgdoc = rsvg.render(self.data)
         self.assertIn(self.data['geometry'], svgdoc)
+
+        #serializer = FeatureSerializer(self.qs)
+        ##serializer.opts.model = self.qs.model
+        #svgdoc = rsvg.render(serializer.data)
+        #print svgdoc
+        #self.assertIn(self.data['geometry'], svgdoc)
 
 
 class RasterRendererTestCase(RasterTestBase):
     img_header = 'EHFA_HEADER_TAG'
 
     def test_render_geotiff(self):
-        f = GeoTIFFRenderer().render(self.data)
+        f = renderers.GeoTIFFRenderer().render(self.data)
         self.assertEqual(f.filelike.read(), self.f.read())
 
     def test_render_imagine(self):
-        data = HFARenderer().render(self.data)
+        data = renderers.HFARenderer().render(self.data)
         # Read the image header.
         self.assertEqual(data.filelike[:15], self.img_header)
 
     def test_render_hfazip(self):
-        f = HFAZipRenderer().render(self.data)
+        f = renderers.HFAZipRenderer().render(self.data)
         zf = zipfile.ZipFile(f.filelike)
         self.assertTrue(all(name.endswith('.img') for name in zf.namelist()))
         self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
 
     def test_render_tifzip(self):
         tifs = [self.data, self.data]
-        f = GeoTIFFZipRenderer().render(tifs)
+        f = renderers.GeoTIFFZipRenderer().render(tifs)
         zf = zipfile.ZipFile(f.filelike)
         self.assertEqual(len(zf.filelist), len(tifs))
         self.assertTrue(all(name.endswith('.tif') for name in zf.namelist()))
+
+
+class MapnikRendererTestCase(RasterStoreTestBase):
+    def test_render(self):
+        imgdata = renderers.MapnikRenderer().render(self.object)
+        im = Image.open(io.BytesIO(imgdata))
+        self.assertEqual(im.size, (256, 256))
+        self.assertNotEqual(im.getpixel((100, 100)), (0, 0, 0, 0))
