@@ -4,7 +4,7 @@ from wsgiref.util import FileWrapper
 import zipfile
 
 from django.contrib.gis.shortcuts import compress_kml
-from django.conf import settings
+from django.core.files.storage import default_storage
 from django.template import loader, Context
 from rest_framework.pagination import PaginationSerializer
 from rest_framework.renderers import BaseRenderer
@@ -209,7 +209,8 @@ class HFAZipRenderer(GeoTIFFZipRenderer):
 
 
 class MapnikRenderer(BaseRenderer):
-    mapfile = os.path.join(settings.MEDIA_ROOT, 'maptest.xml')
+    """Renders Mapnik stylesheets to tiled PNG."""
+    mapfile = default_storage.path('map.xml')
     media_type = 'image/png'
     format = 'png'
     charset = None
