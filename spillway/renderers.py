@@ -219,8 +219,12 @@ class MapnikRenderer(BaseRenderer):
     def __init__(self, *args, **kwargs):
         super(MapnikRenderer, self).__init__(*args, **kwargs)
         m = mapnik.Map(256, 256)
+        try:
+            mapnik.load_map(m, str(self.mapfile))
+        except RuntimeError:
+            pass
         m.buffer_size = 128
-        mapnik.load_map(m, self.mapfile)
+        m.srs = '+init=epsg:3857'
         self.map = m
 
     def render(self, object, accepted_media_type=None, renderer_context=None):
