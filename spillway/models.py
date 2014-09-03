@@ -2,9 +2,11 @@ import datetime
 
 from django.contrib.gis.db import models
 from django.utils.translation import ugettext_lazy as _
-from greenwich import Raster
+from greenwich import Raster, SpatialReference
+import mapnik
 
-from .query import GeoQuerySet
+from spillway import styles
+from spillway.query import GeoQuerySet
 
 
 # Temporary solution until QuerySet.as_manager() is available in 1.7.
@@ -53,3 +55,24 @@ class AbstractRasterStore(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super(AbstractRasterStore, self).save(*args, **kwargs)
+
+    def layer(self, band=1):
+        layer = mapnik.Layer(str(self), SpatialReference(self.srs).proj4)
+        layer.datasource = mapnik.Gdal(file=self.image.path, band=band)
+        return layer
+
+    def draw(self, canvas):
+        stylename = getattr(self, 'stylename', 'default-raster')
+        try:
+            style = canvas.find_style(stylename)
+        except KeyError:
+            style = styles.get_raster_style()
+            canvas.append_style(stylename, style)
+        rule = style.rules[0]
+        symbolizer = rule.symbols[0]
+        styles.adjust_to_minmax(symbolizer.colorizer,
+                                (self.minval, self.maxval))
+        layer = self.layer()
+        layer.styles.append(stylename)
+        # Must append layer to map *after* appending style to it.
+        canvas.layers.append(layer)
