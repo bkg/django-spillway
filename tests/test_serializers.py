@@ -7,15 +7,14 @@ from django.test import SimpleTestCase, TestCase
 from rest_framework.serializers import Serializer, ModelSerializer
 from PIL import Image
 from greenwich.raster import Raster, frombytes
+from greenwich.srs import SpatialReference
 
 from spillway import serializers, fields
 from .models import Location, RasterStore, _geom
 
-# Store tempfiles in the temp media root.
-tempfile.tempdir = default_storage.location
-
 def create_image():
-    fp = tempfile.NamedTemporaryFile(suffix='.tif')
+    tmpname = os.path.basename(tempfile.mktemp(suffix='.tif'))
+    fp = default_storage.open(tmpname, 'w+b')
     ras = frombytes(bytes(bytearray(range(25))), (5, 5))
     ras.affine = (-120, 2, 0, 38, 0, -2)
     ras.sref = 4326
