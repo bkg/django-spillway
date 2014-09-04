@@ -38,7 +38,7 @@ class AbstractRasterStore(models.Model):
         return self.image.name
 
     def clean_fields(self, *args, **kwargs):
-        with Raster(self.image) as r:
+        with Raster(self.image.path) as r:
             band = r[-1]
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
             if bmin is None or bmax is None:
