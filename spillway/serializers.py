@@ -56,10 +56,9 @@ class RasterModelSerializer(GeoModelSerializer):
     def get_default_fields(self):
         fields = super(RasterModelSerializer, self).get_default_fields()
         if not self.opts.raster_field:
-            meta = self.opts.model._meta
-            for field in meta.fields:
-                if isinstance(field, models.FileField):
-                    self.opts.raster_field = field.name
+            for name, field in fields.items():
+                if isinstance(field, serializers.FileField):
+                    self.opts.raster_field = name
         request = self.context.get('request')
         render_format = request.accepted_renderer.format if request else None
         # Serialize image data as arrays when json is requested.
