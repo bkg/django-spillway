@@ -61,12 +61,12 @@ class RasterModelSerializer(GeoModelSerializer):
                 if isinstance(field, models.FileField):
                     self.opts.raster_field = field.name
         request = self.context.get('request')
+        render_format = request.accepted_renderer.format if request else None
         # Serialize image data as arrays when json is requested.
-        if request and request.accepted_renderer.format == 'json':
-            try:
-                fields[self.opts.raster_field] = NDArrayField()
-            except AttributeError:
-                pass
+        if render_format == 'json':
+            fields[self.opts.raster_field] = NDArrayField()
+        elif render_format in ('api', 'html'):
+            pass
         elif self.opts.raster_field and 'path' not in fields:
             # Add a filepath field for GDAL based renderers.
             fields['path'] = serializers.CharField(
