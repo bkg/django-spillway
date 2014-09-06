@@ -22,12 +22,11 @@ class GeoModelSerializer(serializers.ModelSerializer):
         added.
         """
         fields = super(GeoModelSerializer, self).get_default_fields()
-        # Go hunting for a geometry field when it's undeclared.
+        # Set the geometry field name when it's undeclared.
         if not self.opts.geom_field:
-            meta = self.opts.model._meta
-            for field in meta.fields:
-                if isinstance(field, models.GeometryField):
-                    self.opts.geom_field = field.name
+            for name, field in fields.items():
+                if isinstance(field, GeometryField):
+                    self.opts.geom_field = name
         return fields
 
 
