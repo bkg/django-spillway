@@ -47,6 +47,26 @@ class GeoListViewTestCase(TestCase):
                              json.loads(self.qs[0].geom.geojson))
 
 
+class GeoDetailViewTestCase(TestCase):
+    def setUp(self):
+        self.view = generics.GeoDetailView.as_view(model=Location)
+        for i in range(2): Location.create()
+        self.qs = Location.objects.all()
+
+    def test_response(self):
+        request = factory.get('/1')
+        with self.assertNumQueries(1):
+            response = self.view(request, pk=1).render()
+        self.assertEqual(response.status_code, 200)
+        d = json.loads(response.content)
+        self.assertEqual(d['geometry'], json.loads(self.qs[0].geom.geojson))
+
+    def test_kml_response(self):
+        request = factory.get('/1', {'format': 'kml'})
+        response = self.view(request, pk=1).render()
+        self.assertInHTML(self.qs[0].geom.kml, response.content, count=1)
+
+
 class RasterListViewTestCase(RasterStoreTestBase):
     def setUp(self):
         super(RasterListViewTestCase, self).setUp()

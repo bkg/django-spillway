@@ -15,6 +15,12 @@ class BaseGeoView(mixins.QueryFormMixin):
                           tuple(api_settings.DEFAULT_RENDERER_CLASSES))
 
 
+class GeoDetailView(BaseGeoView, RetrieveAPIView):
+    """Generic detail view providing vector geometry representations."""
+    renderer_classes = tuple(RetrieveAPIView.renderer_classes) + (
+        renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
+
+
 class GeoListView(BaseGeoView, ListAPIView):
     """Generic list view providing vector geometry representations."""
     renderer_classes = tuple(ListAPIView.renderer_classes) + (
