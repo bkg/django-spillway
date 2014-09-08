@@ -31,6 +31,10 @@ class GeoModelSerializer(serializers.ModelSerializer):
 
 
 class FeatureSerializer(GeoModelSerializer):
+    def __init__(self, *args, **kwargs):
+        super(FeatureSerializer, self).__init__(*args, **kwargs)
+        self.fields[self.opts.geom_field].set_default_source()
+
     def to_native(self, obj):
         native = super(FeatureSerializer, self).to_native(obj)
         geometry = native.pop(self.opts.geom_field)

@@ -13,8 +13,9 @@ class GeometryField(WritableField):
     # TODO: Introspect available formats from spatial backends.
     _formats = ('geohash', 'geojson', 'gml', 'kml', 'svg')
 
-    def initialize(self, *args, **kwargs):
-        super(GeometryField, self).initialize(*args, **kwargs)
+    def set_default_source(self):
+        """Set a default source based on the selected renderer."""
+        # Do not override an explicitly provided field source.
         if self.source:
             return
         view = self.context.get('view')
