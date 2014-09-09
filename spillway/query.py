@@ -45,16 +45,20 @@ class GeoQuerySet(query.GeoQuerySet):
         Keyword args:
         srid -- EPSG id for for transforming the output geometry.
         """
-        if not srid:
+        if not srid and not connection.ops.spatialite:
             return super(GeoQuerySet, self).extent()
         transform = self._transform(self.geo_field.column, srid)
-        ext = {'extent': '%s(%s)' % (connection.ops.extent, transform)}
+        # Spatialite extent() is supported post-1.7.
+        if connection.ops.spatialite:
+            ext = {'extent': 'AsText(%s(%s))' % ('Extent', transform)}
+        else:
+            ext = {'extent': '%s(%s)' % (connection.ops.extent, transform)}
         # The bare order_by() is needed to remove the default sort field which
         # is not present in this aggregation.
         qs = self.extra(select=ext).values('extent').order_by()
         try:
             return tuple(map(float, re.findall('[-.\d]+', qs[0]['extent'])))
-        except IndexError:
+        except (IndexError, TypeError):
             return ()
 
     def filter_geometry(self, **kwargs):
