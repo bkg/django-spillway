@@ -34,7 +34,18 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
         im = Image.open(BytesIO(response.content))
         self.assertEqual(im.size, (256, 256))
 
-    def test_no_tile(self):
-        # FIXME: Should this return 404 or 200 with an empty tile?
-        response = self.client.get('/maptiles/10/553/347/')
-        self.assertEqual(response.status_code, 404)
+    def _assert_is_empty_tile(self, response):
+        im = Image.open(BytesIO(response.content))
+        stats = im.getextrema()
+        zero_rgba = ((0, 0), (0, 0), (0, 0), (0, 0))
+        self.assertEqual(stats, zero_rgba)
+
+    def test_empty_tile(self):
+        response = self.client.get('/maptiles/1/10/553/347/')
+        self.assertEqual(response.status_code, 200)
+        self._assert_is_empty_tile(response)
+
+    def test_bad_tile_coords(self):
+        response = self.client.get('/maptiles/1/2/0/100/')
+        self.assertEqual(response.status_code, 200)
+        self._assert_is_empty_tile(response)

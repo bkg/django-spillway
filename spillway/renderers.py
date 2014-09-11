@@ -228,18 +228,17 @@ class MapnikRenderer(BaseRenderer):
         self.map = m
 
     def render(self, object, accepted_media_type=None, renderer_context=None):
+        img = mapnik.Image(self.map.width, self.map.height)
+        bbox = renderer_context.get('bbox') if renderer_context else None
         try:
             object.draw(self.map)
         except AttributeError:
             pass
-        bbox = renderer_context.get('bbox') if renderer_context else None
-        if bbox:
+        # Zero area bounding boxes are invalid.
+        if bbox and bbox.area:
             bbox.transform(self.map.srs)
             self.map.zoom_to_box(mapnik.Box2d(*bbox.extent))
-        else:
-            self.map.zoom_all()
-        img = mapnik.Image(self.map.width, self.map.height)
-        mapnik.render(self.map, img)
+            mapnik.render(self.map, img)
         return img.tostring(self.format)
 
 
