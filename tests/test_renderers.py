@@ -125,7 +125,9 @@ class RasterRendererTestCase(RasterTestBase):
 
 class MapnikRendererTestCase(RasterStoreTestBase):
     def test_render(self):
-        imgdata = renderers.MapnikRenderer().render(self.object)
+        ctx = {'bbox': self.object.geom}
+        imgdata = renderers.MapnikRenderer().render(
+            self.object, renderer_context=ctx)
         im = Image.open(io.BytesIO(imgdata))
         self.assertEqual(im.size, (256, 256))
         self.assertNotEqual(im.getpixel((100, 100)), (0, 0, 0, 0))
