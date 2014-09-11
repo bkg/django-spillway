@@ -1,3 +1,4 @@
+import os
 import json
 import tempfile
 
@@ -41,13 +42,6 @@ class ArraySerializer(Serializer):
 
 
 class RasterStoreSerializer(serializers.RasterModelSerializer):
-    class Meta:
-        model = RasterStore
-
-
-class GDALModelSerializer(serializers.RasterModelSerializer):
-    image = fields.GDALField()
-
     class Meta:
         model = RasterStore
 
