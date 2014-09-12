@@ -55,22 +55,22 @@ class FilterTestCase(TestCase):
         params = {'intersects': centroid}
         request = factory.get('/', params)
         response = self.view(request)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['features']), 1)
 
     def test_bounding_box(self):
         bbox = self.qs[0].geom.extent
         params = {'bbox': ','.join(map(str, bbox))}
         request = factory.get('/', params)
         response = self.view(request)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data['features']), 1)
 
     def test_spatial_lookup_notfound(self):
         params = {'intersects': 'POINT(0 0)'}
         request = factory.get('/', params)
         response = self.view(request)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(len(response.data['features']), 0)
 
     def test_geoqueryset(self):
         request = factory.get('/', {'simplify': 0.1, 'srs': 3857})
         response = self.view(request)
-        self.assertEqual(len(response.data), len(self.qs))
+        self.assertEqual(len(response.data['features']), len(self.qs))

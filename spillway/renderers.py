@@ -6,40 +6,25 @@ import zipfile
 from django.contrib.gis.shortcuts import compress_kml
 from django.core.files.storage import default_storage
 from django.template import loader, Context
-from rest_framework.pagination import PaginationSerializer
 from rest_framework.renderers import BaseRenderer
 from greenwich.geometry import Geometry
 from greenwich.io import MemFileIO
 from greenwich.raster import Raster, driver_for_path
 import mapnik
 
-from spillway.collections import FeatureCollection
+from spillway.collections import Feature, FeatureCollection
 
 
 class BaseGeoRenderer(BaseRenderer):
     """Base renderer for geographic features."""
 
-    def _collection(self, data, renderer_context=None):
-        pageinfo = {}
-        results_field = self._results_field(renderer_context)
-        results = data
-        if data and isinstance(data, dict):
-            if results_field in data:
-                results = data.pop(results_field)
-                pageinfo = data
+    def _features(self, data):
+        if not isinstance(data, (Feature, FeatureCollection)):
+            if isinstance(data, dict):
+                data = Feature(**data)
             else:
-                results = [data]
-        return FeatureCollection(features=results, **pageinfo)
-
-    def _results_field(self, context):
-        """Returns the view's pagination serializer results field or the
-        default value.
-        """
-        try:
-            view = context.get('view')
-            return view.pagination_serializer_class.results_field
-        except AttributeError:
-            return PaginationSerializer.results_field
+                data = FeatureCollection(features=data)
+        return data
 
 
 class GeoJSONRenderer(BaseGeoRenderer):
@@ -53,7 +38,7 @@ class GeoJSONRenderer(BaseGeoRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """Returns *data* encoded as GeoJSON."""
-        return str(self._collection(data, renderer_context))
+        return str(self._features(data))
 
 
 class TemplateRenderer(BaseGeoRenderer):
@@ -61,9 +46,13 @@ class TemplateRenderer(BaseGeoRenderer):
     template_name = None
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        collection = self._collection(data, renderer_context)
+        collection = self._features(data)
+        try:
+            features = collection['features']
+        except KeyError:
+            features = [collection]
         template = loader.get_template(self.template_name)
-        return template.render(Context({'features': collection['features']}))
+        return template.render(Context({'features': features}))
 
 
 class KMLRenderer(TemplateRenderer):

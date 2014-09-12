@@ -29,13 +29,13 @@ class GeoListViewTestCase(TestCase):
     def test_list(self):
         request = factory.get('/')
         response = self.view(request)
-        self.assertEqual(len(response.data), len(self.qs))
+        self.assertEqual(len(response.data['features']), len(self.qs))
 
     def test_paginate(self):
         view = PaginatedGeoListView.as_view(model=Location)
         request = factory.get('/', {'page': 2})
         response = view(request).render()
-        self.assertEqual(len(response.data['results']),
+        self.assertEqual(len(response.data['features']),
                          PaginatedGeoListView.paginate_by)
 
     def test_geojson(self):

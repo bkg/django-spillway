@@ -9,42 +9,27 @@ from rest_framework.pagination import PaginationSerializer
 from PIL import Image
 
 from spillway import renderers
+from spillway.collections import Feature, FeatureCollection
 from .models import Location, _geom
 from .test_serializers import RasterTestBase, RasterStoreTestBase
 
 
 class GeoJSONRendererTestCase(SimpleTestCase):
     def setUp(self):
-        self.data = {'type': 'Feature',
-                     'id': 1,
-                     'properties': {'name': 'San Francisco'},
-                     'geometry': json.dumps(_geom)}
-        self.collection = """{
-            "type": "FeatureCollection",
-            "features": [{
-                "type": "Feature",
-                "geometry": %s,
-                "id": 1,
-                "properties": {"name": "San Francisco"}
-            }]
-        }""" % json.dumps(_geom)
-        self.expected = json.loads(self.collection)
-        self.empty = '{"type": "FeatureCollection", "features": []}'
+        self.data = Feature(id=1, properties={'name': 'San Francisco'},
+                            geometry=_geom)
+        self.collection = FeatureCollection(features=[self.data])
         self.r = renderers.GeoJSONRenderer()
 
-    def test_render_dict(self):
-        data = json.loads(self.r.render(self.data.copy()))
-        geom = json.dumps(data['features'][0]['geometry'])
-        # Ensure we can correctly instantiate a GEOS geometry.
-        self.assertIsInstance(GEOSGeometry(geom), GEOSGeometry)
-        self.assertEqual(geom, self.data['geometry'])
-        self.assertEqual(data, self.expected)
-        self.assertEqual(self.r.render({}), self.empty)
+    def test_render_feature(self):
+        data = json.loads(self.r.render(self.data))
+        self.assertEqual(data, self.data)
+        self.assertEqual(self.r.render({}), str(Feature()))
 
-    def test_render_list(self):
-        data = json.loads(self.r.render([self.data]))
-        self.assertEqual(data, self.expected)
-        self.assertEqual(self.r.render([]), self.empty)
+    def test_render_feature_collection(self):
+        data = json.loads(self.r.render(self.collection))
+        self.assertEqual(data, self.collection)
+        self.assertEqual(self.r.render([]), str(FeatureCollection()))
 
     def test_render_paginated(self):
         count = 4

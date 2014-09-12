@@ -7,6 +7,7 @@ from spillway import filters, forms, mixins, renderers, serializers
 class BaseGeoView(mixins.QueryFormMixin):
     """Base view for models with geometry fields."""
     model_serializer_class = serializers.FeatureSerializer
+    pagination_serializer_class = serializers.PaginatedFeatureSerializer
     query_form_class = forms.GeometryQueryForm
 
     def wants_default_renderer(self):

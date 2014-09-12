@@ -1,7 +1,7 @@
 from django.contrib.gis.db import models
-from rest_framework import serializers
+from rest_framework import serializers, pagination
 
-from spillway.collections import Feature
+from spillway.collections import Feature, FeatureCollection, LinkedCRS
 from spillway.fields import GeometryField, NDArrayField
 
 
@@ -35,6 +35,30 @@ class FeatureSerializer(GeoModelSerializer):
         super(FeatureSerializer, self).__init__(*args, **kwargs)
         self.fields[self.opts.geom_field].set_default_source()
 
+    @property
+    def data(self):
+        if self._data is None:
+            data = super(FeatureSerializer, self).data
+            fieldname = self.opts.geom_field
+            obj = self.object
+            # Extent is an attr or method depending on type.
+            try:
+                extent = obj.extent()
+            except AttributeError:
+                try:
+                    extent = getattr(obj, fieldname).extent
+                except AttributeError:
+                    extent = ()
+                else:
+                    srid = getattr(obj, fieldname).srid
+            else:
+                srid = obj.query._geo_field().srid
+            if self.many:
+                self._data = FeatureCollection(features=data, crs=srid)
+            else:
+                self._data['crs'] = LinkedCRS(srid)
+        return self._data
+
     def to_native(self, obj):
         native = super(FeatureSerializer, self).to_native(obj)
         geometry = native.pop(self.opts.geom_field)
@@ -45,6 +69,10 @@ class FeatureSerializer(GeoModelSerializer):
         data = {self.opts.geom_field: obj.get('geometry')}
         data.update(obj.get('properties'))
         return super(FeatureSerializer, self).from_native(data, files)
+
+
+class PaginatedFeatureSerializer(pagination.PaginationSerializer):
+    results_field = 'features'
 
 
 class RasterModelSerializerOptions(GeoModelSerializerOptions):
