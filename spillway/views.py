@@ -24,8 +24,8 @@ class MapView(GenericAPIView):
 class TileView(BaseGeoView, ListAPIView):
     """View for serving tiled GeoJSON from a GeoModel."""
     renderer_classes = (renderers.GeoJSONRenderer,)
-    # Geometry simplification tolerances based on tile zlevel, thanks to
-    # TileStache for determining these values.
+    # Geometry simplification tolerances based on tile zlevel, see
+    # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames.
     tolerances = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
                   for zoom in range(20)]
 
