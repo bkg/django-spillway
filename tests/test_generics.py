@@ -54,12 +54,13 @@ class GeoDetailViewTestCase(TestCase):
         self.qs = Location.objects.all()
 
     def test_response(self):
-        request = factory.get('/1')
-        with self.assertNumQueries(1):
-            response = self.view(request, pk=1).render()
-        self.assertEqual(response.status_code, 200)
-        d = json.loads(response.content)
-        self.assertEqual(d['geometry'], json.loads(self.qs[0].geom.geojson))
+        for params in {}, {'format': 'geojson'}:
+            request = factory.get('/1', params)
+            with self.assertNumQueries(1):
+                response = self.view(request, pk=1).render()
+            self.assertEqual(response.status_code, 200)
+            d = json.loads(response.content)
+            self.assertEqual(d['geometry'], json.loads(self.qs[0].geom.geojson))
 
     def test_kml_response(self):
         request = factory.get('/1', {'format': 'kml'})
