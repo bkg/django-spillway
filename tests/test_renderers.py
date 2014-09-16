@@ -31,15 +31,6 @@ class GeoJSONRendererTestCase(SimpleTestCase):
         self.assertEqual(data, self.collection)
         self.assertEqual(self.r.render([]), str(FeatureCollection()))
 
-    def test_render_paginated(self):
-        count = 4
-        objects = [self.data.copy() for i in range(count)]
-        p = Paginator(objects, 2)
-        serializer = PaginationSerializer(p.page(1))
-        data = json.loads(self.r.render(serializer.data))
-        self.assertEqual(data['count'], count)
-        self.assertTrue(*map(data.has_key, ('previous', 'next')))
-
 
 class KMLRendererTestCase(SimpleTestCase):
     def setUp(self):

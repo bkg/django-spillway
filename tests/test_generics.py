@@ -37,6 +37,9 @@ class GeoListViewTestCase(TestCase):
         response = view(request).render()
         self.assertEqual(len(response.data['features']),
                          PaginatedGeoListView.paginate_by)
+        data = json.loads(response.content)
+        self.assertEqual(data['count'], len(self.qs))
+        self.assertTrue(*map(data.has_key, ('previous', 'next')))
 
     def test_geojson(self):
         for request in (factory.get('/', {'format': 'geojson'}),
