@@ -11,6 +11,7 @@ from greenwich.raster import Raster, frombytes
 from greenwich.srs import SpatialReference
 
 from spillway import serializers, fields
+from spillway.collections import Feature, FeatureCollection
 from .models import Location, RasterStore, _geom
 
 def create_image():
@@ -119,17 +120,22 @@ class GeoModelSerializerTestCase(ModelTestCase):
 class FeatureSerializerTestCase(ModelTestCase):
     def setUp(self):
         super(FeatureSerializerTestCase, self).setUp()
-        self.expected = {'type': 'Feature',
-                         'id': 1,
-                         'geometry': {'type': 'Polygon',
-                                      'coordinates': self.coords},
-                         'properties': {'name': 'Argentina'}}
+        attrs = {'id': 1,
+                 'crs': 4326,
+                 'geometry': {'type': 'Polygon',
+                              'coordinates': self.coords},
+                 'properties': {'name': 'Argentina'}}
+        self.expected = Feature(**attrs)
 
     def test_serialize(self):
         serializer = LocationFeatureSerializer(self.obj)
         self.assertEqual(serializer.data, self.expected)
+
+    def test_serialize_list(self):
         serializer = LocationFeatureSerializer([self.obj])
-        self.assertEqual(serializer.data, [self.expected])
+        feat = self.expected.copy()
+        feat.pop('crs')
+        self.assertEqual(serializer.data, FeatureCollection([feat]))
 
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)
@@ -140,16 +146,6 @@ class FeatureSerializerTestCase(ModelTestCase):
         serializer = LocationFeatureSerializer(data=features)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.object[0].geom, self.obj.geom)
-
-    def test_feature(self):
-        exp = self.expected.copy()
-        exp.pop('type')
-        feat = serializers.Feature(**exp)
-        self.assertJSONEqual(str(feat), json.dumps(self.expected))
-        # Test handling of pre-serialized geometry
-        exp['geometry'] = json.dumps(exp['geometry'])
-        feat = serializers.Feature(**exp)
-        self.assertJSONEqual(str(feat), json.dumps(self.expected))
 
 
 class RasterSerializerTestCase(RasterStoreTestBase):

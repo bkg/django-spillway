@@ -39,24 +39,24 @@ class FeatureSerializer(GeoModelSerializer):
     def data(self):
         if self._data is None:
             data = super(FeatureSerializer, self).data
-            fieldname = self.opts.geom_field
-            obj = self.object
-            # Extent is an attr or method depending on type.
-            try:
-                extent = obj.extent()
-            except AttributeError:
+            if self.many or isinstance(data, (list, tuple)):
                 try:
-                    extent = getattr(obj, fieldname).extent
+                    extent = self.object.extent()
+                except AttributeError:
+                    extent = ()
+                    srid = None
+                else:
+                    srid = self.object.query._geo_field().srid
+                self._data = FeatureCollection(features=data, crs=srid)
+            else:
+                fieldname = self.opts.geom_field
+                try:
+                    geom = getattr(self.object, fieldname)
+                    extent = geom.extent
                 except AttributeError:
                     extent = ()
                 else:
-                    srid = getattr(obj, fieldname).srid
-            else:
-                srid = obj.query._geo_field().srid
-            if self.many:
-                self._data = FeatureCollection(features=data, crs=srid)
-            else:
-                self._data['crs'] = LinkedCRS(srid)
+                    self._data['crs'] = LinkedCRS(geom.srid)
         return self._data
 
     def to_native(self, obj):
