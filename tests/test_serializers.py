@@ -142,6 +142,13 @@ class FeatureSerializerTestCase(ModelTestCase):
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.object.geom, self.obj.geom)
 
+    def test_deserialize_projected(self):
+        feat = Feature(**dict(self.expected, crs=4269)).copy()
+        serializer = LocationFeatureSerializer(data=feat)
+        self.assertTrue(serializer.is_valid())
+        self.assertEqual(serializer.object.geom.srid, 4269)
+
+    def test_deserialize_list(self):
         features = [self.expected.copy(), self.expected.copy()]
         serializer = LocationFeatureSerializer(data=features)
         self.assertTrue(serializer.is_valid())

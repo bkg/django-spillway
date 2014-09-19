@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 from rest_framework import serializers, pagination
+from greenwich.srs import SpatialReference
 
 from spillway.collections import Feature, FeatureCollection, NamedCRS
 from spillway.fields import GeometryField, NDArrayField
@@ -68,7 +69,16 @@ class FeatureSerializer(GeoModelSerializer):
     def from_native(self, obj, files=None):
         data = {self.opts.geom_field: obj.get('geometry')}
         data.update(obj.get('properties'))
-        return super(FeatureSerializer, self).from_native(data, files)
+        feature = super(FeatureSerializer, self).from_native(data, files)
+        try:
+            sref = SpatialReference(obj['crs']['properties']['name'])
+        except KeyError as exc:
+            exc.args = ('No EPSG code found in CRS: %s' % obj['crs'],)
+            raise exc
+        else:
+            geom = getattr(feature, self.opts.geom_field)
+            geom.srid = sref.srid
+        return feature
 
 
 class PaginatedFeatureSerializer(pagination.PaginationSerializer):
