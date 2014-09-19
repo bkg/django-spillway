@@ -12,6 +12,13 @@ class LinkedCRS(dict):
         self.update(iterable, **kwargs)
 
 
+class NamedCRS(dict):
+    def __init__(self, srid=4326, iterable=(), **kwargs):
+        self['type'] = 'name'
+        self['properties'] = {'name': 'urn:ogc:def:crs:EPSG::%s' % srid}
+        self.update(iterable, **kwargs)
+
+
 class Feature(dict):
     """GeoJSON Feature dict."""
 
@@ -22,8 +29,8 @@ class Feature(dict):
         self['id'] = id
         self['geometry'] = geometry or {}
         self['properties'] = properties or {}
-        if crs and not isinstance(crs, LinkedCRS):
-            self['crs'] = LinkedCRS(crs)
+        if crs and not isinstance(crs, NamedCRS):
+            self['crs'] = NamedCRS(crs)
         self.update(iterable, **kwargs)
 
     @property
@@ -46,8 +53,8 @@ class FeatureCollection(dict):
     def __init__(self, features=None, crs=None, iterable=(), **kwargs):
         super(FeatureCollection, self).__init__()
         self['type'] = self.__class__.__name__
-        if crs and not isinstance(crs, LinkedCRS):
-            self['crs'] = LinkedCRS(crs)
+        if crs and not isinstance(crs, NamedCRS):
+            self['crs'] = NamedCRS(crs)
         if features and not isinstance(features[0], Feature):
             self['features'] = [Feature(**feat) for feat in features]
         else:

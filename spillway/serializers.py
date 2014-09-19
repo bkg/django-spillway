@@ -1,7 +1,7 @@
 from django.contrib.gis.db import models
 from rest_framework import serializers, pagination
 
-from spillway.collections import Feature, FeatureCollection, LinkedCRS
+from spillway.collections import Feature, FeatureCollection, NamedCRS
 from spillway.fields import GeometryField, NDArrayField
 
 
@@ -56,7 +56,7 @@ class FeatureSerializer(GeoModelSerializer):
                 except AttributeError:
                     extent = ()
                 else:
-                    self._data['crs'] = LinkedCRS(geom.srid)
+                    self._data['crs'] = NamedCRS(geom.srid)
         return self._data
 
     def to_native(self, obj):
