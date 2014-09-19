@@ -15,7 +15,10 @@ class LinkedCRS(dict):
 class NamedCRS(dict):
     def __init__(self, srid=4326, iterable=(), **kwargs):
         self['type'] = 'name'
-        self['properties'] = {'name': 'urn:ogc:def:crs:EPSG::%s' % srid}
+        if not isinstance(srid, int):
+            iterable = srid
+        else:
+            self['properties'] = {'name': 'urn:ogc:def:crs:EPSG::%s' % srid}
         self.update(iterable, **kwargs)
 
 
@@ -29,7 +32,7 @@ class Feature(dict):
         self['id'] = id
         self['geometry'] = geometry or {}
         self['properties'] = properties or {}
-        if crs and not isinstance(crs, NamedCRS):
+        if crs:
             self['crs'] = NamedCRS(crs)
         self.update(iterable, **kwargs)
 
@@ -53,7 +56,7 @@ class FeatureCollection(dict):
     def __init__(self, features=None, crs=None, iterable=(), **kwargs):
         super(FeatureCollection, self).__init__()
         self['type'] = self.__class__.__name__
-        if crs and not isinstance(crs, NamedCRS):
+        if crs:
             self['crs'] = NamedCRS(crs)
         if features and not isinstance(features[0], Feature):
             self['features'] = [Feature(**feat) for feat in features]
