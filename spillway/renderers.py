@@ -12,6 +12,7 @@ from greenwich.io import MemFileIO
 from greenwich.raster import Raster, driver_for_path
 import mapnik
 
+from spillway import styles
 from spillway.collections import Feature, FeatureCollection
 
 
@@ -219,10 +220,17 @@ class MapnikRenderer(BaseRenderer):
     def render(self, object, accepted_media_type=None, renderer_context=None):
         img = mapnik.Image(self.map.width, self.map.height)
         bbox = renderer_context.get('bbox') if renderer_context else None
+        stylename = getattr(object, 'stylename', 'default')
+        style = styles.find_or_append(stylename, self.map)
         try:
-            object.draw(self.map)
+            styles.add_colorizer_stops(style, (object.minval, object.maxval))
+            layer = object.layer()
         except AttributeError:
             pass
+        else:
+            layer.styles.append(stylename)
+            # Must append layer to map *after* appending style to it.
+            self.map.layers.append(layer)
         # Zero area bounding boxes are invalid.
         if bbox and bbox.area:
             bbox.transform(self.map.srs)
