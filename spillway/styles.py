@@ -1,11 +1,12 @@
 import mapnik
 import numpy as np
 
+# ColorBrewer http://colorbrewer2.org/
 colors = {'YlGnBu': ('#edf8b1', '#7fcdbb', '#2c7fb8'),
-          'bluered': ('blue', 'red')}
+          'YlOrRd': ('#ffeda0', '#feb24c', '#f03b20')}
 
 def add_colorizer_stops(style, values, name=None):
-    ramp = colors.get(name or 'YlGnBu')
+    ramp = colors.get(name) or colors['YlGnBu']
     if not ramp:
         raise ValueError('No color ramp found for "%s"' % name)
     breaks = np.linspace(values[0], values[-1], len(ramp))

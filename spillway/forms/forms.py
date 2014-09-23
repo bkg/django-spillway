@@ -1,8 +1,9 @@
 from django.contrib.gis import forms
 from django.contrib.gis.db.models.sql.query import ALL_TERMS
-
-from spillway.forms import fields
 from greenwich.srs import transform_tile
+
+from spillway import styles
+from spillway.forms import fields
 
 
 class SpatialQueryForm(forms.Form):
@@ -60,6 +61,9 @@ class MapTile(forms.Form):
     y = forms.IntegerField()
     z = forms.IntegerField()
     size = forms.IntegerField(required=False, initial=256)
+    style = forms.ChoiceField(
+        choices=[(k, k.lower()) for k in list(styles.colors)],
+        required=False)
 
     def clean(self):
         cleaned = super(MapTile, self).clean()

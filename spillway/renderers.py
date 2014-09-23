@@ -220,10 +220,12 @@ class MapnikRenderer(BaseRenderer):
     def render(self, object, accepted_media_type=None, renderer_context=None):
         img = mapnik.Image(self.map.width, self.map.height)
         bbox = renderer_context.get('bbox') if renderer_context else None
-        stylename = getattr(object, 'stylename', 'default')
+        stylename = str(renderer_context.get('style') or
+                        getattr(object, 'style', None))
         style = styles.find_or_append(stylename, self.map)
         try:
-            styles.add_colorizer_stops(style, (object.minval, object.maxval))
+            styles.add_colorizer_stops(
+                style, (object.minval, object.maxval), name=stylename)
             layer = object.layer()
         except AttributeError:
             pass

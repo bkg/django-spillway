@@ -13,7 +13,8 @@ class MapView(GenericAPIView):
 
     def get_renderer_context(self):
         context = super(MapView, self).get_renderer_context()
-        form = forms.MapTile(dict(self.request.QUERY_PARAMS, **self.kwargs))
+        form = forms.MapTile(dict(self.request.QUERY_PARAMS.dict(),
+                                  **context.pop('kwargs')))
         context.update(form.cleaned_data if form.is_valid() else {})
         return context
 
