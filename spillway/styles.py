@@ -19,14 +19,6 @@ def add_colorizer_stops(style, values, name=None):
         symbolizer.colorizer.add_stop(value, mapnik.Color(color))
     return style
 
-def find_or_append(stylename, canvas):
-    try:
-        style = canvas.find_style(stylename)
-    except KeyError:
-        style = make_raster_style()
-        canvas.append_style(stylename, style)
-    return style
-
 def make_raster_style():
     """Returns a default raster Style."""
     style = mapnik.Style()

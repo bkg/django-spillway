@@ -217,15 +217,15 @@ class MapnikRenderer(BaseRenderer):
         m.srs = '+init=epsg:3857'
         self.map = m
 
-    def render(self, object, accepted_media_type=None, renderer_context=None):
-        img = mapnik.Image(self.map.width, self.map.height)
-        bbox = renderer_context.get('bbox') if renderer_context else None
-        stylename = str(renderer_context.get('style') or
-                        getattr(object, 'style', None))
-        style = styles.find_or_append(stylename, self.map)
+    def append_layer(self, object, stylename):
         try:
+            style = self.map.find_style(stylename)
+        except KeyError:
+            style = styles.make_raster_style()
+            self.map.append_style(stylename, style)
             styles.add_colorizer_stops(
                 style, (object.minval, object.maxval), name=stylename)
+        try:
             layer = object.layer()
         except AttributeError:
             pass
@@ -233,6 +233,13 @@ class MapnikRenderer(BaseRenderer):
             layer.styles.append(stylename)
             # Must append layer to map *after* appending style to it.
             self.map.layers.append(layer)
+
+    def render(self, object, accepted_media_type=None, renderer_context=None):
+        img = mapnik.Image(self.map.width, self.map.height)
+        bbox = renderer_context.get('bbox') if renderer_context else None
+        stylename = str(renderer_context.get('style') or
+                        getattr(object, 'style', None))
+        self.append_layer(object, stylename)
         # Zero area bounding boxes are invalid.
         if bbox and bbox.area:
             bbox.transform(self.map.srs)
