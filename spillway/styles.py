@@ -2,8 +2,11 @@ import mapnik
 import numpy as np
 
 # ColorBrewer http://colorbrewer2.org/
-colors = {'YlGnBu': ('#edf8b1', '#7fcdbb', '#2c7fb8'),
-          'YlOrRd': ('#ffeda0', '#feb24c', '#f03b20')}
+colors = {'YlGnBu': ('#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4',
+                     '#1d91c0', '#225ea8', '#253494', '#081d58'),
+
+          'YlOrRd': ('#ffffcc', '#ffeda0', '#fed976', '#feb24c', '#fd8d3c',
+                     '#fc4e2a', '#e31a1c', '#bd0026', '#800026')}
 
 def add_colorizer_stops(style, values, name=None):
     ramp = colors.get(name) or colors['YlGnBu']
