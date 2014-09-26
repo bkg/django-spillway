@@ -1,4 +1,4 @@
-from rest_framework.compat import patterns, url
+from django.conf.urls import patterns, url
 from spillway import views
 
 from .models import Location, RasterStore
