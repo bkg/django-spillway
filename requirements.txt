@@ -1,3 +1,3 @@
-django==1.6.5
-djangorestframework==2.3.14
+django==1.7.0
+djangorestframework==2.4.3
 git+https://github.com/bkg/greenwich.git#egg=greenwich
