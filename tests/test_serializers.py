@@ -137,6 +137,14 @@ class FeatureSerializerTestCase(ModelTestCase):
         feat.pop('crs')
         self.assertEqual(serializer.data, FeatureCollection([feat]))
 
+    def test_serialize_queryset(self):
+        serializer = LocationFeatureSerializer(
+            Location.objects.all(), many=True)
+        feat = self.expected.copy()
+        crs = feat.pop('crs')
+        self.assertEqual(serializer.data['features'][0], feat)
+        self.assertEqual(serializer.data['crs'], crs)
+
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)
         self.assertTrue(serializer.is_valid())
