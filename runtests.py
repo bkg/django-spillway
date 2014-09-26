@@ -22,6 +22,10 @@ DEFAULT_SETTINGS = {
         }
     },
     'MEDIA_ROOT': TMPDIR,
+    'MIDDLEWARE_CLASSES': (
+        'django.middleware.common.CommonMiddleware',
+        'django.middleware.csrf.CsrfViewMiddleware',
+    ),
     'ROOT_URLCONF': 'tests.urls'
 }
 
