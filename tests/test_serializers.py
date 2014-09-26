@@ -93,12 +93,12 @@ class GeoModelSerializerTestCase(ModelTestCase):
 
     def test_list(self):
         data = [self.data.copy() for i in range(3)]
-        serializer = LocationSerializer(data)
+        serializer = LocationSerializer(data, many=True)
         self.assertEqual(serializer.data, data)
 
     def test_queryset(self):
         qs = Location.objects.all()
-        serializer = LocationSerializer(qs)
+        serializer = LocationSerializer(qs, many=True)
         expected = [self.expected,
                     {'name': 'Vancouver',
                      'id': 2,
@@ -132,7 +132,7 @@ class FeatureSerializerTestCase(ModelTestCase):
         self.assertEqual(serializer.data, self.expected)
 
     def test_serialize_list(self):
-        serializer = LocationFeatureSerializer([self.obj])
+        serializer = LocationFeatureSerializer([self.obj], many=True)
         feat = self.expected.copy()
         feat.pop('crs')
         self.assertEqual(serializer.data, FeatureCollection([feat]))
@@ -150,7 +150,7 @@ class FeatureSerializerTestCase(ModelTestCase):
 
     def test_deserialize_list(self):
         features = [self.expected.copy(), self.expected.copy()]
-        serializer = LocationFeatureSerializer(data=features)
+        serializer = LocationFeatureSerializer(data=features, many=True)
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.object[0].geom, self.obj.geom)
 
@@ -162,7 +162,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         self.assertEqual(arr, Raster(self.data['path']).array().tolist())
 
     def test_serialize_queryset(self):
-        serializer = RasterStoreSerializer(self.qs)
+        serializer = RasterStoreSerializer(self.qs, many=True)
         path = serializer.data[0]['path']
         self.assertEqual(path, self.qs[0].image.path)
         expected = {
