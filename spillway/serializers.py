@@ -15,8 +15,16 @@ class GeoModelSerializerOptions(serializers.ModelSerializerOptions):
 class GeoModelSerializer(serializers.ModelSerializer):
     """Serializer class for GeoModels."""
     _options_class = GeoModelSerializerOptions
-    field_mapping = dict({models.GeometryField: GeometryField},
-                         **serializers.ModelSerializer.field_mapping)
+    field_mapping = dict({
+        models.GeometryField: GeometryField,
+        models.PointField: GeometryField,
+        models.LineStringField: GeometryField,
+        models.PolygonField: GeometryField,
+        models.MultiPointField: GeometryField,
+        models.MultiLineStringField: GeometryField,
+        models.MultiPolygonField: GeometryField,
+        models.GeometryCollectionField: GeometryField
+    }, **serializers.ModelSerializer.field_mapping)
 
     def get_default_fields(self):
         """Returns a fields dict for this serializer with a 'geometry' field
