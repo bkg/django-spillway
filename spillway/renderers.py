@@ -208,6 +208,7 @@ class MapnikRenderer(BaseRenderer):
 
     def __init__(self, *args, **kwargs):
         super(MapnikRenderer, self).__init__(*args, **kwargs)
+        self.stylename = 'Spectral_r'
         m = mapnik.Map(256, 256)
         try:
             mapnik.load_map(m, str(self.mapfile))
@@ -223,8 +224,9 @@ class MapnikRenderer(BaseRenderer):
         except KeyError:
             style = styles.make_raster_style()
             self.map.append_style(stylename, style)
-            styles.add_colorizer_stops(
-                style, (object.minval, object.maxval), name=stylename)
+            colors = styles.colors.get(stylename)
+            bins = object.bin(k=len(colors))
+            styles.add_colorizer_stops(style, bins, colors)
         try:
             layer = object.layer()
         except AttributeError:
@@ -238,7 +240,7 @@ class MapnikRenderer(BaseRenderer):
         img = mapnik.Image(self.map.width, self.map.height)
         bbox = renderer_context.get('bbox') if renderer_context else None
         stylename = str(renderer_context.get('style') or
-                        getattr(object, 'style', None))
+                        getattr(object, 'style', self.stylename))
         self.append_layer(object, stylename)
         # Zero area bounding boxes are invalid.
         if bbox and bbox.area:

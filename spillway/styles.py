@@ -1,5 +1,4 @@
 import mapnik
-import numpy as np
 
 # ColorBrewer http://colorbrewer2.org/
 colors = {'YlGnBu': ('#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4',
@@ -83,13 +82,13 @@ colors = {'YlGnBu': ('#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4',
                    '#e5c494', '#b3b3b3'),
           'Set3': ('#8dd3c7', '#ffffb3', '#bebada', '#fb8072', '#80b1d3', '#fdb462',
                    '#b3de69', '#fccde5', '#d9d9d9', '#bc80bd', '#ccebc5', '#ffed6f')}
+# Add reversed colors.
+colors.update({'%s_r' % k: tuple(reversed(v)) for k, v in colors.items()})
 
-def add_colorizer_stops(style, values, name=None):
-    ramp = colors.get(name) or colors['YlGnBu']
-    breaks = np.linspace(values[0], values[-1], len(ramp))
+def add_colorizer_stops(style, bins, mcolors):
     rule = style.rules[0]
     symbolizer = rule.symbols[0]
-    for value, color in zip(breaks, ramp):
+    for value, color in zip(bins, mcolors):
         symbolizer.colorizer.add_stop(value, mapnik.Color(color))
     return style
 

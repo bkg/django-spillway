@@ -4,6 +4,7 @@ from django.contrib.gis.db import models
 from django.utils.translation import ugettext_lazy as _
 from greenwich import Raster, SpatialReference
 import mapnik
+import numpy as np
 
 from spillway.query import GeoQuerySet
 
@@ -35,6 +36,13 @@ class AbstractRasterStore(models.Model):
 
     def __unicode__(self):
         return self.image.name
+
+    def bin(self, k=5, quantiles=False):
+        if not quantiles:
+            return np.linspace(self.minval, self.maxval, k)
+        with Raster(self.image.path) as rast:
+            arr = rast.array()
+        return np.percentile(arr.compressed(), list(np.arange(k) * 10))
 
     def clean_fields(self, *args, **kwargs):
         with Raster(self.image.path) as r:
