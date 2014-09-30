@@ -41,8 +41,9 @@ class AbstractRasterStore(models.Model):
         if not quantiles:
             return np.linspace(self.minval, self.maxval, k)
         with Raster(self.image.path) as rast:
-            arr = rast.array()
-        return np.percentile(arr.compressed(), list(np.arange(k) * 10))
+            arr = rast.masked_array()
+        q = list(np.linspace(0, 100, k))
+        return np.percentile(arr.compressed(), q)
 
     def clean_fields(self, *args, **kwargs):
         with Raster(self.image.path) as r:
