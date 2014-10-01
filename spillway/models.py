@@ -21,12 +21,17 @@ class GeoManager(models.GeoManager):
 class AbstractRasterStore(models.Model):
     """Abstract model for raster data storage."""
     image = models.FileField(_('raster file'), upload_to='data')
-    geom = models.GeometryField()
+    width = models.IntegerField(_('width in pixels'))
+    height = models.IntegerField(_('height in pixels'))
+    geom = models.PolygonField(_('raster bounding polygon'))
     event = models.DateField()
     srs = models.CharField(_('spatial reference system'), max_length=256)
     minval = models.FloatField(_('minimum value'))
     maxval = models.FloatField(_('maximum value'))
     nodata = models.FloatField(_('nodata value'), blank=True, null=True)
+    # Spatial resolution
+    xpixsize = models.FloatField(_('West to East pixel resolution'))
+    ypixsize = models.FloatField(_('North to South pixel resolution'))
 
     class Meta:
         unique_together = ('image', 'event')
@@ -52,6 +57,8 @@ class AbstractRasterStore(models.Model):
             if bmin is None or bmax is None:
                 bmin, bmax = band.ComputeRasterMinMax()
             self.geom = buffer(r.envelope.polygon.ExportToWkb())
+            self.xpixsize, self.ypixsize = r.affine.scale
+            self.width, self.height = r.size
             self.minval = bmin
             self.maxval = bmax
             self.nodata = r.nodata
