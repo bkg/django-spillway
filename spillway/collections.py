@@ -5,20 +5,23 @@ from spillway.compat import json
 class LinkedCRS(dict):
     def __init__(self, srid=4326, iterable=(), **kwargs):
         self['type'] = 'link'
-        properties = {}
-        properties['href'] = 'http://spatialreference.org/ref/epsg/%s/proj4/' % srid
-        properties['type'] = 'proj4'
-        self['properties'] = properties
+        if isinstance(srid, int):
+            properties = {}
+            properties['href'] = 'http://spatialreference.org/ref/epsg/%s/proj4/' % srid
+            properties['type'] = 'proj4'
+            self['properties'] = properties
+        else:
+            iterable = iterable or srid
         self.update(iterable, **kwargs)
 
 
 class NamedCRS(dict):
     def __init__(self, srid=4326, iterable=(), **kwargs):
         self['type'] = 'name'
-        if not isinstance(srid, int):
-            iterable = srid
-        else:
+        if isinstance(srid, int):
             self['properties'] = {'name': 'urn:ogc:def:crs:EPSG::%s' % srid}
+        else:
+            iterable = iterable or srid
         self.update(iterable, **kwargs)
 
 
