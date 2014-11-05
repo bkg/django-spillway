@@ -11,7 +11,7 @@ from PIL import Image
 from spillway import renderers
 from spillway.collections import Feature, FeatureCollection
 from .models import Location, _geom
-from .test_serializers import RasterTestBase, RasterStoreTestBase
+from .test_models import RasterTestBase, RasterStoreTestBase
 
 
 class GeoJSONRendererTestCase(SimpleTestCase):

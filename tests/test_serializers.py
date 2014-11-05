@@ -1,29 +1,14 @@
-import os
 import json
-import tempfile
 
-from django.core.files import File
-from django.core.files.storage import default_storage
-from django.test import SimpleTestCase, TestCase
-from rest_framework.serializers import Serializer, ModelSerializer
-from PIL import Image
-from greenwich.raster import Raster, frombytes
+from django.test import TestCase
+from rest_framework.serializers import Serializer
+from greenwich.raster import Raster
 from greenwich.srs import SpatialReference
 
 from spillway import serializers, fields
 from spillway.collections import Feature, FeatureCollection
 from .models import Location, RasterStore, _geom
-
-def create_image():
-    tmpname = os.path.basename(tempfile.mktemp(suffix='.tif'))
-    fp = default_storage.open(tmpname, 'w+b')
-    ras = frombytes(bytes(bytearray(range(25))), (5, 5))
-    ras.affine = (-120, 2, 0, 38, 0, -2)
-    ras.sref = 4326
-    ras.save(fp)
-    ras.close()
-    fp.seek(0)
-    return fp
+from .test_models import RasterStoreTestBase
 
 
 class LocationSerializer(serializers.GeoModelSerializer):
@@ -45,22 +30,6 @@ class ArraySerializer(Serializer):
 class RasterStoreSerializer(serializers.RasterModelSerializer):
     class Meta:
         model = RasterStore
-
-
-class RasterTestBase(SimpleTestCase):
-    def setUp(self):
-        self.f = create_image()
-        self.data = {'path': self.f.name}
-
-    def tearDown(self):
-        self.f.close()
-
-
-class RasterStoreTestBase(RasterTestBase, TestCase):
-    def setUp(self):
-        super(RasterStoreTestBase, self).setUp()
-        self.object = RasterStore.objects.create(image=File(self.f))
-        self.qs = RasterStore.objects.all()
 
 
 class ModelTestCase(TestCase):
