@@ -1,4 +1,6 @@
 import collections
+
+from rest_framework.utils.encoders import JSONEncoder
 from spillway.compat import json
 
 
@@ -46,9 +48,9 @@ class Feature(dict):
     def __str__(self):
         geom = self['geometry'] or '{}'
         if isinstance(geom, dict):
-            return json.dumps(self)
+            return json.dumps(self, cls=JSONEncoder)
         keys = self.viewkeys() - {'geometry'}
-        props = json.dumps({k: self[k] for k in keys})[1:-1]
+        props = json.dumps({k: self[k] for k in keys}, cls=JSONEncoder)[1:-1]
         feature = '{"geometry": %s, %s}' % (geom, props)
         return feature
 
@@ -75,5 +77,5 @@ class FeatureCollection(dict):
         features = ','.join(map(str, self['features']))
         keys = self.viewkeys() - {'features'}
         collection = '%s, "features": [' % json.dumps(
-                {k: self[k] for k in keys})[:-1]
+            {k: self[k] for k in keys}, cls=JSONEncoder)[:-1]
         return ''.join([collection, features, ']}'])

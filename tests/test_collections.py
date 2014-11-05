@@ -1,5 +1,6 @@
-from django.test import SimpleTestCase
+import datetime
 
+from django.test import SimpleTestCase
 from spillway.collections import Feature, LinkedCRS, NamedCRS
 
 
@@ -23,6 +24,10 @@ class FeatureTestCase(SimpleTestCase):
         crs = {'type': 'name',
                'properties': {'name': 'urn:ogc:def:crs:EPSG::4326'}}
         self.assertEqual(NamedCRS(), crs)
+
+    def test_str(self):
+        feat = Feature(properties={'event': datetime.date(1899, 1, 1)})
+        self.assertIn('"properties": {"event": "1899-01-01"}}', str(feat))
 
 
 class LinkedCRSTestCase(SimpleTestCase):
