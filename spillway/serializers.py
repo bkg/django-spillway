@@ -50,20 +50,16 @@ class FeatureSerializer(GeoModelSerializer):
             data = super(FeatureSerializer, self).data
             if self.many or isinstance(data, (list, tuple)):
                 try:
-                    extent = self.object.extent()
-                except AttributeError:
-                    extent = ()
-                    srid = None
-                else:
                     srid = self.object.query._geo_field().srid
+                except AttributeError:
+                    srid = None
                 self._data = FeatureCollection(features=data, crs=srid)
             else:
                 fieldname = self.opts.geom_field
                 try:
                     geom = getattr(self.object, fieldname)
-                    extent = geom.extent
                 except AttributeError:
-                    extent = ()
+                    pass
                 else:
                     self._data['crs'] = NamedCRS(geom.srid)
         return self._data
