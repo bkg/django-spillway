@@ -1,11 +1,12 @@
 import os
-import hashlib
 import tempfile
 
 from django.core.files.storage import default_storage
 from django.core.files import File
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
 from greenwich.raster import frombytes
+from greenwich.io import MemFileIO
 
 from .models import RasterStore
 
@@ -26,9 +27,6 @@ class RasterTestBase(SimpleTestCase):
         self.f = create_image()
         self.data = {'path': self.f.name}
 
-    def md5digest(self, s):
-        return hashlib.md5(s).hexdigest()
-
     def tearDown(self):
         self.f.close()
 
@@ -38,3 +36,12 @@ class RasterStoreTestBase(RasterTestBase, TestCase):
         super(RasterStoreTestBase, self).setUp()
         self.object = RasterStore.objects.create(image=File(self.f))
         self.qs = RasterStore.objects.all()
+
+
+class RasterStoreTestCase(RasterStoreTestBase):
+    def test_save_uploadfile(self):
+        upload = SimpleUploadedFile('up.tif', self.object.image.read())
+        rstore = RasterStore(image=upload)
+        rstore.save()
+        self.assertTrue(default_storage.exists(rstore.image))
+        self.assertEqual(rstore.image.size, self.f.size)

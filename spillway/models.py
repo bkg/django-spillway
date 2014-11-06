@@ -51,6 +51,10 @@ class AbstractRasterStore(models.Model):
         return np.percentile(arr.compressed(), q)
 
     def clean_fields(self, *args, **kwargs):
+        # Override this instead of save() so that fields are populated on
+        # save() *or* manager methods like RasterStore.objects.create().
+        if not self.image.storage.exists(self.image):
+            self.image.save(self.image.name, self.image, save=False)
         with Raster(self.image.path) as r:
             band = r[-1]
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
