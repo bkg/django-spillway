@@ -23,6 +23,8 @@ class GeoQuerySet(query.GeoQuerySet):
         return self.extra(select={format: val % (sql, precision)})
 
     def _transform(self, colname, srid=None):
+        if srid:
+            self.transform(srid)
         return ('%s(%s, %s)' % (connection.ops.transform, colname, srid)
                 if srid else colname)
 
@@ -97,4 +99,6 @@ class GeoQuerySet(query.GeoQuerySet):
                         if tolerance else transform)
             return self._as_format(simplify, format, precision)
         simplify = self._simplify(transform, tolerance)
-        return self.extra(select={self.geo_field.column: self._wkb(simplify)})
+        if connection.ops.spatialite:
+            simplify = 'AsEWKT(%s)' % simplify
+        return self.extra(select={self.geo_field.column: simplify})
