@@ -1,3 +1,5 @@
+import json
+
 from django.test import TestCase
 from rest_framework.compat import django_filters
 from rest_framework.test import APIRequestFactory
@@ -72,5 +74,9 @@ class FilterTestCase(TestCase):
 
     def test_geoqueryset(self):
         request = factory.get('/', {'simplify': 0.1, 'srs': 3857})
-        response = self.view(request)
+        response = self.view(request).render()
         self.assertEqual(len(response.data['features']), len(self.qs))
+        fc = json.loads(response.content)
+        feat = json.loads(self.qs[0].geom.geojson)
+        self.assertNotEqual(fc['features'][0], feat)
+        self.assertIn('EPSG::3857', response.content)
