@@ -1,5 +1,4 @@
-import re
-
+from django.contrib.gis import geos
 from django.contrib.gis.db.models import query
 from django.db import connection
 
@@ -33,10 +32,6 @@ class GeoQuerySet(query.GeoQuerySet):
         return ('ST_Simplify(%s, %s)' % (colname, tolerance)
                 if tolerance else colname)
 
-    def _wkb(self, sql):
-        # Convert spatialite wkb-esque geometries to true wkb.
-        return 'AsBinary(%s)' % sql if connection.ops.spatialite else sql
-
     def extent(self, srid=None):
         """Returns the GeoQuerySet extent as a 4-tuple.
 
@@ -59,8 +54,8 @@ class GeoQuerySet(query.GeoQuerySet):
         # is not present in this aggregation.
         qs = self.extra(select=ext).values('extent').order_by()
         try:
-            return tuple(map(float, re.findall('[-.\d]+', qs[0]['extent'])))
-        except (IndexError, TypeError):
+            return geos.GEOSGeometry(qs[0]['extent'], srid).extent
+        except IndexError:
             return ()
 
     def filter_geometry(self, **kwargs):
