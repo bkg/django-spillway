@@ -71,16 +71,18 @@ class FeatureSerializer(GeoModelSerializer):
         pk = native.pop(obj._meta.pk.name, None)
         return Feature(pk, geometry, native)
 
-    def from_native(self, obj, files=None):
-        data = {self.opts.geom_field: obj.get('geometry')}
-        data.update(obj.get('properties'))
-        feature = super(FeatureSerializer, self).from_native(data, files)
+    def from_native(self, data, files=None):
+        if data and 'features' in data:
+            for feat in data['features']:
+                return self.from_native(feat, files)
         try:
-            sref = SpatialReference(obj['crs']['properties']['name'])
-        except KeyError as exc:
-            exc.args = ('No EPSG code found in CRS: %s' % obj['crs'],)
-            raise exc
-        else:
+            sref = SpatialReference(data['crs']['properties']['name'])
+        except KeyError:
+            sref = None
+        record = {self.opts.geom_field: data.get('geometry')}
+        record.update(data.get('properties', {}))
+        feature = super(FeatureSerializer, self).from_native(record, files)
+        if feature and sref:
             geom = getattr(feature, self.opts.geom_field)
             geom.srid = sref.srid
         return feature
