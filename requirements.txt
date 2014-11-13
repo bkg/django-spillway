@@ -1,3 +1,4 @@
 django==1.7.1
 djangorestframework==2.4.4
+mapnik2==2.2.0
 git+https://github.com/bkg/greenwich.git#egg=greenwich
