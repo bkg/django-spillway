@@ -34,7 +34,7 @@ class GeoJSONRenderer(BaseGeoRenderer):
     This renderer purposefully avoids reserialization of GeoJSON from the
     spatial backend which greatly improves performance.
     """
-    media_type = 'application/geojson'
+    media_type = 'application/vnd.geo+json'
     format = 'geojson'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
