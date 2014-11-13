@@ -5,12 +5,13 @@ import zipfile
 from django.core.files import File
 from django.test import TestCase
 from greenwich.raster import Raster
+from rest_framework import status
 from rest_framework.test import APIRequestFactory
 
 from spillway import generics
 from spillway.renderers import GeoJSONRenderer
 from .models import Location, RasterStore
-from .test_serializers import RasterStoreTestBase
+from .test_serializers import RasterStoreTestBase, LocationFeatureSerializer
 
 factory = APIRequestFactory()
 
@@ -48,6 +49,23 @@ class GeoListViewTestCase(TestCase):
             d = json.loads(response.content)
             self.assertEqual(d['features'][0]['geometry'],
                              json.loads(self.qs[0].geom.geojson))
+
+
+class GeoListCreateAPIView(TestCase):
+    def setUp(self):
+        self.view = generics.GeoListCreateAPIView.as_view(model=Location)
+        Location.create()
+        self.qs = Location.objects.all()
+
+    def test_post(self):
+        fs = LocationFeatureSerializer(self.qs, many=True)
+        request = factory.post('/', fs.data, format='json')
+        with self.assertNumQueries(1):
+            response = self.view(request).render()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        created = self.qs.get(id=2)
+        self.assertEqual(created.name, 'Vancouver')
+        self.assertEqual(created.geom, fs.object[0].geom)
 
 
 class GeoDetailViewTestCase(TestCase):

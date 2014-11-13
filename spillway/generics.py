@@ -1,7 +1,9 @@
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.settings import api_settings
 
 from spillway import filters, forms, mixins, renderers, serializers
+
+_default_renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
 
 
 class BaseGeoView(mixins.QueryFormMixin):
@@ -9,23 +11,24 @@ class BaseGeoView(mixins.QueryFormMixin):
     model_serializer_class = serializers.FeatureSerializer
     pagination_serializer_class = serializers.PaginatedFeatureSerializer
     query_form_class = forms.GeometryQueryForm
+    renderer_classes = _default_renderers + (
+        renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
 
     def wants_default_renderer(self):
         """Returns true when using a default renderer class."""
-        return isinstance(self.request.accepted_renderer,
-                          tuple(api_settings.DEFAULT_RENDERER_CLASSES))
+        return isinstance(self.request.accepted_renderer, _default_renderers)
 
 
 class GeoDetailView(BaseGeoView, RetrieveAPIView):
     """Generic detail view providing vector geometry representations."""
-    renderer_classes = tuple(RetrieveAPIView.renderer_classes) + (
-        renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
 
 
 class GeoListView(BaseGeoView, ListAPIView):
     """Generic list view providing vector geometry representations."""
-    renderer_classes = tuple(ListAPIView.renderer_classes) + (
-        renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
+    filter_backends = (filters.SpatialLookupFilter, filters.GeoQuerySetFilter)
+
+
+class GeoListCreateAPIView(BaseGeoView, ListCreateAPIView):
     filter_backends = (filters.SpatialLookupFilter, filters.GeoQuerySetFilter)
 
 
@@ -42,7 +45,7 @@ class BaseRasterView(BaseGeoView):
 
 class RasterDetailView(BaseRasterView, RetrieveAPIView):
     """View providing access to a Raster model instance."""
-    renderer_classes = tuple(RetrieveAPIView.renderer_classes) + (
+    renderer_classes = _default_renderers + (
         renderers.HFARenderer,
         renderers.GeoTIFFRenderer
     )
@@ -51,7 +54,7 @@ class RasterDetailView(BaseRasterView, RetrieveAPIView):
 class RasterListView(BaseRasterView, ListAPIView):
     """View providing access to a Raster model QuerySet."""
     filter_backends = (filters.SpatialLookupFilter,)
-    renderer_classes = tuple(ListAPIView.renderer_classes) + (
+    renderer_classes = _default_renderers + (
         renderers.HFAZipRenderer,
         renderers.GeoTIFFZipRenderer,
     )
