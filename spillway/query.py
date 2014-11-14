@@ -50,13 +50,18 @@ class GeoQuerySet(query.GeoQuerySet):
             ext = {'extent': 'AsText(%s(%s))' % ('Extent', transform)}
         else:
             ext = {'extent': '%s(%s)' % (connection.ops.extent, transform)}
-        # The bare order_by() is needed to remove the default sort field which
-        # is not present in this aggregation.
-        qs = self.extra(select=ext).values('extent').order_by()
         try:
-            return geos.GEOSGeometry(qs[0]['extent'], srid).extent
+            # The bare order_by() is needed to remove the default sort field
+            # which is not present in this aggregation.
+            extent = (self.extra(select=ext)
+                          .values_list('extent', flat=True)
+                          .order_by()[0])
         except IndexError:
             return ()
+        try:
+            return connection.ops.convert_extent(extent)
+        except NotImplementedError:
+            return geos.GEOSGeometry(extent, srid).extent
 
     def filter_geometry(self, **kwargs):
         """Convenience method for providing spatial lookup types as keywords
