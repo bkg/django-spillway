@@ -12,6 +12,7 @@ setup(name='django-spillway',
       packages=find_packages(exclude=['tests*']),
       include_package_data=True,
       install_requires=['django', 'djangorestframework', 'greenwich'],
+      extras_requires={'mapnik': ['Mapnik>=2.0']},
       license='BSD',
       classifiers=[
           'Development Status :: 3 - Alpha',

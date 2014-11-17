@@ -4,9 +4,9 @@ import datetime
 from django.contrib.gis.db import models
 from django.utils.translation import ugettext_lazy as _
 from greenwich import Raster, SpatialReference
-import mapnik
 import numpy as np
 
+from spillway.compat import mapnik
 from spillway.query import GeoQuerySet
 
 

@@ -1,4 +1,4 @@
-import mapnik
+from spillway.compat import mapnik
 
 # ColorBrewer http://colorbrewer2.org/
 colors = {'YlGnBu': ('#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4',

@@ -1,10 +1,8 @@
-from __future__ import absolute_import
-
-import mapnik
 from django.core.files.storage import default_storage
 from rest_framework.renderers import BaseRenderer
 
 from spillway import styles
+from spillway.compat import mapnik
 
 
 class MapnikRenderer(BaseRenderer):
