@@ -1,4 +1,4 @@
-from django.contrib.gis import forms
+from django.contrib.gis import gdal, forms
 from django.contrib.gis.db.models.sql.query import ALL_TERMS
 from greenwich.srs import transform_tile
 
@@ -69,6 +69,8 @@ class MapTile(forms.Form):
         cleaned = super(MapTile, self).clean()
         x, y, z = map(cleaned.get, ('x', 'y', 'z'))
         # Create bbox from NW and SE tile corners.
-        cleaned['bbox'] = self.fields['bbox'].clean(
-            transform_tile(x, y, z) + transform_tile(x + 1, y + 1, z))
+        extent = transform_tile(x, y, z) + transform_tile(x + 1, y + 1, z)
+        geom = gdal.OGRGeometry.from_bbox(extent)
+        geom.srid = self.fields['bbox'].default_srid
+        cleaned['bbox'] = geom
         return cleaned

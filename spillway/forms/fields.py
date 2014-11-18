@@ -97,9 +97,9 @@ class OGRGeometryField(forms.GeometryField):
         if '"Feature",' in value:
             d = json.loads(value)
             value = json.dumps(d.get('geometry'))
-        # Handle extent as a four-tuple.
-        elif len(value) == 4:
-            value = Envelope(value).polygon.ExportToWkt()
+        # Handle a comma delimited extent.
+        elif list(value).count(',') == 3:
+            value = Envelope(value.split(',')).polygon.ExportToWkt()
         try:
             geom = gdal.OGRGeometry(value)
         except (gdal.OGRException, TypeError, ValueError):
