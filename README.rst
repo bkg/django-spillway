@@ -46,4 +46,4 @@ Any `spatial lookup
 supported by the backend is available to search on. For instance, find the county which
 intersects a particular point::
 
-    curl -g 'localhost:8000/counties?intersects={"type":"Point","coordinates":[-120,38]}'
+    curl -g '127.0.0.1:8000/counties?intersects={"type":"Point","coordinates":[-120,38]}'
