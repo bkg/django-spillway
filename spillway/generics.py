@@ -46,8 +46,8 @@ class BaseRasterView(BaseGeoView):
 class RasterDetailView(BaseRasterView, RetrieveAPIView):
     """View providing access to a Raster model instance."""
     renderer_classes = _default_renderers + (
+        renderers.GeoTIFFRenderer,
         renderers.HFARenderer,
-        renderers.GeoTIFFRenderer
     )
 
 
@@ -55,6 +55,6 @@ class RasterListView(BaseRasterView, ListAPIView):
     """View providing access to a Raster model QuerySet."""
     filter_backends = (filters.SpatialLookupFilter,)
     renderer_classes = _default_renderers + (
-        renderers.HFAZipRenderer,
         renderers.GeoTIFFZipRenderer,
+        renderers.HFAZipRenderer,
     )
