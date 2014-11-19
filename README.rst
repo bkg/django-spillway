@@ -32,12 +32,11 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
             name='county-list'),
     )
 
-
 Retrieve all counties as GeoJSON::
 
     curl -H 'Accept: application/vnd.geo+json' 127.0.0.1:8000/counties/
 
-Simplify and reproject the geometries to another coordinate system.::
+Simplify and reproject the geometries to another coordinate system::
 
     curl -H 'Accept: application/vnd.geo+json' '127.0.0.1:8000/counties/?srs=3857&simplify=100'
 
@@ -47,3 +46,28 @@ supported by the backend is available to search on. For instance, find the count
 intersects a particular point::
 
     curl -g '127.0.0.1:8000/counties?intersects={"type":"Point","coordinates":[-120,38]}'
+
+Raster data support is provided as well.
+
+.. code-block:: python
+
+    from spillway import generics
+    from myapp.models import RasterStore
+
+    urlpatterns = patterns('',
+        url(r'^rstores/(?P<slug>[\w-]+)/$',
+            generics.RasterDetailView.as_view(model=RasterStore),
+            name='rasterstore'),
+        url(r'^rstores/$',
+            generics.RasterListView.as_view(model=RasterStore),
+            name='rasterstore-list'),
+    )
+
+Return JSON containing a 2D array of pixel values for a given bounding box::
+
+    curl 'http://127.0.0.1:8000/rstores/tasmax/?bbox=-107.74,37.39,-106.95,38.40'
+
+One can crop raster images with a geometry and return a .zip archive of the
+results::
+
+    curl  -H 'Accept: application/zip' 'http://127.0.0.1:8000/rstores/?g=-107.74,37.39,-106.95,38.40'
