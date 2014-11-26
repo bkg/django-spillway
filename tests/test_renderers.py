@@ -1,8 +1,10 @@
+import sys
 import io
 import json
 import zipfile
 
 from django.contrib.gis.geos import GEOSGeometry
+from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
 from django.test import SimpleTestCase, TestCase
 from rest_framework.pagination import PaginationSerializer
@@ -107,3 +109,11 @@ class MapnikRendererTestCase(RasterStoreTestBase):
         im = Image.open(io.BytesIO(imgdata))
         self.assertEqual(im.size, (256, 256))
         self.assertNotEqual(im.getpixel((100, 100)), (0, 0, 0, 0))
+
+    def test_compat(self):
+        from spillway import compat
+        sys.modules.pop('mapnik')
+        sys.path = []
+        reload(compat)
+        with self.assertRaises(ImproperlyConfigured):
+            m = compat.mapnik.Map(128, 128)
