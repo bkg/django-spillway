@@ -1,8 +1,10 @@
 import json
+import math
 
 from django.test import TestCase
 from rest_framework.compat import django_filters
 from rest_framework.test import APIRequestFactory
+from django.contrib.gis.geos import Polygon
 
 from spillway import generics
 from .models import Location
@@ -43,11 +45,24 @@ fcollection = {
   ]
 }
 
+def create_polygon_circle(middle_x=-100, middle_y=30, vertices=40, radius=2):
+    coords = ()
+    for i in range(0, vertices):
+        rad = float(i)/float(vertices) * math.pi
+        x = math.sin(rad) * radius + middle_x
+        y = math.cos(rad) * radius + middle_y
+        if i == 0:
+            last = (x, y)
+        coords = coords + ((x, y),)
+    coords = coords + (last, )
+    return Polygon(coords)
+
 
 class FilterTestCase(TestCase):
     def setUp(self):
         self.view = generics.GeoListView.as_view(model=Location)
         for feature in fcollection['features']:
+            print feature['geometry']
             attrs = dict(geom=feature['geometry'], **feature['properties'])
             obj = Location.create(**attrs)
         self.qs = Location.objects.all()
@@ -80,3 +95,12 @@ class FilterTestCase(TestCase):
         feat = json.loads(self.qs[0].geom.geojson)
         self.assertNotEqual(fc['features'][0], feat)
         self.assertIn('EPSG::3857', response.content)
+
+
+class TestSimplify(TestCase):
+    def setUp(self):
+        attrs = dict(geom=create_polygon_circle(), name='Falks')
+        obj = Location.create(**attrs)
+
+    def test_simplify(self):
+        pass
