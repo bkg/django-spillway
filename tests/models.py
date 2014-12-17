@@ -23,11 +23,13 @@ class Location(models.Model):
         return self.name
 
     @classmethod
-    def create(cls, **defaults):
-        data = {'name': 'Vancouver',
-                'geom': json.dumps(defaults.pop('geom', _geom))}
-        data.update(**defaults)
-        obj = cls(**data)
+    def create(cls, **data):
+        geom = data.pop('geom', _geom)
+        if isinstance(geom, dict):
+            geom = json.dumps(geom)
+        defaults = {'name': 'Vancouver', 'geom': geom}
+        defaults.update(**data)
+        obj = cls(**defaults)
         obj.save()
         return obj
 
