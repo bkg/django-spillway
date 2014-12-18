@@ -101,4 +101,4 @@ class GeoQuerySet(query.GeoQuerySet):
         simplify = self._simplify(transform, tolerance)
         if connection.ops.spatialite:
             simplify = 'AsEWKT(%s)' % simplify
-        return self.extra(select={self.geo_field.column: simplify})
+        return self.extra(select={self.geo_field.name: simplify})
