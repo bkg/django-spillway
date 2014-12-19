@@ -28,7 +28,7 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
     from spillway.models import GeoManager
 
     class Location(models.Model):
-        name = models.CharField(max_length=128)
+        slug = models.SlugField(max_length=128)
         geom = models.GeometryField()
         objects = GeoManager()
 
@@ -37,7 +37,10 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
     from .models import Location
 
     urlpatterns = patterns('',
-        url(r'^locations$',
+        url(r'^locations/(?P<slug[\w-]+)/$',
+            generics.GeoDetailView.as_view(model=Location),
+            name='location'),
+        url(r'^locations/$',
             generics.GeoListView.as_view(model=Location),
             name='location-list'),
     )
