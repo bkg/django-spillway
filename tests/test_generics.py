@@ -2,6 +2,7 @@ import json
 import io
 import zipfile
 
+from django.contrib.gis import geos
 from django.core.files import File
 from django.test import TestCase
 from greenwich.raster import Raster
@@ -71,20 +72,31 @@ class GeoListCreateAPIView(TestCase):
 class GeoDetailViewTestCase(TestCase):
     def setUp(self):
         self.view = generics.GeoDetailView.as_view(model=Location)
-        for i in range(2): Location.create()
+        self.radius = 5
+        Location.add_buffer((10, -10), self.radius)
+        Location.create()
         self.qs = Location.objects.all()
 
     def test_response(self):
         for params in {}, {'format': 'geojson'}:
-            request = factory.get('/1', params)
+            request = factory.get('/1/', params)
             with self.assertNumQueries(1):
                 response = self.view(request, pk=1).render()
             self.assertEqual(response.status_code, 200)
-            d = json.loads(response.content)
-            self.assertEqual(d['geometry'], json.loads(self.qs[0].geom.geojson))
+            self.assertEqual(json.loads(response.content)['geometry'],
+                             json.loads(self.qs[0].geom.geojson))
+
+    def test_simplify(self):
+        request = factory.get('/1/', {'simplify': self.radius})
+        response = self.view(request, pk=1).render()
+        geom = self.qs[0].geom
+        simplified = geos.GEOSGeometry(
+            json.dumps(response.data['geometry']), geom.srid)
+        self.assertNotEqual(simplified, geom)
+        self.assertNotEqual(simplified.num_coords, geom.num_coords)
 
     def test_kml_response(self):
-        request = factory.get('/1', {'format': 'kml'})
+        request = factory.get('/1/', {'format': 'kml'})
         response = self.view(request, pk=1).render()
         self.assertInHTML(self.qs[0].geom.kml, response.content, count=1)
 

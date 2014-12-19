@@ -8,10 +8,7 @@ from .models import Location
 class GeoQuerySetTestCase(TestCase):
     def setUp(self):
         self.radius = 10
-        Location.create(geom=geos.Point(0, 0).buffer(self.radius))
-        obj = Location.create()
-        obj.geom = obj.geom.buffer(self.radius)
-        obj.save()
+        Location.add_buffer((0, 0), self.radius)
         self.qs = Location.objects.all()
         self.srid = 4269
 

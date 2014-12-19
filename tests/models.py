@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.gis import geos
 from django.contrib.gis.db import models
 from spillway.models import GeoManager, AbstractRasterStore
 
@@ -32,6 +33,10 @@ class Location(models.Model):
         obj = cls(**defaults)
         obj.save()
         return obj
+
+    @classmethod
+    def add_buffer(cls, coord, radius, **data):
+        return cls.create(geom=geos.Point(*coord).buffer(radius), **data)
 
 
 class RasterStore(AbstractRasterStore):
