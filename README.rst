@@ -28,11 +28,12 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
     from spillway.models import GeoManager
 
     class Location(models.Model):
-        slug = models.SlugField(max_length=128)
+        slug = models.SlugField()
         geom = models.GeometryField()
         objects = GeoManager()
 
     # urls.py
+    from django.conf.urls import patterns, url
     from spillway import generics
     from .models import Location
 
@@ -64,6 +65,7 @@ Raster data support is provided as well.
 
 .. code-block:: python
 
+    from django.conf.urls import patterns, url
     from spillway import generics
     from .models import RasterStore
 
