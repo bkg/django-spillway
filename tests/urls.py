@@ -1,5 +1,5 @@
 from django.conf.urls import patterns, url
-from spillway import views
+from spillway import views, generics
 
 from .models import Location, RasterStore
 
@@ -10,4 +10,7 @@ urlpatterns = patterns('',
         views.TileView.as_view(model=Location), name='location-tiles'),
     url(r'^maptiles/(?P<pk>\d+)/%s' % _tile,
         views.MapView.as_view(model=RasterStore), name='map-tiles'),
+    url(
+        r'^list/$', generics.GeoListView.as_view(model=Location),
+        name='locations-list')
 )
