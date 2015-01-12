@@ -54,6 +54,10 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
         self._assert_is_empty_tile(response)
 
 
+class MyGeoListView(GeoListView):
+    paginate_by = 10
+
+
 class ListViewTestCase(APITestCase):
 
     def setUp(self):
@@ -67,7 +71,8 @@ class ListViewTestCase(APITestCase):
             Location.create(**d)
 
     def test_response(self):
-        response = self.client.get('/list/')
+        response = self.client.get('/list/?format=geojson')
         self.assertEqual(response.status_code, 200)
         data = json.loads(response.content)
+        print response.content
         self.assertEqual(data['type'], 'FeatureCollection')
