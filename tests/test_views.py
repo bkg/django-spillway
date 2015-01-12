@@ -56,6 +56,7 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
 
 class MyGeoListView(GeoListView):
     paginate_by = 10
+    paginate_by_param = 'page_size'
 
 
 class ListViewTestCase(APITestCase):
