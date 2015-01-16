@@ -2,22 +2,10 @@ from django.contrib.gis.shortcuts import compress_kml
 from django.template import loader, Context
 from rest_framework.renderers import BaseRenderer
 
-from spillway.collections import Feature, FeatureCollection
+from spillway.collections import as_feature
 
 
-class BaseGeoRenderer(BaseRenderer):
-    """Base renderer for geographic features."""
-
-    def _features(self, data):
-        if not isinstance(data, (Feature, FeatureCollection)):
-            if isinstance(data, dict):
-                data = Feature(**data)
-            else:
-                data = FeatureCollection(features=data)
-        return data
-
-
-class GeoJSONRenderer(BaseGeoRenderer):
+class GeoJSONRenderer(BaseRenderer):
     """Renderer which serializes to GeoJSON.
 
     This renderer purposefully avoids reserialization of GeoJSON from the
@@ -28,15 +16,15 @@ class GeoJSONRenderer(BaseGeoRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """Returns *data* encoded as GeoJSON."""
-        return str(self._features(data))
+        return str(as_feature(data))
 
 
-class TemplateRenderer(BaseGeoRenderer):
+class TemplateRenderer(BaseRenderer):
     """Template based feature renderer."""
     template_name = None
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        collection = self._features(data)
+        collection = as_feature(data)
         try:
             features = collection['features']
         except KeyError:

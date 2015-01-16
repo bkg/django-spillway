@@ -1,6 +1,39 @@
+from __future__ import absolute_import
 import collections
 
 from spillway.compat import json, JSONEncoder
+
+def as_feature(data):
+    """Returns a Feature or FeatureCollection.
+
+    Arguments:
+    data -- Sequence or Mapping of Feature-like or FeatureCollection-like data
+    """
+    if not isinstance(data, (Feature, FeatureCollection)):
+        if is_featurelike(data):
+            data = Feature(**data)
+        elif has_features(data):
+            data = FeatureCollection(**data)
+        elif isinstance(data, collections.Sequence):
+            data = FeatureCollection(features=data)
+        elif isinstance(data, dict) and not data:
+            data = Feature()
+    return data
+
+def has_features(fcollection):
+    """Returns true for a FeatureCollection-like structure."""
+    try:
+        return 'features' in fcollection
+        # and is_featurelike(fcollection['features'][0])
+    except (AttributeError, TypeError):
+        return False
+
+def is_featurelike(feature):
+    """Returns true for a Feature-like structure."""
+    try:
+        return 'geometry' in feature and 'properties' in feature
+    except (AttributeError, TypeError):
+        return False
 
 
 class LinkedCRS(dict):
