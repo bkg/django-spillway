@@ -33,15 +33,24 @@ class GeoListViewTestCase(TestCase):
         response = self.view(request)
         self.assertEqual(len(response.data['features']), len(self.qs))
 
-    def test_paginate(self):
+    def _test_paginate(self, params, **kwargs):
         view = PaginatedGeoListView.as_view(model=Location)
-        request = factory.get('/', {'page': 2})
+        request = factory.get('/', params, **kwargs)
         response = view(request).render()
         self.assertEqual(len(response.data['features']),
                          PaginatedGeoListView.paginate_by)
         data = json.loads(response.content)
         self.assertEqual(data['count'], len(self.qs))
         self.assertTrue(*map(data.has_key, ('previous', 'next')))
+        return data
+
+    def test_paginate(self):
+        self._test_paginate({'page': 2})
+
+    def test_paginate_geojson(self):
+        data = self._test_paginate(
+            {'page': 1}, HTTP_ACCEPT=GeoJSONRenderer.media_type)
+        self.assertEqual(data['type'], 'FeatureCollection')
 
     def test_geojson(self):
         for request in (factory.get('/', {'format': 'geojson'}),
@@ -50,6 +59,7 @@ class GeoListViewTestCase(TestCase):
             d = json.loads(response.content)
             self.assertEqual(d['features'][0]['geometry'],
                              json.loads(self.qs[0].geom.geojson))
+            self.assertEqual(d['type'], 'FeatureCollection')
 
 
 class GeoListCreateAPIView(TestCase):
