@@ -1,4 +1,5 @@
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.settings import api_settings
 
 from spillway import filters, forms, mixins, renderers, serializers
@@ -19,7 +20,8 @@ class BaseGeoView(mixins.QueryFormMixin):
 
     def wants_default_renderer(self):
         """Returns true when using a default renderer class."""
-        return isinstance(self.request.accepted_renderer, _default_renderers)
+        return isinstance(self.request.accepted_renderer,
+                          (BrowsableAPIRenderer, JSONRenderer))
 
 
 class GeoDetailView(BaseGeoView, RetrieveAPIView):
