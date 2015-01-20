@@ -1,11 +1,11 @@
 from django.contrib.gis.shortcuts import compress_kml
 from django.template import loader, Context
-from rest_framework.renderers import BaseRenderer
+from rest_framework.renderers import BaseRenderer, JSONRenderer
 
 from spillway.collections import as_feature
 
 
-class GeoJSONRenderer(BaseRenderer):
+class GeoJSONRenderer(JSONRenderer):
     """Renderer which serializes to GeoJSON.
 
     This renderer purposefully avoids reserialization of GeoJSON from the
@@ -16,7 +16,12 @@ class GeoJSONRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """Returns *data* encoded as GeoJSON."""
-        return str(as_feature(data))
+        data = as_feature(data)
+        try:
+            return data.geojson
+        except AttributeError:
+            return super(GeoJSONRenderer, self).render(
+                data, accepted_media_type, renderer_context)
 
 
 class TemplateRenderer(BaseRenderer):

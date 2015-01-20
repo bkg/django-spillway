@@ -59,7 +59,28 @@ class NamedCRS(dict):
         self.update(iterable, **kwargs)
 
 
-class Feature(dict):
+class AbstractFeature(dict):
+    """Abstract Feature class"""
+
+    @property
+    def __geo_interface__(self):
+        return self
+
+    def __str__(self):
+        return self.geojson
+
+    def _dumps(self):
+        return json.dumps(self, cls=JSONEncoder)
+
+    @property
+    def geojson(self):
+        raise NotImplementedError
+
+    def is_serialized(self, key):
+        return isinstance(self[key], basestring)
+
+
+class Feature(AbstractFeature):
     """GeoJSON Feature dict."""
 
     def __init__(self, id=None, geometry=None, properties=None,
@@ -74,20 +95,16 @@ class Feature(dict):
         self.update(iterable, **kwargs)
 
     @property
-    def __geo_interface__(self):
-        return self
-
-    def __str__(self):
+    def geojson(self):
+        if not self.is_serialized('geometry'):
+            return self._dumps()
         geom = self['geometry'] or '{}'
-        if isinstance(geom, dict):
-            return json.dumps(self, cls=JSONEncoder)
         keys = self.viewkeys() - {'geometry'}
         props = json.dumps({k: self[k] for k in keys}, cls=JSONEncoder)[1:-1]
-        feature = '{"geometry": %s, %s}' % (geom, props)
-        return feature
+        return '{"geometry": %s, %s}' % (str(geom), props)
 
 
-class FeatureCollection(dict):
+class FeatureCollection(AbstractFeature):
     """GeoJSON FeatureCollection dict."""
 
     def __init__(self, features=None, crs=None, iterable=(), **kwargs):
@@ -102,12 +119,15 @@ class FeatureCollection(dict):
         self.update(iterable, **kwargs)
 
     @property
-    def __geo_interface__(self):
-        return self
-
-    def __str__(self):
+    def geojson(self):
+        if not self.has_serialized_geom:
+            return self._dumps()
         features = ','.join(map(str, self['features']))
         keys = self.viewkeys() - {'features'}
         collection = '%s, "features": [' % json.dumps(
             {k: self[k] for k in keys}, cls=JSONEncoder)[:-1]
         return ''.join([collection, features, ']}'])
+
+    @property
+    def has_serialized_geom(self):
+        return any(feat.is_serialized('geometry') for feat in self['features'])
