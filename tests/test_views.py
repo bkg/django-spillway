@@ -28,6 +28,10 @@ class TileViewTestCase(APITestCase):
         self.assertEqual(len(d['features'][0]['geometry']['coordinates'][0]),
                          len(self.geometry['coordinates'][0]) + 1)
 
+    def test_not_existing_tile_coords(self):
+        """Test response if non-existing tile coordinates are requested."""
+        response = self.client.get('/vectiles/3/1000/1000/')
+
 
 class MapViewTestCase(RasterStoreTestBase, APITestCase):
     def test_response(self):
