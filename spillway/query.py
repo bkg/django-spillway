@@ -77,6 +77,9 @@ class GeoQuerySet(query.GeoQuerySet):
     def geo_field(self):
         return self.query._geo_field()
 
+    def has_format(self, format):
+        return format in self._formats
+
     def scale(self, x, y, z=0.0, tolerance=0.0, precision=6, srid=None,
               format=None, **kwargs):
         """Returns a GeoQuerySet with scaled and optionally reprojected and

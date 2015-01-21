@@ -13,25 +13,12 @@ class GeometryField(WritableField):
     # TODO: Introspect available formats from spatial backends.
     _formats = ('geohash', 'geojson', 'gml', 'kml', 'svg')
 
-    def set_default_source(self):
-        """Set a default source based on the selected renderer."""
-        # Do not override an explicitly provided field source.
-        if self.source:
-            return
-        view = self.context.get('view')
-        # Alter the field source based on geometry output format.
-        try:
-            wants_default_renderer = view.wants_default_renderer()
-        except AttributeError:
-            wants_default_renderer = True
-        # Alter the field source based on geometry output format.
-        if not wants_default_renderer:
-            renderer = view.request.accepted_renderer
-            if renderer.format in self._formats:
-                self.source = renderer.format
-                # Single objects must use GEOSGeometry attrs to provide formats.
-                if not self.parent.many:
-                    self.source = '%s.%s' % (self.label, self.source)
+    def set_source(self, format):
+        if format in self._formats:
+            self.source = format
+            # Single objects must use GEOSGeometry attrs to provide formats.
+            if not self.parent.many:
+                self.source = '%s.%s' % (self.label, self.source)
 
     def to_native(self, value):
         # Create a dict from the GEOSGeometry when the value is not previously
