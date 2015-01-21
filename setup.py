@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(name='django-spillway',
-      version='0.1.1',
+      version='0.1.2',
       description='Geodata extensions for Django REST Framework',
       long_description=open('README.rst').read(),
       author='Brian Galey',
@@ -11,7 +11,7 @@ setup(name='django-spillway',
       url='https://github.com/bkg/django-spillway',
       packages=find_packages(exclude=['tests*']),
       include_package_data=True,
-      install_requires=['django', 'djangorestframework', 'greenwich>=0.3'],
+      install_requires=['django', 'djangorestframework<3.0.0', 'greenwich>=0.3'],
       extras_require={'mapnik': ['Mapnik>=2.0']},
       license='BSD',
       classifiers=[

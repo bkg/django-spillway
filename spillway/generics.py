@@ -3,6 +3,7 @@ from rest_framework.settings import api_settings
 
 from spillway import filters, forms, mixins, renderers, serializers
 
+_default_filters = tuple(api_settings.DEFAULT_FILTER_BACKENDS)
 _default_renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
 
 
@@ -11,6 +12,8 @@ class BaseGeoView(mixins.QueryFormMixin):
     model_serializer_class = serializers.FeatureSerializer
     pagination_serializer_class = serializers.PaginatedFeatureSerializer
     query_form_class = forms.GeometryQueryForm
+    filter_backends = _default_filters + (
+        filters.SpatialLookupFilter, filters.GeoQuerySetFilter)
     renderer_classes = _default_renderers + (
         renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
 
@@ -24,18 +27,18 @@ class GeoDetailView(BaseGeoView, RetrieveAPIView):
 
 
 class GeoListView(BaseGeoView, ListAPIView):
-    """Generic list view providing vector geometry representations."""
-    filter_backends = (filters.SpatialLookupFilter, filters.GeoQuerySetFilter)
+    """Generic view for listing a geoqueryset."""
 
 
 class GeoListCreateAPIView(BaseGeoView, ListCreateAPIView):
-    filter_backends = (filters.SpatialLookupFilter, filters.GeoQuerySetFilter)
+    """Generic view for listing or creating geomodel instances."""
 
 
 class BaseRasterView(BaseGeoView):
     """Base view for raster models."""
     model_serializer_class = serializers.RasterModelSerializer
     query_form_class = forms.RasterQueryForm
+    filter_backends = _default_filters
 
     def get_serializer_context(self):
         context = super(BaseRasterView, self).get_serializer_context()
@@ -53,7 +56,7 @@ class RasterDetailView(BaseRasterView, RetrieveAPIView):
 
 class RasterListView(BaseRasterView, ListAPIView):
     """View providing access to a Raster model QuerySet."""
-    filter_backends = (filters.SpatialLookupFilter,)
+    filter_backends = _default_filters + (filters.SpatialLookupFilter,)
     renderer_classes = _default_renderers + (
         renderers.GeoTIFFZipRenderer,
         renderers.HFAZipRenderer,

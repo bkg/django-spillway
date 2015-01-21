@@ -1,7 +1,6 @@
 import collections
 
-from rest_framework.utils.encoders import JSONEncoder
-from spillway.compat import json
+from spillway.compat import json, JSONEncoder
 
 
 class LinkedCRS(dict):

@@ -93,12 +93,16 @@ class GeoQuerySet(query.GeoQuerySet):
         """Returns a GeoQuerySet with simplified geometries serialized to
         a supported geometry format.
         """
+        # Transform first, then simplify.
         transform = self._transform(self.geo_field.column, srid)
-        if format:
-            simplify = (self._simplify(transform, tolerance)
-                        if tolerance else transform)
-            return self._as_format(simplify, format, precision)
         simplify = self._simplify(transform, tolerance)
+        if format:
+            return self._as_format(simplify, format, precision)
+        # TODO: EWKB bug is fixed in spatialite 4.2+ so this can be removed.
         if connection.ops.spatialite:
+            # Spatialite returns additional precision when converting to wkt,
+            # so avoid the call unless we are simplifying geometries.
+            if not (tolerance or srid):
+                return self
             simplify = 'AsEWKT(%s)' % simplify
-        return self.extra(select={self.geo_field.column: simplify})
+        return self.extra(select={self.geo_field.name: simplify})

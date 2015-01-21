@@ -23,36 +23,51 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
 
 .. code-block:: python
 
+    # models.py
+    from django.contrib.gis.db import models
+    from spillway.models import GeoManager
+
+    class Location(models.Model):
+        slug = models.SlugField()
+        geom = models.GeometryField()
+        objects = GeoManager()
+
+    # urls.py
+    from django.conf.urls import patterns, url
     from spillway import generics
-    from myapp.models import County
+    from .models import Location
 
     urlpatterns = patterns('',
-        url(r'^counties/$',
-            generics.GeoListView.as_view(model=County),
-            name='county-list'),
+        url(r'^locations/(?P<slug[\w-]+)/$',
+            generics.GeoDetailView.as_view(model=Location),
+            name='location'),
+        url(r'^locations/$',
+            generics.GeoListView.as_view(model=Location),
+            name='location-list'),
     )
 
-Retrieve all counties as GeoJSON::
+Retrieve all locations as GeoJSON::
 
-    curl -H 'Accept: application/vnd.geo+json' 127.0.0.1:8000/counties/
+    curl -H 'Accept: application/vnd.geo+json' 127.0.0.1:8000/locations/
 
 Simplify and reproject the geometries to another coordinate system::
 
-    curl -H 'Accept: application/vnd.geo+json' '127.0.0.1:8000/counties/?srs=3857&simplify=100'
+    curl -H 'Accept: application/vnd.geo+json' '127.0.0.1:8000/locations/?srs=3857&simplify=100'
 
 Any `spatial lookup
 <https://docs.djangoproject.com/en/dev/ref/contrib/gis/geoquerysets/#spatial-lookups>`_
-supported by the backend is available to search on. For instance, find the county which
+supported by the backend is available to search on. For instance, find the location which
 intersects a particular point::
 
-    curl -g '127.0.0.1:8000/counties?intersects={"type":"Point","coordinates":[-120,38]}'
+    curl -g '127.0.0.1:8000/locations/?intersects={"type":"Point","coordinates":[-120,38]}'
 
 Raster data support is provided as well.
 
 .. code-block:: python
 
+    from django.conf.urls import patterns, url
     from spillway import generics
-    from myapp.models import RasterStore
+    from .models import RasterStore
 
     urlpatterns = patterns('',
         url(r'^rstores/(?P<slug>[\w-]+)/$',

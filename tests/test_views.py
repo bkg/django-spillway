@@ -8,6 +8,7 @@ from PIL import Image
 from spillway import views
 from .models import Location, RasterStore
 from .test_serializers import RasterStoreTestBase
+from spillway.generics import GeoListView
 
 
 class TileViewTestCase(APITestCase):
@@ -55,3 +56,28 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
         response = self.client.get('/maptiles/1/2/0/100/')
         self.assertEqual(response.status_code, 200)
         self._assert_is_empty_tile(response)
+
+
+class MyGeoListView(GeoListView):
+    paginate_by = 10
+    paginate_by_param = 'page_size'
+
+
+class ListViewTestCase(APITestCase):
+
+    def setUp(self):
+        data = [{'geom': {'type': 'Point',
+                          'coordinates': [-100, 30]},
+                 'name': 'point_1'},
+                {'geom': {'type': 'Point',
+                          'coordinates': [-121, 31]},
+                 'name': 'point_2'}]
+        for d in data:
+            Location.create(**d)
+
+    def test_response(self):
+        response = self.client.get('/list/?format=geojson')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        print response.content
+        self.assertEqual(data['type'], 'FeatureCollection')
