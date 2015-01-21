@@ -40,9 +40,7 @@ class GeoModelSerializer(serializers.ModelSerializer):
 
 
 class FeatureSerializer(GeoModelSerializer):
-    def __init__(self, *args, **kwargs):
-        super(FeatureSerializer, self).__init__(*args, **kwargs)
-        self.fields[self.opts.geom_field].set_default_source()
+    """Feature serializer for GeoModels."""
 
     @property
     def data(self):

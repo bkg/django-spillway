@@ -1,5 +1,4 @@
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
-from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.settings import api_settings
 
 from spillway import filters, forms, mixins, renderers, serializers
@@ -18,10 +17,12 @@ class BaseGeoView(mixins.QueryFormMixin):
     renderer_classes = _default_renderers + (
         renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
 
-    def wants_default_renderer(self):
-        """Returns true when using a default renderer class."""
-        return isinstance(self.request.accepted_renderer,
-                          (BrowsableAPIRenderer, JSONRenderer))
+    def get_serializer(self, *args, **kwargs):
+        obj = super(BaseGeoView, self).get_serializer(*args, **kwargs)
+        renderer = self.request.accepted_renderer
+        geom_field = obj.fields[obj.opts.geom_field]
+        geom_field.set_source(renderer.format)
+        return obj
 
 
 class GeoDetailView(BaseGeoView, RetrieveAPIView):

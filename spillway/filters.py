@@ -13,9 +13,9 @@ class GeoQuerySetFilter(BaseFilterBackend):
         tolerance, srs = map(params.get, ('simplify', 'srs'))
         srid = getattr(srs, 'srid', None)
         kwargs = {}
-        if not view.wants_default_renderer():
-            kwargs.update(precision=self.precision,
-                          format=request.accepted_renderer.format)
+        format = request.accepted_renderer.format
+        if queryset.has_format(format):
+            kwargs.update(precision=self.precision, format=format)
         return queryset.simplify(tolerance, srid, **kwargs)
 
 
