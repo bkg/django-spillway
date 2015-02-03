@@ -79,6 +79,9 @@ class AbstractFeature(dict):
     def is_serialized(self, key):
         return isinstance(self[key], basestring)
 
+    def copy(self):
+        return self.__class__(**super(AbstractFeature, self).copy())
+
 
 class Feature(AbstractFeature):
     """GeoJSON Feature dict."""
