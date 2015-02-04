@@ -90,12 +90,13 @@ class Feature(AbstractFeature):
                  crs=None, iterable=(), **kwargs):
         super(Feature, self).__init__()
         self['type'] = self.__class__.__name__
-        self['id'] = id
         self['geometry'] = geometry or {}
-        self['properties'] = properties or {}
+        self['properties'] = properties or kwargs or {}
+        if id:
+            self['id'] = id
         if crs:
             self['crs'] = NamedCRS(crs)
-        self.update(iterable, **kwargs)
+        self.update(iterable)
 
     @property
     def geojson(self):
