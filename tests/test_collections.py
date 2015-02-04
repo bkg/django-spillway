@@ -9,6 +9,9 @@ class FeatureTestCase(SimpleTestCase):
         self.crs = {'type': 'name',
                     'properties': {'name': 'urn:ogc:def:crs:EPSG::3310'}}
 
+    def test_copy(self):
+        self.assertIsInstance(Feature().copy(), Feature)
+
     def test_crs(self):
         feat = Feature(crs=self.crs)
         self.assertEqual(feat['crs'], self.crs)
@@ -24,6 +27,10 @@ class FeatureTestCase(SimpleTestCase):
         crs = {'type': 'name',
                'properties': {'name': 'urn:ogc:def:crs:EPSG::4326'}}
         self.assertEqual(NamedCRS(), crs)
+
+    def test_iterable(self):
+        self.assertEqual(Feature(iterable=(('geometry', [0, 0]),)),
+                         {'geometry': [0, 0], 'type': 'Feature', 'properties': {}})
 
     def test_str(self):
         feat = Feature(properties={'event': datetime.date(1899, 1, 1)})
