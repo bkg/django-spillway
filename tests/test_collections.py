@@ -8,6 +8,7 @@ class FeatureTestCase(SimpleTestCase):
     def setUp(self):
         self.crs = {'type': 'name',
                     'properties': {'name': 'urn:ogc:def:crs:EPSG::3310'}}
+        self.geom = {'type': 'Point', 'coordinates': [0, 0]}
 
     def test_copy(self):
         self.assertIsInstance(Feature().copy(), Feature)
@@ -23,14 +24,20 @@ class FeatureTestCase(SimpleTestCase):
         self.assertEqual(NamedCRS(self.crs), self.crs)
         self.assertEqual(NamedCRS(**self.crs), self.crs)
 
+    def test_dict(self):
+        self.assertEqual(Feature(**{'geometry': self.geom, 'name': 'atlantic'}),
+                         {'geometry': self.geom, 'type': 'Feature',
+                          'properties': {'name': 'atlantic'}})
+
     def test_empty_crs(self):
         crs = {'type': 'name',
                'properties': {'name': 'urn:ogc:def:crs:EPSG::4326'}}
         self.assertEqual(NamedCRS(), crs)
 
     def test_iterable(self):
-        self.assertEqual(Feature(iterable=(('geometry', [0, 0]),)),
-                         {'geometry': [0, 0], 'type': 'Feature', 'properties': {}})
+        iterable = (('geometry', self.geom),)
+        self.assertEqual(Feature(iterable=iterable),
+                         {'geometry': self.geom, 'type': 'Feature', 'properties': {}})
 
     def test_str(self):
         feat = Feature(properties={'event': datetime.date(1899, 1, 1)})
