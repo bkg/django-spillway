@@ -90,8 +90,8 @@ class OGRGeometryField(forms.GeometryField):
     default_srid = 4326
 
     def to_python(self, value):
-        if value is None:
-            return value
+        if value in self.empty_values:
+            return None
         # Work with a single GeoJSON geometry or a Feature. Avoid parsing
         # overhead unless we have a true "Feature".
         if '"Feature",' in value:
@@ -104,9 +104,11 @@ class OGRGeometryField(forms.GeometryField):
             geom = gdal.OGRGeometry(value)
         except (gdal.OGRException, TypeError, ValueError):
             raise forms.ValidationError(self.error_messages['invalid_geom'])
-        # When no projection info is present, try 4326 which is fairly common.
         if not geom.srs:
-            geom.srid = self.default_srid
+            try:
+                geom.srid = self.widget.map_srid
+            except AttributeError:
+                geom.srid = self.srid or self.default_srid
         return geom
 
 
