@@ -46,8 +46,8 @@ class BaseGDALRenderer(BaseRenderer):
 
     def _render_items(self, items, renderer_context):
         renderer_context = renderer_context or {}
-        view = renderer_context.get('view')
-        geom = view and view.clean_params().get('g')
+        params = renderer_context.get('params')
+        geom = params and params.get('g')
         driver = driver_for_path(self.file_ext.replace(os.extsep, ''))
         if geom:
             # Convert to wkb for ogr.Geometry

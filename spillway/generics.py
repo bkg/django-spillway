@@ -47,8 +47,8 @@ class BaseRasterView(BaseGeoView):
     query_form_class = forms.RasterQueryForm
     filter_backends = _default_filters
 
-    def get_serializer_context(self):
-        context = super(BaseRasterView, self).get_serializer_context()
+    def get_renderer_context(self):
+        context = super(BaseRasterView, self).get_renderer_context()
         context.update(params=self.clean_params())
         return context
 
