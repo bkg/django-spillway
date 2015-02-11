@@ -19,9 +19,13 @@ class BaseGeoView(mixins.QueryFormMixin):
 
     def get_serializer(self, *args, **kwargs):
         obj = super(BaseGeoView, self).get_serializer(*args, **kwargs)
-        renderer = self.request.accepted_renderer
-        geom_field = obj.fields[obj.opts.geom_field]
-        geom_field.set_source(renderer.format)
+        try:
+            renderer = self.request.accepted_renderer
+            geom_field = obj.fields[obj.opts.geom_field]
+        except AttributeError:
+            pass
+        else:
+            geom_field.set_source(renderer.format)
         return obj
 
 
