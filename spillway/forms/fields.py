@@ -87,7 +87,6 @@ class GeometryFileField(forms.FileField):
 
 class OGRGeometryField(forms.GeometryField):
     """A Field for creating OGR geometries."""
-    default_srid = 4326
 
     def to_python(self, value):
         if value in self.empty_values:
@@ -105,10 +104,7 @@ class OGRGeometryField(forms.GeometryField):
         except (gdal.OGRException, TypeError, ValueError):
             raise forms.ValidationError(self.error_messages['invalid_geom'])
         if not geom.srs:
-            try:
-                geom.srid = self.widget.map_srid
-            except AttributeError:
-                geom.srid = self.srid or self.default_srid
+            geom.srid = self.srid or self.widget.map_srid
         return geom
 
 

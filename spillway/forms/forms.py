@@ -56,7 +56,7 @@ class RasterQueryForm(forms.Form):
 
 class MapTile(forms.Form):
     """Validates requested map tiling parameters."""
-    bbox = fields.OGRGeometryField(required=False)
+    bbox = fields.OGRGeometryField(srid=4326, required=False)
     x = forms.IntegerField()
     y = forms.IntegerField()
     z = forms.IntegerField()
@@ -71,6 +71,6 @@ class MapTile(forms.Form):
         # Create bbox from NW and SE tile corners.
         extent = transform_tile(x, y, z) + transform_tile(x + 1, y + 1, z)
         geom = gdal.OGRGeometry.from_bbox(extent)
-        geom.srid = self.fields['bbox'].default_srid
+        geom.srid = self.fields['bbox'].srid
         cleaned['bbox'] = geom
         return cleaned
