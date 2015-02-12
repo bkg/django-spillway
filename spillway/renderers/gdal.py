@@ -1,6 +1,5 @@
 import os
 import tempfile
-from wsgiref.util import FileWrapper
 import zipfile
 
 from greenwich.geometry import Geometry
@@ -42,7 +41,7 @@ class BaseGDALRenderer(BaseRenderer):
         if isfile:
             self.set_response_length(os.path.getsize(img), renderer_context)
             img = open(img)
-        return FileWrapper(img)
+        return img
 
     def _render_items(self, items, renderer_context):
         renderer_context = renderer_context or {}
@@ -119,7 +118,7 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
                     zf.writestr(arcname, raster)
         self.set_response_length(fp.tell(), renderer_context)
         fp.seek(0)
-        return FileWrapper(fp)
+        return fp
 
 
 class HFAZipRenderer(GeoTIFFZipRenderer):

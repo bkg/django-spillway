@@ -1,3 +1,4 @@
+from django.http import StreamingHttpResponse
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.settings import api_settings
 
@@ -46,6 +47,17 @@ class BaseRasterView(BaseGeoView):
     model_serializer_class = serializers.RasterModelSerializer
     query_form_class = forms.RasterQueryForm
     filter_backends = _default_filters
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super(BaseRasterView, self).finalize_response(
+            request, response, *args, **kwargs)
+        # Use streaming responses for GDAL formats.
+        if isinstance(response.accepted_renderer,
+                      renderers.gdal.BaseGDALRenderer):
+            headers = response._headers
+            response = StreamingHttpResponse(response.rendered_content)
+            response._headers = headers
+        return response
 
     def get_renderer_context(self):
         context = super(BaseRasterView, self).get_renderer_context()
