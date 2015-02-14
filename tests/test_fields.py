@@ -1,4 +1,5 @@
 import json
+import zipfile
 
 from django import forms
 from django.core.files.storage import default_storage
@@ -31,13 +32,21 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
 
 class GeometryFileFieldTestCase(SimpleTestCase):
     def setUp(self):
+        self.field = GeometryFileField()
         self.fp = default_storage.open('geofield.json', 'w+b')
         self.fp.write(json.dumps(_geom))
         self.fp.seek(0)
 
     def test_to_python(self):
-        field = GeometryFileField()
-        self.assertIsInstance(field.to_python(self.fp), OGRGeometry)
+        self.assertIsInstance(self.field.to_python(self.fp), OGRGeometry)
+
+    def test_zipfile(self):
+        zfile = default_storage.open('geofield.zip', 'w+b')
+        with zipfile.ZipFile(zfile, 'w') as zf:
+            zf.write(self.fp.name)
+        zfile.seek(0)
+        self.assertIsInstance(self.field.to_python(zfile), OGRGeometry)
+        zfile.close()
 
     def tearDown(self):
         self.fp.close()
