@@ -49,8 +49,8 @@ class RasterQueryForm(forms.Form):
         precedence.
         """
         cleaned = super(RasterQueryForm, self).clean()
-        cleaned['g'] = (cleaned.pop('upload') or cleaned.pop('g') or
-                        cleaned.pop('bbox'))
+        cleaned['g'] = (cleaned.pop('upload') or cleaned.pop('bbox') or
+                        cleaned.get('g'))
         return cleaned
 
 
