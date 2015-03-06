@@ -15,10 +15,6 @@ class BaseGDALRenderer(BaseRenderer):
     charset = None
     render_style = 'binary'
 
-    @property
-    def file_ext(self):
-        return os.extsep + os.path.splitext(self.format)[0]
-
     def basename(self, item):
         """Returns the output filename.
 
@@ -27,6 +23,10 @@ class BaseGDALRenderer(BaseRenderer):
         """
         fname = os.path.basename(item['path'])
         return os.path.splitext(fname)[0] + self.file_ext
+
+    @property
+    def file_ext(self):
+        return os.extsep + os.path.splitext(self.format)[0]
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         if isinstance(data, dict):
@@ -132,7 +132,17 @@ class JPEGRenderer(BaseGDALRenderer):
     format = 'jpg'
 
 
+class JPEGZipRenderer(GeoTIFFZipRenderer):
+    """Bundles JPEG files in a zip archive."""
+    format = 'jpg.zip'
+
+
 class PNGRenderer(BaseGDALRenderer):
     """Renders a raster to PNG (.png) format."""
     media_type = 'image/png'
     format = 'png'
+
+
+class PNGZipRenderer(GeoTIFFZipRenderer):
+    """Bundles PNG files in a zip archive."""
+    format = 'png.zip'

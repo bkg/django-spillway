@@ -96,13 +96,29 @@ class RasterRendererTestCase(RasterTestBase):
         im = self._image(data)
         self.assertEqual(im.format, format)
 
+    def assert_member_formats(self, obj, format):
+        imgs = [self.data]
+        fp = obj.render(imgs)
+        with zipfile.ZipFile(fp) as zf:
+            for name in zf.namelist():
+                self.assert_format(zf.read(name), format)
+            filecount = len(zf.filelist)
+        self.assertEqual(filecount, len(imgs))
+        fp.close()
+
     def test_render_jpeg(self):
         imgdata = renderers.JPEGRenderer().render(self.data)
         self.assert_format(imgdata, 'JPEG')
 
+    def test_render_jpegzip(self):
+        self.assert_member_formats(renderers.JPEGZipRenderer(), 'JPEG')
+
     def test_render_png(self):
         imgdata = renderers.PNGRenderer().render(self.data)
         self.assert_format(imgdata, 'PNG')
+
+    def test_render_pngzip(self):
+        self.assert_member_formats(renderers.PNGZipRenderer(), 'PNG')
 
     def test_render_tifzip(self):
         tifs = [self.data, self.data]
