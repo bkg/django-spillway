@@ -1,3 +1,4 @@
+import io
 import os
 import tempfile
 
@@ -6,6 +7,7 @@ from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
 from greenwich.raster import frombytes
+from PIL import Image
 
 from .models import RasterStore
 
@@ -28,6 +30,9 @@ class RasterTestBase(SimpleTestCase):
 
     def tearDown(self):
         self.f.close()
+
+    def _image(self, imgdata):
+        return Image.open(io.BytesIO(imgdata))
 
 
 class RasterStoreTestBase(RasterTestBase, TestCase):

@@ -84,11 +84,6 @@ class BaseGDALRenderer(BaseRenderer):
             pass
 
 
-class HFARenderer(BaseGDALRenderer):
-    """Renders a raster to Erdas Imagine (.img) format."""
-    format = 'img'
-
-
 class GeoTIFFRenderer(BaseGDALRenderer):
     """Renders a raster to GeoTIFF (.tif) format."""
     media_type = 'image/tiff'
@@ -121,6 +116,23 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
         return fp
 
 
+class HFARenderer(BaseGDALRenderer):
+    """Renders a raster to Erdas Imagine (.img) format."""
+    format = 'img'
+
+
 class HFAZipRenderer(GeoTIFFZipRenderer):
     """Bundles Erdas Imagine rasters in a zip archive."""
     format = 'img.zip'
+
+
+class JPEGRenderer(BaseGDALRenderer):
+    """Renders a raster to JPEG (.jpg) format."""
+    media_type = 'image/jpeg'
+    format = 'jpg'
+
+
+class PNGRenderer(BaseGDALRenderer):
+    """Renders a raster to PNG (.png) format."""
+    media_type = 'image/png'
+    format = 'png'

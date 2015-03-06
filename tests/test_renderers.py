@@ -8,7 +8,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.core.paginator import Paginator
 from django.test import SimpleTestCase, TestCase
 from rest_framework.pagination import PaginationSerializer
-from PIL import Image
 
 from spillway import renderers
 from spillway.collections import Feature, FeatureCollection
@@ -82,7 +81,7 @@ class RasterRendererTestCase(RasterTestBase):
         fp = renderers.GeoTIFFRenderer().render(self.data)
         self.assertEqual(fp.read(), self.f.read())
 
-    def test_render_imagine(self):
+    def test_render_hfa(self):
         data = renderers.HFARenderer().render(self.data)
         # Read the image header.
         self.assertEqual(data[:15], self.img_header)
@@ -92,6 +91,18 @@ class RasterRendererTestCase(RasterTestBase):
         zf = zipfile.ZipFile(fp)
         self.assertTrue(all(name.endswith('.img') for name in zf.namelist()))
         self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
+
+    def assert_format(self, data, format):
+        im = self._image(data)
+        self.assertEqual(im.format, format)
+
+    def test_render_jpeg(self):
+        imgdata = renderers.JPEGRenderer().render(self.data)
+        self.assert_format(imgdata, 'JPEG')
+
+    def test_render_png(self):
+        imgdata = renderers.PNGRenderer().render(self.data)
+        self.assert_format(imgdata, 'PNG')
 
     def test_render_tifzip(self):
         tifs = [self.data, self.data]
@@ -106,7 +117,7 @@ class MapnikRendererTestCase(RasterStoreTestBase):
         ctx = {'bbox': self.object.geom}
         imgdata = renderers.MapnikRenderer().render(
             self.object, renderer_context=ctx)
-        im = Image.open(io.BytesIO(imgdata))
+        im = self._image(imgdata)
         self.assertEqual(im.size, (256, 256))
         self.assertNotEqual(im.getpixel((100, 100)), (0, 0, 0, 0))
 
