@@ -47,7 +47,8 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
         self.assertEqual(response.status_code, 200)
         self._assert_is_empty_tile(response)
 
-    def test_bad_tile_coords(self):
+    def test_invalid_tile_coords(self):
         response = self.client.get('/maptiles/1/2/0/100/')
         self.assertEqual(response.status_code, 200)
         self._assert_is_empty_tile(response)
+        self._assert_is_empty_tile(self.client.get('/maptiles/1/2/100/100/'))
