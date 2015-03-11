@@ -1,55 +1,22 @@
 import json
 
+from django.contrib.gis import geos
 from django.test import TestCase
-from rest_framework.compat import django_filters
 from rest_framework.test import APIRequestFactory
 
 from spillway import generics
 from .models import Location
 
 factory = APIRequestFactory()
-fcollection = {
-  'type': 'FeatureCollection',
-  'features': [{
-      'type': 'Feature',
-      'properties': {
-        'name': 'Banff'
-      },
-      'geometry': {
-        'type': 'Polygon',
-        'coordinates': [[
-            [-116.685, 50.903],
-            [-115.631, 52.001],
-            [-114.834, 50.495],
-            [-116.685, 50.903]
-        ]]
-      }
-    }, {
-      'type': 'Feature',
-      'properties': {
-        'name': 'Jasper'
-      },
-      'geometry': {
-        'type': 'Polygon',
-        'coordinates': [[
-            [-118.822, 53.612],
-            [-117.097, 52.819],
-            [-119.009, 52.301],
-            [-118.822, 53.612]
-
-        ]]
-      }
-    }
-  ]
-}
 
 
 class FilterTestCase(TestCase):
     def setUp(self):
+        records = [{'name': 'Banff', 'coordinates': [-115.554, 51.179]},
+                   {'name': 'Jasper', 'coordinates': [-118.081, 52.875]}]
         self.view = generics.GeoListView.as_view(model=Location)
-        for feature in fcollection['features']:
-            attrs = dict(geom=feature['geometry'], **feature['properties'])
-            obj = Location.create(**attrs)
+        for record in records:
+            obj = Location.add_buffer(record.pop('coordinates'), 0.5, **record)
         self.qs = Location.objects.all()
 
     def test_spatial_lookup(self):
@@ -73,10 +40,14 @@ class FilterTestCase(TestCase):
         self.assertEqual(len(response.data['features']), 0)
 
     def test_geoqueryset(self):
-        request = factory.get('/', {'simplify': 0.1, 'srs': 3857})
+        srid = 3857
+        request = factory.get('/', {'simplify': 10000, 'srs': srid})
         response = self.view(request).render()
-        self.assertEqual(len(response.data['features']), len(self.qs))
-        fc = json.loads(response.content)
-        feat = json.loads(self.qs[0].geom.geojson)
-        self.assertNotEqual(fc['features'][0], feat)
-        self.assertIn('EPSG::3857', response.content)
+        simplified = json.loads(response.content)
+        self.assertEqual(len(simplified['features']), len(self.qs))
+        for feature, obj in zip(simplified['features'], self.qs):
+            geom = geos.GEOSGeometry(json.dumps(feature['geometry']), srid)
+            orig = obj.geom.transform(srid, clone=True)
+            self.assertNotEqual(geom, orig)
+            self.assertNotEqual(geom.num_coords, orig.num_coords)
+        self.assertContains(response, 'EPSG::%d' % srid)
