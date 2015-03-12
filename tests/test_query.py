@@ -43,7 +43,7 @@ class GeoQuerySetTestCase(TestCase):
     def test_simplify_kml(self):
         sqs = self.qs.simplify(self.tol, format='kml')
         self.assertTrue(sqs[0].kml.startswith('<Polygon>'))
-        self.assertHTMLNotEqual(sqs[0].kml, self.qs[0].geom.kml)
+        self.assertXMLNotEqual(sqs[0].kml, self.qs[0].geom.kml)
 
     def test_extent(self):
         ex = self.qs.extent(self.srid)
