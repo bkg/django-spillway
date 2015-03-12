@@ -25,12 +25,18 @@ class GeoQuerySetTestCase(TestCase):
             self.assertLess(obj.geom.num_coords, source.geom.num_coords)
 
     def test_simplify_geojson(self):
-        sqs = self.qs.simplify(self.radius, srid=self.srid, format='geojson', precision=2)
+        sqs = self.qs.simplify(self.radius, srid=self.srid,
+                               format='geojson', precision=2)
         geom = geos.GEOSGeometry(sqs[0].geojson, self.srid)
         source = self.qs[0].geom
         self.assertNotEqual(geom, source)
         self.assertEqual(geom.srid, source.srid)
         self.assertLess(geom.num_coords, source.num_coords)
+
+    def test_simplify_kml(self):
+        sqs = self.qs.simplify(self.radius, format='kml')
+        self.assertTrue(sqs[0].kml.startswith('<Polygon>'))
+        self.assertHTMLNotEqual(sqs[0].kml, self.qs[0].geom.kml)
 
     def test_extent(self):
         ex = self.qs.extent(3857)
