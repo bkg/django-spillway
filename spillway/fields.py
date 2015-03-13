@@ -16,9 +16,6 @@ class GeometryField(WritableField):
     def set_source(self, format):
         if format in self._formats:
             self.source = format
-            # Single objects must use GEOSGeometry attrs to provide formats.
-            if not self.parent.many:
-                self.source = '%s.%s' % (self.label, self.source)
 
     def to_native(self, value):
         # Create a dict from the GEOSGeometry when the value is not previously
