@@ -3,13 +3,12 @@ import io
 import zipfile
 
 from django.contrib.gis import geos
-from django.core.files import File
 from django.test import TestCase
 from greenwich.raster import Raster
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
 
-from spillway import generics
+from spillway import generics, filters
 from spillway.renderers import GeoJSONRenderer
 from .models import Location, RasterStore
 from .test_serializers import RasterStoreTestBase, LocationFeatureSerializer
@@ -23,38 +22,53 @@ class PaginatedGeoListView(generics.GeoListView):
 
 
 class GeoDetailViewTestCase(TestCase):
+    precision = filters.GeoQuerySetFilter.precision
+
     def setUp(self):
         self.view = generics.GeoDetailView.as_view(model=Location)
+        self.pk = 1
+        self.url = '/%d/' % self.pk
         self.radius = 5
         Location.add_buffer((10, -10), self.radius)
         Location.create()
         self.qs = Location.objects.all()
 
-    def test_response(self):
-        for params in {}, {'format': 'geojson'}:
-            request = factory.get('/1/', params)
-            response = None
-            with self.assertNumQueries(1):
-                response = self.view(request, pk=1).render()
-            self.assertEqual(response.status_code, 200)
-            feature = json.loads(response.content)
-            self.assertEqual(feature['geometry'],
-                             json.loads(self.qs[0].geom.geojson))
-            self.assertEqual(feature['type'], 'Feature')
+    def test_json_response(self):
+        expected = json.loads(self.qs[0].geom.geojson)
+        response = self.view(factory.get(self.url), pk=self.pk).render()
+        self.assertEqual(response.status_code, 200)
+        feature = json.loads(response.content)
+        self.assertEqual(feature['geometry'], expected)
+        self.assertEqual(feature['type'], 'Feature')
+
+    def test_geojson_response(self):
+        expected = json.loads(
+            self.qs.geojson(precision=self.precision)[0].geojson)
+        request = factory.get(self.url, {'format': 'geojson'})
+        with self.assertNumQueries(1):
+            response = self.view(request, pk=self.pk).render()
+        self.assertEqual(response.status_code, 200)
+        feature = json.loads(response.content)
+        self.assertEqual(feature['geometry'], expected)
+        self.assertEqual(feature['type'], 'Feature')
 
     def test_simplify(self):
-        request = factory.get('/1/', {'simplify': self.radius})
-        response = self.view(request, pk=1).render()
-        geom = self.qs[0].geom
-        simplified = geos.GEOSGeometry(
-            json.dumps(response.data['geometry']), geom.srid)
-        self.assertNotEqual(simplified, geom)
-        self.assertNotEqual(simplified.num_coords, geom.num_coords)
+        request = factory.get(self.url, {'simplify': self.radius,
+                                         'format': 'geojson'})
+        response = self.view(request, pk=self.pk).render()
+        orig = self.qs.get(pk=self.pk).geom
+        serializer = LocationFeatureSerializer(
+            data=json.loads(response.content))
+        self.assertTrue(serializer.is_valid())
+        self.assertLess(serializer.object.geom.num_coords, orig.num_coords)
+        self.assertNotEqual(serializer.object.geom, orig)
+        self.assertEqual(serializer.object.geom.srid, orig.srid)
 
     def test_kml_response(self):
-        request = factory.get('/1/', {'format': 'kml'})
-        response = self.view(request, pk=1).render()
-        self.assertInHTML(self.qs[0].geom.kml, response.content, count=1)
+        request = factory.get(self.url, {'format': 'kml'})
+        response = self.view(request, pk=self.pk).render()
+        part = self.qs.kml(precision=self.precision)[0].kml
+        self.assertInHTML(part, response.content, count=1)
 
 
 class GeoListViewTestCase(TestCase):
@@ -115,7 +129,7 @@ class GeoListViewTestCase(TestCase):
         for geom, obj in zip(self._parse_collection(response, srid), self.qs):
             orig = obj.geom.transform(srid, clone=True)
             self.assertNotEqual(geom, orig)
-            self.assertNotEqual(geom.num_coords, orig.num_coords)
+            self.assertLess(geom.num_coords, orig.num_coords)
         self.assertContains(response, 'EPSG::%d' % srid)
 
 
@@ -145,9 +159,9 @@ class PaginatedGeoListViewTestCase(TestCase):
     def _test_paginate(self, params, **kwargs):
         request = factory.get('/', params, **kwargs)
         response = self.view(request).render()
-        self.assertEqual(len(response.data['features']),
-                         PaginatedGeoListView.paginate_by)
         data = json.loads(response.content)
+        self.assertEqual(len(data['features']),
+                         PaginatedGeoListView.paginate_by)
         self.assertEqual(data['count'], len(self.qs))
         self.assertTrue(*map(data.has_key, ('previous', 'next')))
         return data
