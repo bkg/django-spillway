@@ -15,10 +15,12 @@ _geom = {
 }
 
 
-class Location(models.Model):
+class AbstractLocation(models.Model):
     name = models.CharField(max_length=30)
     geom = models.GeometryField()
-    objects = GeoManager()
+
+    class Meta:
+        abstract = True
 
     def __repr__(self):
         return '<%s: %s %s>' % (self.__class__.__name__, self.name, self.geom)
@@ -40,6 +42,14 @@ class Location(models.Model):
     @classmethod
     def add_buffer(cls, coord, radius, **data):
         return cls.create(geom=geos.Point(*coord).buffer(radius), **data)
+
+
+class Location(AbstractLocation):
+    objects = GeoManager()
+
+
+class GeoLocation(AbstractLocation):
+    objects = models.GeoManager()
 
 
 class RasterStore(AbstractRasterStore):

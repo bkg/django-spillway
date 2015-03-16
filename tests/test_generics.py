@@ -10,7 +10,7 @@ from rest_framework.test import APIRequestFactory
 
 from spillway import generics, filters
 from spillway.renderers import GeoJSONRenderer
-from .models import Location, RasterStore
+from .models import GeoLocation, Location, RasterStore
 from .test_serializers import RasterStoreTestBase, LocationFeatureSerializer
 
 factory = APIRequestFactory()
@@ -22,16 +22,17 @@ class PaginatedGeoListView(generics.GeoListView):
 
 
 class GeoDetailViewTestCase(TestCase):
+    model = GeoLocation
     precision = filters.GeoQuerySetFilter.precision
 
     def setUp(self):
-        self.view = generics.GeoDetailView.as_view(model=Location)
+        self.view = generics.GeoDetailView.as_view(model=self.model)
         self.pk = 1
         self.url = '/%d/' % self.pk
         self.radius = 5
-        Location.add_buffer((10, -10), self.radius)
-        Location.create()
-        self.qs = Location.objects.all()
+        self.model.add_buffer((10, -10), self.radius)
+        self.model.create()
+        self.qs = self.model.objects.all()
 
     def test_json_response(self):
         expected = json.loads(self.qs[0].geom.geojson)
@@ -52,6 +53,16 @@ class GeoDetailViewTestCase(TestCase):
         self.assertEqual(feature['geometry'], expected)
         self.assertEqual(feature['type'], 'Feature')
 
+    def test_kml_response(self):
+        request = factory.get(self.url, {'format': 'kml'})
+        response = self.view(request, pk=self.pk).render()
+        part = self.qs.kml(precision=self.precision)[0].kml
+        self.assertInHTML(part, response.content, count=1)
+
+
+class GeoManagerDetailViewTestCase(GeoDetailViewTestCase):
+    model = Location
+
     def test_simplify(self):
         request = factory.get(self.url, {'simplify': self.radius,
                                          'format': 'geojson'})
@@ -63,12 +74,6 @@ class GeoDetailViewTestCase(TestCase):
         self.assertLess(serializer.object.geom.num_coords, orig.num_coords)
         self.assertNotEqual(serializer.object.geom, orig)
         self.assertEqual(serializer.object.geom.srid, orig.srid)
-
-    def test_kml_response(self):
-        request = factory.get(self.url, {'format': 'kml'})
-        response = self.view(request, pk=self.pk).render()
-        part = self.qs.kml(precision=self.precision)[0].kml
-        self.assertInHTML(part, response.content, count=1)
 
 
 class GeoListViewTestCase(TestCase):
