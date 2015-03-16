@@ -1,4 +1,3 @@
-from django.contrib.gis.db import models
 from rest_framework.filters import BaseFilterBackend
 
 from spillway import forms
@@ -9,12 +8,20 @@ class GeoQuerySetFilter(BaseFilterBackend):
     precision = 4
 
     def filter_queryset(self, request, queryset, view):
+        format = request.accepted_renderer.format
+        try:
+            has_format = queryset.has_format(format)
+        except AttributeError:
+            # Handle default GeoQuerySet.
+            try:
+                return getattr(queryset, format)(precision=self.precision)
+            except AttributeError:
+                return queryset
         params = view.clean_params()
         tolerance, srs = map(params.get, ('simplify', 'srs'))
         srid = getattr(srs, 'srid', None)
         kwargs = {}
-        format = request.accepted_renderer.format
-        if queryset.has_format(format):
+        if has_format:
             kwargs.update(precision=self.precision, format=format)
         return queryset.simplify(tolerance, srid, **kwargs)
 
@@ -27,4 +34,7 @@ class SpatialLookupFilter(BaseFilterBackend):
     def filter_queryset(self, request, queryset, view):
         form = forms.SpatialQueryForm(request.QUERY_PARAMS)
         params = form.cleaned_data if form.is_valid() else {}
-        return queryset.filter_geometry(**params)
+        try:
+            return queryset.filter_geometry(**params)
+        except AttributeError:
+            return queryset
