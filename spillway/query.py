@@ -2,6 +2,20 @@ from django.contrib.gis import geos
 from django.contrib.gis.db.models import query
 from django.db import connection
 
+def filter_geometry(queryset, **filters):
+    """Helper function for spatial lookups filters.
+
+    Provide spatial lookup types as keywords without underscores instead of the
+    usual "geometryfield__lookuptype" format.
+    """
+    try:
+        fieldname = queryset.geo_field.name
+    except AttributeError:
+        fieldname = queryset.query._geo_field().name
+    query = {'%s__%s' % (fieldname, k): v for k, v in filters.items()}
+    return queryset.filter(**query)
+
+
 # Many GeoQuerySet methods cannot be chained as expected and extending
 # GeoQuerySet to work properly with serialization calls like
 # .simplify(100).svg() will require patching
@@ -64,17 +78,12 @@ class GeoQuerySet(query.GeoQuerySet):
             return geos.GEOSGeometry(extent, srid).extent
 
     def filter_geometry(self, **kwargs):
-        """Convenience method for providing spatial lookup types as keywords
-        without underscores instead of the usual "geometryfield__lookuptype"
-        format.
-        """
-        fieldname = self.geo_field.name
-        query = {'%s__%s' % (fieldname, key): val
-                 for key, val in kwargs.items()}
-        return self.filter(**query)
+        """Convenience method for spatial lookup filters."""
+        return filter_geometry(self, **kwargs)
 
     @property
     def geo_field(self):
+        """Returns model geometry field."""
         return self.query._geo_field()
 
     def has_format(self, format):
