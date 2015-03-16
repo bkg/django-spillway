@@ -31,7 +31,7 @@ class GeoQuerySet(query.GeoQuerySet):
                 'kml': '%s(%%s, %%s)' % connection.ops.kml,
                 'svg': '%s(%%s, 0, %%s)' % connection.ops.svg}
 
-    def _as_format(self, sql, format=None, precision=6):
+    def _as_format(self, sql, format=None, precision=8):
         val = self._formats.get(format, self._formats['geojson'])
         return self.extra(select={format: val % (sql, precision)})
 
@@ -89,7 +89,7 @@ class GeoQuerySet(query.GeoQuerySet):
     def has_format(self, format):
         return format in self._formats
 
-    def scale(self, x, y, z=0.0, tolerance=0.0, precision=6, srid=None,
+    def scale(self, x, y, z=0.0, tolerance=0.0, precision=8, srid=None,
               format=None, **kwargs):
         """Returns a GeoQuerySet with scaled and optionally reprojected and
         simplified geometries, serialized to a supported format.
@@ -101,7 +101,7 @@ class GeoQuerySet(query.GeoQuerySet):
         simplify = self._simplify(scale, tolerance)
         return self._as_format(simplify, format, precision)
 
-    def simplify(self, tolerance=0.0, srid=None, format=None, precision=6):
+    def simplify(self, tolerance=0.0, srid=None, format=None, precision=8):
         """Returns a GeoQuerySet with simplified geometries serialized to
         a supported geometry format.
         """
