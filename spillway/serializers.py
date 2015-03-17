@@ -26,6 +26,21 @@ class GeoModelSerializer(serializers.ModelSerializer):
         models.GeometryCollectionField: GeometryField
     }, **serializers.ModelSerializer.field_mapping)
 
+    def __init__(self, *args, **kwargs):
+        super(GeoModelSerializer, self).__init__(*args, **kwargs)
+        # Alter geometry field source based on requested format.
+        try:
+            renderer = self.context['request'].accepted_renderer
+        except KeyError:
+            pass
+        else:
+            # Keep this variable declaration here, do not move it to the if
+            # body below, otherwise the geom_field ref returns 'None' instead
+            # of the field name.
+            geom_field = self.fields[self.opts.geom_field]
+            if hasattr(self.object, renderer.format):
+                geom_field.source = renderer.format
+
     def get_default_fields(self):
         """Returns a fields dict for this serializer with a 'geometry' field
         added.

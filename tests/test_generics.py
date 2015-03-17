@@ -150,7 +150,7 @@ class GeoListCreateAPIView(TestCase):
         with self.assertNumQueries(1):
             response = self.view(request).render()
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        created = self.qs.get(id=2)
+        created = self.qs.get(pk=2)
         self.assertEqual(created.name, 'Vancouver')
         self.assertEqual(created.geom, fs.object[0].geom)
 

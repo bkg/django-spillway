@@ -10,12 +10,6 @@ class GeometryField(WritableField):
     type_name = 'GeometryField'
     type_label = 'geometry'
     form_field_class = forms.GeometryField
-    # TODO: Introspect available formats from spatial backends.
-    _formats = ('geohash', 'geojson', 'gml', 'kml', 'svg')
-
-    def set_source(self, format):
-        if format in self._formats:
-            self.source = format
 
     def to_native(self, value):
         # Create a dict from the GEOSGeometry when the value is not previously

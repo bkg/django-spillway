@@ -18,17 +18,6 @@ class BaseGeoView(mixins.QueryFormMixin):
     renderer_classes = _default_renderers + (
         renderers.GeoJSONRenderer, renderers.KMLRenderer, renderers.KMZRenderer)
 
-    def get_serializer(self, *args, **kwargs):
-        obj = super(BaseGeoView, self).get_serializer(*args, **kwargs)
-        try:
-            renderer = self.request.accepted_renderer
-            geom_field = obj.fields[obj.opts.geom_field]
-        except AttributeError:
-            pass
-        else:
-            geom_field.set_source(renderer.format)
-        return obj
-
 
 class GeoDetailView(BaseGeoView, RetrieveAPIView):
     """Generic detail view providing vector geometry representations."""
