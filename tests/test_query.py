@@ -8,7 +8,9 @@ from .models import Location
 class GeoQuerySetTestCase(TestCase):
     def setUp(self):
         self.srid = 3857
+        # Simplification tolerance in meters for EPSG 3857.
         self.tol = 10000
+        # Buffer radius in degrees for EPSG 4326.
         self.radius = 2
         Location.add_buffer((0, 0), self.radius)
         self.qs = Location.objects.all()
@@ -41,8 +43,9 @@ class GeoQuerySetTestCase(TestCase):
         self.assertLess(geom.num_coords, source.num_coords)
 
     def test_simplify_kml(self):
-        sqs = self.qs.simplify(self.tol, format='kml')
+        sqs = self.qs.simplify(self.radius, format='kml')
         self.assertTrue(sqs[0].kml.startswith('<Polygon>'))
+        self.assertNotIn('<coordinates></coordinates>', sqs[0].kml)
         self.assertXMLNotEqual(sqs[0].kml, self.qs[0].geom.kml)
 
     def test_extent(self):
