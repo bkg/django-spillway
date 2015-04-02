@@ -55,6 +55,7 @@ class GeometryFileField(forms.FileField):
     """A Field for creating OGR geometries from file based sources."""
 
     def to_python(self, value):
+        value = super(GeometryFileField, self).to_python(value)
         if value is None:
             return value
         filename = value.name
