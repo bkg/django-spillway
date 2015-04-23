@@ -31,7 +31,7 @@ class GeoModelSerializer(serializers.ModelSerializer):
         # Alter geometry field source based on requested format.
         try:
             renderer = self.context['request'].accepted_renderer
-        except KeyError:
+        except (AttributeError, KeyError):
             pass
         else:
             # Keep this variable declaration here, do not move it to the if
