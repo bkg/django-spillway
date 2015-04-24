@@ -8,7 +8,7 @@ from greenwich.raster import Raster
 from rest_framework import status
 from rest_framework.test import APIRequestFactory
 
-from spillway import generics, filters
+from spillway import generics, forms
 from spillway.renderers import GeoJSONRenderer
 from .models import GeoLocation, Location, RasterStore
 from .test_serializers import RasterStoreTestBase, LocationFeatureSerializer
@@ -23,7 +23,7 @@ class PaginatedGeoListView(generics.GeoListView):
 
 class GeoDetailViewTestCase(TestCase):
     model = GeoLocation
-    precision = filters.GeoQuerySetFilter.precision
+    precision = forms.GeometryQueryForm()['precision'].field.initial
 
     def setUp(self):
         self.view = generics.GeoDetailView.as_view(model=self.model)

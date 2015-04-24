@@ -1,12 +1,27 @@
+import math
+
 from django.contrib.gis import gdal, forms
 from django.contrib.gis.db.models.sql.query import ALL_TERMS
 from greenwich.srs import transform_tile
 
 from spillway import styles
 from spillway.forms import fields
+from spillway.query import GeoQuerySet, filter_geometry
 
 
-class SpatialQueryForm(forms.Form):
+class GeoQuerySetForm(forms.Form):
+    """Base form for applying GeoQuerySet methods and filters."""
+
+    def __init__(self, data=None, queryset=None, *args, **kwargs):
+        super(GeoQuerySetForm, self).__init__(data, *args, **kwargs)
+        self.queryset = queryset
+
+    def select(self):
+        if self.is_valid() and self.queryset is not None:
+            self.queryset = filter_geometry(self.queryset, **self.cleaned_data)
+
+
+class SpatialQueryForm(GeoQuerySetForm):
     """A Form for spatial lookup queries such as intersects, overlaps, etc.
 
     Includes 'bbox' as an alias for 'bboverlaps'.
@@ -31,11 +46,40 @@ class SpatialQueryForm(forms.Form):
         return cleaned_data
 
 
-class GeometryQueryForm(forms.Form):
+class GeometryQueryForm(GeoQuerySetForm):
     """A form providing GeoQuerySet method arguments."""
+    format = forms.ChoiceField(
+        choices=zip(GeoQuerySet._formats, GeoQuerySet._formats),
+        required=False)
+    precision = forms.IntegerField(required=False, initial=4)
     # Tolerance value for geometry simplification
     simplify = forms.FloatField(required=False)
     srs = fields.SpatialReferenceField(required=False)
+
+    def clean_precision(self):
+        # Unfortunately initial values are not used as default values.
+        return (self.cleaned_data['precision'] or
+                self.fields['precision'].initial)
+
+    def select(self):
+        if not self.is_valid() or self.queryset is None:
+            return
+        data = self.cleaned_data
+        kwargs = {'precision': data['precision']}
+        tolerance, srs, format = map(data.get, ('simplify', 'srs', 'format'))
+        srid = getattr(srs, 'srid', None)
+        try:
+            has_format = self.queryset.has_format(format)
+        except AttributeError:
+            # Handle default GeoQuerySet.
+            try:
+                self.queryset = getattr(self.queryset, format)(**kwargs)
+            except AttributeError:
+                pass
+        else:
+            if has_format:
+                kwargs.update(format=format)
+            self.queryset = self.queryset.simplify(tolerance, srid, **kwargs)
 
 
 class RasterQueryForm(forms.Form):
@@ -54,16 +98,24 @@ class RasterQueryForm(forms.Form):
         return cleaned
 
 
-class MapTile(forms.Form):
+class MapTile(GeoQuerySetForm):
     """Validates requested map tiling parameters."""
     bbox = fields.OGRGeometryField(srid=4326, required=False)
     x = forms.IntegerField()
     y = forms.IntegerField()
     z = forms.IntegerField()
+    band = forms.IntegerField(required=False, initial=1)
     size = forms.IntegerField(required=False, initial=256)
     style = forms.ChoiceField(
         choices=[(k, k.lower()) for k in list(styles.colors)],
         required=False)
+    # Tile grid uses 3857, but coordinates should be in 4326 commonly.
+    tile_srid = 3857
+    # Geometry simplification tolerances based on tile zlevel, see
+    # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames.
+    #SpatialReference(3857).GetSemiMajor() == 6378137.0
+    tolerances = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
+                  for zoom in range(20)]
 
     def clean(self):
         cleaned = super(MapTile, self).clean()
@@ -74,3 +126,27 @@ class MapTile(forms.Form):
         geom.srid = self.fields['bbox'].srid
         cleaned['bbox'] = geom
         return cleaned
+
+    def select(self):
+        params = self.cleaned_data if self.is_valid() else {}
+        bbox = params.get('bbox')
+        coord_srid = bbox.srid
+        original_srid = self.queryset.geo_field.srid
+        try:
+            tolerance = self.tolerances[params['z']]
+        except IndexError:
+            tolerance = self.tolerances[-1]
+        geom_wkt = bbox.ewkt
+        self.queryset = (self.queryset.filter_geometry(intersects=geom_wkt)
+                                      .intersection(geom_wkt))
+        for obj in self.queryset:
+            geom = obj.intersection
+            # Geometry must be in Web Mercator for simplification.
+            if geom.srid != self.tile_srid:
+                # Result of intersection does not have SRID set properly.
+                if geom.srid is None:
+                    geom.srid = original_srid
+                geom.transform(self.tile_srid)
+            geom = geom.simplify(tolerance, preserve_topology=True)
+            geom.transform(coord_srid)
+            obj.geojson = geom.geojson
