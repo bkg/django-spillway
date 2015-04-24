@@ -128,13 +128,14 @@ class GeoListViewTestCase(TestCase):
 
     def test_simplify(self):
         srid = 3857
-        request = factory.get('/', {'simplify': 10000, 'srs': srid,
-                                    'format': 'geojson'})
-        response = self.view(request).render()
-        for geom, obj in zip(self._parse_collection(response, srid), self.qs):
-            orig = obj.geom.transform(srid, clone=True)
-            self.assertNotEqual(geom, orig)
-            self.assertLess(geom.num_coords, orig.num_coords)
+        for format in 'json', 'geojson':
+            request = factory.get('/', {'simplify': 10000, 'srs': srid,
+                                        'format': format})
+            response = self.view(request).render()
+            for geom, obj in zip(self._parse_collection(response, srid), self.qs):
+                orig = obj.geom.transform(srid, clone=True)
+                self.assertNotEqual(geom, orig)
+                self.assertLess(geom.num_coords, orig.num_coords)
         self.assertContains(response, 'EPSG::%d' % srid)
 
 
