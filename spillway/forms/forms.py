@@ -48,9 +48,7 @@ class SpatialQueryForm(GeoQuerySetForm):
 
 class GeometryQueryForm(GeoQuerySetForm):
     """A form providing GeoQuerySet method arguments."""
-    format = forms.ChoiceField(
-        choices=zip(GeoQuerySet._formats, GeoQuerySet._formats),
-        required=False)
+    format = forms.CharField(required=False)
     precision = forms.IntegerField(required=False, initial=4)
     # Tolerance value for geometry simplification
     simplify = forms.FloatField(required=False)
