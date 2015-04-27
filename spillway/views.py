@@ -28,5 +28,5 @@ class TileView(BaseGeoView, ListAPIView):
     def filter_queryset(self, queryset):
         queryset = super(TileView, self).filter_queryset(queryset)
         form = forms.MapTile(self.kwargs, queryset)
-        form.select()
+        form.query()
         return form.queryset

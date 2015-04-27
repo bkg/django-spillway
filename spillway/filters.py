@@ -1,3 +1,4 @@
+from rest_framework import exceptions
 from rest_framework.filters import BaseFilterBackend
 
 from spillway import forms
@@ -10,7 +11,10 @@ class FormFilterBackend(BaseFilterBackend):
         params = dict(request.QUERY_PARAMS.dict(),
                       format=request.accepted_renderer.format)
         form = self.queryset_form(params, queryset)
-        form.select()
+        try:
+            form.query()
+        except ValueError:
+            raise exceptions.ParseError(form.errors)
         return form.queryset
 
 

@@ -15,10 +15,26 @@ class GeoQuerySetForm(forms.Form):
     def __init__(self, data=None, queryset=None, *args, **kwargs):
         super(GeoQuerySetForm, self).__init__(data, *args, **kwargs)
         self.queryset = queryset
+        self._is_selected = False
+
+    def query(self):
+        """Returns the filtered/selected GeoQuerySet."""
+        if not self.is_valid():
+            raise ValueError('Invalid field values')
+        if not self._is_selected:
+            if self.queryset is None:
+                raise TypeError('Must be GeoQuerySet not %s' %
+                                type(self.queryset))
+            self.select()
+            self._is_selected = True
+        return self.queryset
 
     def select(self):
-        if self.is_valid() and self.queryset is not None:
-            self.queryset = filter_geometry(self.queryset, **self.cleaned_data)
+        """Set GeoQuerySet from field values and filters.
+
+        Subclasses implement this. Not called directly, use .select().
+        """
+        raise NotImplementedError
 
 
 class SpatialQueryForm(GeoQuerySetForm):
@@ -45,6 +61,9 @@ class SpatialQueryForm(GeoQuerySetForm):
             cleaned_data['bboverlaps'] = bbox
         return cleaned_data
 
+    def select(self):
+        self.queryset = filter_geometry(self.queryset, **self.cleaned_data)
+
 
 class GeometryQueryForm(GeoQuerySetForm):
     """A form providing GeoQuerySet method arguments."""
@@ -60,8 +79,6 @@ class GeometryQueryForm(GeoQuerySetForm):
                 self.fields['precision'].initial)
 
     def select(self):
-        if not self.is_valid() or self.queryset is None:
-            return
         data = self.cleaned_data
         kwargs = {'precision': data['precision']}
         tolerance, srs, format = map(data.get, ('simplify', 'srs', 'format'))
@@ -126,15 +143,15 @@ class MapTile(GeoQuerySetForm):
         return cleaned
 
     def select(self):
-        params = self.cleaned_data if self.is_valid() else {}
-        bbox = params.get('bbox')
+        data = self.cleaned_data
+        bbox = data['bbox']
+        geom_wkt = bbox.ewkt
         coord_srid = bbox.srid
         original_srid = self.queryset.geo_field.srid
         try:
-            tolerance = self.tolerances[params['z']]
+            tolerance = self.tolerances[data['z']]
         except IndexError:
             tolerance = self.tolerances[-1]
-        geom_wkt = bbox.ewkt
         self.queryset = (self.queryset.filter_geometry(intersects=geom_wkt)
                                       .intersection(geom_wkt))
         for obj in self.queryset:
