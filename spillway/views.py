@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView, ListAPIView
 
-from spillway import forms, renderers
+from spillway import filters, forms, renderers
 from spillway.generics import BaseGeoView
 
 
@@ -23,10 +23,5 @@ class MapView(GenericAPIView):
 class TileView(BaseGeoView, ListAPIView):
     """View for serving tiled GeoJSON from a GeoModel."""
     paginate_by = None
+    filter_backends = (filters.TileFilter,)
     renderer_classes = (renderers.GeoJSONRenderer,)
-
-    def filter_queryset(self, queryset):
-        queryset = super(TileView, self).filter_queryset(queryset)
-        form = forms.MapTile(self.kwargs, queryset)
-        form.query()
-        return form.queryset

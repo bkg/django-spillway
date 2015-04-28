@@ -9,7 +9,8 @@ class FormFilterBackend(BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         params = dict(request.QUERY_PARAMS.dict(),
-                      format=request.accepted_renderer.format)
+                      format=request.accepted_renderer.format,
+                      **getattr(view, 'kwargs', {}))
         form = self.queryset_form(params, queryset)
         try:
             form.query()
@@ -28,3 +29,7 @@ class SpatialLookupFilter(FormFilterBackend):
     overlaps, etc.
     """
     queryset_form = forms.SpatialQueryForm
+
+
+class TileFilter(FormFilterBackend):
+    queryset_form = forms.MapTile
