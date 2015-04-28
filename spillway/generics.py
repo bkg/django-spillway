@@ -8,11 +8,10 @@ _default_filters = tuple(api_settings.DEFAULT_FILTER_BACKENDS)
 _default_renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
 
 
-class BaseGeoView(mixins.QueryFormMixin):
+class BaseGeoView(object):
     """Base view for models with geometry fields."""
     model_serializer_class = serializers.FeatureSerializer
     pagination_serializer_class = serializers.PaginatedFeatureSerializer
-    query_form_class = forms.GeometryQueryForm
     filter_backends = _default_filters + (
         filters.SpatialLookupFilter, filters.GeoQuerySetFilter)
     renderer_classes = _default_renderers + (
@@ -31,7 +30,7 @@ class GeoListCreateAPIView(BaseGeoView, ListCreateAPIView):
     """Generic view for listing or creating geomodel instances."""
 
 
-class BaseRasterView(BaseGeoView):
+class BaseRasterView(mixins.QueryFormMixin):
     """Base view for raster models."""
     model_serializer_class = serializers.RasterModelSerializer
     query_form_class = forms.RasterQueryForm
