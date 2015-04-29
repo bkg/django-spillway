@@ -61,7 +61,6 @@ class FeatureSerializer(GeoModelSerializer):
     def data(self):
         if self._data is None:
             data = super(FeatureSerializer, self).data
-            fieldname = self.opts.geom_field
             if self.many or isinstance(data, (list, tuple)):
                 try:
                     srid = (self.object.query.transformed_srid or
@@ -71,7 +70,7 @@ class FeatureSerializer(GeoModelSerializer):
                 self._data = FeatureCollection(features=data, crs=srid)
             else:
                 try:
-                    geom = getattr(self.object, fieldname)
+                    geom = getattr(self.object, self.opts.geom_field)
                 except AttributeError:
                     pass
                 else:
