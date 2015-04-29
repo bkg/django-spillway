@@ -61,20 +61,17 @@ class FeatureSerializer(GeoModelSerializer):
     def data(self):
         if self._data is None:
             data = super(FeatureSerializer, self).data
-            if self.many or isinstance(data, (list, tuple)):
+            if not self.many:
+                geom = getattr(self.object, self.opts.geom_field, None)
+                if geom and geom.srid:
+                    self._data['crs'] = NamedCRS(geom.srid)
+            else:
                 try:
                     srid = (self.object.query.transformed_srid or
                             self.object.geo_field.srid)
                 except AttributeError:
                     srid = None
                 self._data = FeatureCollection(features=data, crs=srid)
-            else:
-                try:
-                    geom = getattr(self.object, self.opts.geom_field)
-                except AttributeError:
-                    pass
-                else:
-                    self._data['crs'] = NamedCRS(geom.srid)
         return self._data
 
     def to_native(self, obj):
