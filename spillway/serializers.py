@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-from rest_framework import serializers, pagination
+from rest_framework import serializers
 from greenwich.srs import SpatialReference
 
 from spillway.collections import Feature, FeatureCollection, NamedCRS
@@ -95,10 +95,6 @@ class FeatureSerializer(GeoModelSerializer):
             geom = getattr(feature, self.opts.geom_field)
             geom.srid = sref.srid
         return feature
-
-
-class PaginatedFeatureSerializer(pagination.PaginationSerializer):
-    results_field = 'features'
 
 
 class RasterModelSerializerOptions(GeoModelSerializerOptions):

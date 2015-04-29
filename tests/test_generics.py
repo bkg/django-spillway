@@ -179,6 +179,7 @@ class PaginatedGeoListViewTestCase(TestCase):
         data = self._test_paginate(
             {'page': 1}, HTTP_ACCEPT=GeoJSONRenderer.media_type)
         self.assertEqual(data['type'], 'FeatureCollection')
+        self.assertIn('crs', data)
 
 
 class RasterListViewTestCase(RasterStoreTestBase):
