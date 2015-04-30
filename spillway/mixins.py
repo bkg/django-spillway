@@ -5,7 +5,7 @@ class QueryFormMixin(object):
     def get_query_form(self):
         """Returns a bound form instance."""
         return self.query_form_class(
-            self.request.QUERY_PARAMS or self.request.DATA,
+            self.request.query_params or self.request.data,
             self.request.FILES or None)
 
     def clean_params(self):

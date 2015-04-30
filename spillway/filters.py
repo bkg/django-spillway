@@ -8,7 +8,7 @@ class FormFilterBackend(BaseFilterBackend):
     queryset_form = None
 
     def filter_queryset(self, request, queryset, view):
-        params = dict(request.QUERY_PARAMS.dict(),
+        params = dict(request.query_params.dict(),
                       format=request.accepted_renderer.format,
                       **getattr(view, 'kwargs', {}))
         form = self.queryset_form(params, queryset)
