@@ -26,13 +26,13 @@ class GeoDetailViewTestCase(TestCase):
     precision = forms.GeometryQueryForm()['precision'].field.initial
 
     def setUp(self):
-        self.view = generics.GeoDetailView.as_view(model=self.model)
+        self.qs = self.model.objects.all()
+        self.view = generics.GeoDetailView.as_view(queryset=self.qs)
         self.pk = 1
         self.url = '/%d/' % self.pk
         self.radius = 5
         self.model.add_buffer((10, -10), self.radius)
         self.model.create()
-        self.qs = self.model.objects.all()
 
     def test_json_response(self):
         expected = json.loads(self.qs[0].geom.geojson)
@@ -71,15 +71,17 @@ class GeoManagerDetailViewTestCase(GeoDetailViewTestCase):
         serializer = LocationFeatureSerializer(
             data=json.loads(response.content))
         self.assertTrue(serializer.is_valid())
-        self.assertLess(serializer.object.geom.num_coords, orig.num_coords)
-        self.assertNotEqual(serializer.object.geom, orig)
-        self.assertEqual(serializer.object.geom.srid, orig.srid)
+        object = serializer.save()
+        self.assertLess(object.geom.num_coords, orig.num_coords)
+        self.assertNotEqual(object.geom, orig)
+        self.assertEqual(object.geom.srid, orig.srid)
 
 
 class GeoListViewTestCase(TestCase):
     def setUp(self):
         self.srid = Location.geom._field.srid
-        self.view = generics.GeoListView.as_view(model=Location)
+        self.view = generics.GeoListView.as_view(
+            queryset=Location.objects.all())
         records = [{'name': 'Banff', 'coordinates': [-115.554, 51.179]},
                    {'name': 'Jasper', 'coordinates': [-118.081, 52.875]}]
         for record in records:
@@ -141,7 +143,8 @@ class GeoListViewTestCase(TestCase):
 
 class GeoListCreateAPIView(TestCase):
     def setUp(self):
-        self.view = generics.GeoListCreateAPIView.as_view(model=Location)
+        self.view = generics.GeoListCreateAPIView.as_view(
+            queryset=Location.objects.all())
         Location.create()
         self.qs = Location.objects.all()
 
@@ -153,12 +156,13 @@ class GeoListCreateAPIView(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         created = self.qs.get(pk=2)
         self.assertEqual(created.name, 'Vancouver')
-        self.assertEqual(created.geom, fs.object[0].geom)
+        self.assertEqual(created.geom, fs.instance[0].geom)
 
 
 class PaginatedGeoListViewTestCase(TestCase):
     def setUp(self):
-        self.view = PaginatedGeoListView.as_view(model=Location)
+        self.view = PaginatedGeoListView.as_view(
+            queryset=Location.objects.all())
         for i in range(20): Location.create()
         self.qs = Location.objects.all()
 
@@ -185,7 +189,8 @@ class PaginatedGeoListViewTestCase(TestCase):
 class RasterListViewTestCase(RasterStoreTestBase):
     def setUp(self):
         super(RasterListViewTestCase, self).setUp()
-        self.view = generics.RasterListView.as_view(model=RasterStore)
+        self.view = generics.RasterListView.as_view(
+            queryset=RasterStore.objects.all())
 
     def test_list_json(self):
         with Raster(self.qs[0].image.path) as r:

@@ -1,5 +1,18 @@
+class ModelSerializerMixin(object):
+    """Provides generic model serializer classes to views."""
+    model_serializer_class = None
+
+    def get_serializer_class(self):
+        if self.serializer_class:
+            return self.serializer_class
+        class DefaultSerializer(self.model_serializer_class):
+            class Meta:
+                model = self.queryset.model
+        return DefaultSerializer
+
+
 class QueryFormMixin(object):
-    """Mixin to provide form based handling of GET or POST requests."""
+    """Provides form based handling of GET or POST requests."""
     query_form_class = None
 
     def get_query_form(self):

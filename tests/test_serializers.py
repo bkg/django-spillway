@@ -57,7 +57,7 @@ class GeoModelSerializerTestCase(ModelTestCase):
 
     def test_get_default_fields(self):
         serializer = LocationSerializer()
-        fields = serializer.get_default_fields()
+        fields = serializer.get_fields()
         self.assertEqual(*map(sorted, (self.data, fields)))
 
     def test_list(self):
@@ -74,12 +74,12 @@ class GeoModelSerializerTestCase(ModelTestCase):
                      'geom': self.expected['geom']}]
         self.assertEqual(serializer.data, expected)
 
-    def test_restore_object(self):
+    def test_save(self):
         serializer = LocationSerializer(data=self.data)
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.object.name, self.obj.name)
-        self.assertEqual(serializer.object.geom, self.obj.geom)
-        self.assertEqual(serializer.restore_object(self.data), self.obj)
+        object = serializer.save()
+        self.assertEqual(object.name, self.obj.name)
+        self.assertEqual(object.geom, self.obj.geom)
 
     def test_serialize_object(self):
         serializer = LocationSerializer(self.obj)
@@ -117,19 +117,22 @@ class FeatureSerializerTestCase(ModelTestCase):
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.object.geom, self.obj.geom)
+        object = serializer.save()
+        self.assertEqual(object.geom, self.obj.geom)
 
     def test_deserialize_projected(self):
         feat = Feature(**dict(self.expected, crs=4269)).copy()
         serializer = LocationFeatureSerializer(data=feat)
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.object.geom.srid, 4269)
+        object = serializer.save()
+        self.assertEqual(object.geom.srid, 4269)
 
     def test_deserialize_list(self):
         features = [self.expected.copy(), self.expected.copy()]
         serializer = LocationFeatureSerializer(data=features, many=True)
         self.assertTrue(serializer.is_valid())
-        self.assertEqual(serializer.object[0].geom, self.obj.geom)
+        object = serializer.save()
+        self.assertEqual(object[0].geom, self.obj.geom)
 
 
 class RasterSerializerTestCase(RasterStoreTestBase):

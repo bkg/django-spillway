@@ -1,17 +1,19 @@
 """Serializer fields"""
 from django.contrib.gis import forms
-from rest_framework.fields import FileField, WritableField
-from greenwich.raster import Raster
+from rest_framework.fields import Field, FileField
+from greenwich import Raster
 
 from spillway.compat import json
 
 
-class GeometryField(WritableField):
-    type_name = 'GeometryField'
-    type_label = 'geometry'
-    form_field_class = forms.GeometryField
+class GeometryField(Field):
+    def to_internal_value(self, data):
+        # forms.GeometryField cannot handle geojson dicts.
+        if isinstance(data, dict):
+            data = json.dumps(data)
+        return forms.GeometryField().to_python(data)
 
-    def to_native(self, value):
+    def to_representation(self, value):
         # Create a dict from the GEOSGeometry when the value is not previously
         # serialized from the spatial db.
         try:
@@ -20,18 +22,9 @@ class GeometryField(WritableField):
         except AttributeError:
             return value
 
-    def from_native(self, value):
-        # forms.GeometryField cannot handle geojson dicts.
-        if isinstance(value, dict):
-            value = json.dumps(value)
-        return super(GeometryField, self).from_native(value)
-
 
 class NDArrayField(FileField):
-    type_name = 'NDArrayField'
-    type_label = 'ndarray'
-
-    def to_native(self, value):
+    def to_representation(self, value):
         params = self.context.get('params', {})
         geom = params.get('g')
         with Raster(getattr(value, 'path', value)) as r:

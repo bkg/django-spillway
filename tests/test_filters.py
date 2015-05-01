@@ -11,7 +11,8 @@ factory = APIRequestFactory()
 class FilterTestCase(TestCase):
     def setUp(self):
         self.filter = filters.SpatialLookupFilter()
-        self.view = generics.GeoListView.as_view(model=Location)
+        self.view = generics.GeoListView.as_view(
+            queryset=Location.objects.all())
         Location.create()
         self.centroid = Location.objects.centroid()[0].centroid
         self.queryset = Location.objects.all()
