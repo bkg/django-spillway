@@ -16,9 +16,9 @@ Specific attention has been paid to speedy serialization of geometries from
 spatial backends which avoids the cost of unneccessary re-serialization in
 Python.
 
+
 Basic Usage
 -----------
-
 Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
 
 .. code-block:: python
@@ -86,3 +86,29 @@ One can crop raster images with a geometry and return a .zip archive of the
 results::
 
     curl  -H 'Accept: application/zip' 'http://127.0.0.1:8000/rstores/?g=-107.74,37.39,-106.95,38.40'
+
+
+Generic Views
+-------------
+Extends REST framework generic views with GeoJSON and KML/KMZ renderers for
+geographic data. This includes pagination of features and all available spatial
+lookups/filters for the spatial backend in use.
+
+
+Renderers
+---------
+So far there are renderers for common raster and vector data formats, namely
+zipped GeoTIFF, JPEG, PNG, and Erdas Imagine, plus GeoJSON, KML/KMZ, and SVG.
+
+
+Tests
+-----
+Create a `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
+`virtualenvwrapper <https://virtualenvwrapper.readthedocs.org/en/latest/>`_,
+install dependencies, and run the tests. Running tests with SpatiaLite requires
+a build of pysqlite with extension loading enabled.
+
+    mkvirtualenv spillway
+    pip install --global-option=build_ext --global-option='-USQLITE_OMIT_LOAD_EXTENSION' pysqlite
+    pip install -r requirements.txt
+    make check
