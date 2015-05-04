@@ -39,10 +39,10 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
 
     urlpatterns = patterns('',
         url(r'^locations/(?P<slug[\w-]+)/$',
-            generics.GeoDetailView.as_view(model=Location),
+            generics.GeoDetailView.as_view(queryset=Location.objects.all()),
             name='location'),
         url(r'^locations/$',
-            generics.GeoListView.as_view(model=Location),
+            generics.GeoListView.as_view(queryset=Location.objects.all()),
             name='location-list'),
     )
 
@@ -66,15 +66,15 @@ Raster data support is provided as well.
 .. code-block:: python
 
     from django.conf.urls import patterns, url
-    from spillway import generics
+    from spillway.generics import RasterDetailView, RasterListView
     from .models import RasterStore
 
     urlpatterns = patterns('',
         url(r'^rstores/(?P<slug>[\w-]+)/$',
-            generics.RasterDetailView.as_view(model=RasterStore),
+            RasterDetailView.as_view(queryset=RasterStore.objects.all()),
             name='rasterstore'),
         url(r'^rstores/$',
-            generics.RasterListView.as_view(model=RasterStore),
+            RasterListView.as_view(queryset=RasterStore.objects.all()),
             name='rasterstore-list'),
     )
 
