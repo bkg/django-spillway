@@ -90,9 +90,9 @@ results::
 
 Generic Views
 -------------
-Extends REST framework generic views with GeoJSON and KML/KMZ renderers for
-geographic data. This includes pagination of features and all available spatial
-lookups/filters for the spatial backend in use.
+Spillway extends REST framework generic views with GeoJSON and KML/KMZ
+renderers for geographic data. This includes pagination of features and all
+available spatial lookups/filters for the spatial backend in use.
 
 
 Renderers
@@ -107,6 +107,8 @@ Create a `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
 `virtualenvwrapper <https://virtualenvwrapper.readthedocs.org/en/latest/>`_,
 install dependencies, and run the tests. Running tests with SpatiaLite requires
 a build of pysqlite with extension loading enabled.
+
+.. code-block:: shell
 
     mkvirtualenv spillway
     pip install --global-option=build_ext --global-option='-USQLITE_OMIT_LOAD_EXTENSION' pysqlite
