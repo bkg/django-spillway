@@ -6,7 +6,7 @@ from spillway.collections import (has_features, Feature,
     FeatureCollection, NamedCRS)
 from spillway.fields import GeometryField, NDArrayField
 
-serializers.ModelSerializer._field_mapping.mapping.update({
+serializers.ModelSerializer.serializer_field_mapping.update({
     models.GeometryField: GeometryField,
     models.PointField: GeometryField,
     models.LineStringField: GeometryField,

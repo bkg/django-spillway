@@ -5,9 +5,7 @@ import zipfile
 
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ImproperlyConfigured
-from django.core.paginator import Paginator
 from django.test import SimpleTestCase, TestCase
-from rest_framework.pagination import PaginationSerializer
 
 from spillway import renderers
 from spillway.collections import Feature, FeatureCollection

@@ -22,6 +22,6 @@ class MapView(GenericAPIView):
 
 class TileView(BaseGeoView, ListAPIView):
     """View for serving tiled GeoJSON from a GeoModel."""
-    paginate_by = None
+    pagination_class = None
     filter_backends = (filters.TileFilter,)
     renderer_classes = (renderers.GeoJSONRenderer,)
