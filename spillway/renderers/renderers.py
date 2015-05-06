@@ -2,7 +2,7 @@ from django.contrib.gis.shortcuts import compress_kml
 from django.template import loader, Context
 from rest_framework.renderers import BaseRenderer, JSONRenderer
 
-from spillway.collections import as_feature
+from spillway import collections
 
 
 class GeoJSONRenderer(JSONRenderer):
@@ -16,7 +16,7 @@ class GeoJSONRenderer(JSONRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """Returns *data* encoded as GeoJSON."""
-        data = as_feature(data)
+        data = collections.as_feature(data)
         try:
             return data.geojson
         except AttributeError:
@@ -29,7 +29,7 @@ class TemplateRenderer(BaseRenderer):
     template_name = None
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        collection = as_feature(data)
+        collection = collections.as_feature(data)
         try:
             features = collection['features']
         except KeyError:

@@ -2,10 +2,8 @@ from django.contrib.gis.db import models
 from rest_framework import serializers
 from greenwich.srs import SpatialReference
 
-from spillway.collections import (has_features, Feature,
-    FeatureCollection, NamedCRS)
+from spillway import query, collections as sc
 from spillway.fields import GeometryField, NDArrayField
-from spillway.query import get_srid
 
 serializers.ModelSerializer.serializer_field_mapping.update({
     models.GeometryField: GeometryField,
@@ -58,10 +56,10 @@ class FeatureListSerializer(serializers.ListSerializer):
     def to_representation(self, data):
         data = super(FeatureListSerializer, self).to_representation(data)
         try:
-            srid = get_srid(self.instance)
+            srid = query.get_srid(self.instance)
         except AttributeError:
             srid = None
-        return FeatureCollection(features=data, crs=srid)
+        return sc.FeatureCollection(features=data, crs=srid)
 
 
 class FeatureSerializer(GeoModelSerializer):
@@ -79,17 +77,17 @@ class FeatureSerializer(GeoModelSerializer):
             if 'crs' not in self._data:
                 geom = getattr(self.instance, self.Meta.geom_field, None)
                 if geom and geom.srid:
-                    self._data['crs'] = NamedCRS(geom.srid)
+                    self._data['crs'] = sc.NamedCRS(geom.srid)
         return self._data
 
     def to_representation(self, instance):
         native = super(FeatureSerializer, self).to_representation(instance)
         geometry = native.pop(self.Meta.geom_field)
         pk = native.pop(instance._meta.pk.name, None)
-        return Feature(pk, geometry, native)
+        return sc.Feature(pk, geometry, native)
 
     def to_internal_value(self, data):
-        if has_features(data):
+        if sc.has_features(data):
             for feat in data['features']:
                 return self.to_internal_value(feat)
         try:
