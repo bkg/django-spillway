@@ -1,10 +1,10 @@
 import math
 
 from django.contrib.gis import gdal, forms
-from django.contrib.gis.db.models.sql.query import ALL_TERMS
 from greenwich.srs import transform_tile
 
 from spillway import styles
+from spillway.compat import ALL_TERMS
 from spillway.forms import fields
 from spillway.query import GeoQuerySet, filter_geometry
 

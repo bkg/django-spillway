@@ -2,6 +2,7 @@ from rest_framework import pagination
 from rest_framework.response import Response
 
 from spillway.collections import NamedCRS
+from spillway.query import get_srid
 
 
 class FeaturePagination(pagination.PageNumberPagination):
@@ -9,9 +10,7 @@ class FeaturePagination(pagination.PageNumberPagination):
 
     def get_paginated_response(self, data):
         paginator = self.page.paginator
-        queryset = paginator.object_list
-        crs = NamedCRS(queryset.query.transformed_srid or
-                       queryset.geo_field.srid)
+        crs = NamedCRS(get_srid(paginator.object_list))
         data.update({'count': paginator.count,
                      'next': self.get_next_link(),
                      'previous': self.get_previous_link(),

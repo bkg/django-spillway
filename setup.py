@@ -11,7 +11,7 @@ setup(name='django-spillway',
       url='https://github.com/bkg/django-spillway',
       packages=find_packages(exclude=['tests*']),
       include_package_data=True,
-      install_requires=['django', 'djangorestframework<3.1.0', 'greenwich>=0.3'],
+      install_requires=['django', 'djangorestframework>=3.1.0', 'greenwich>=0.3'],
       extras_require={'mapnik': ['Mapnik>=2.0']},
       license='BSD',
       classifiers=[

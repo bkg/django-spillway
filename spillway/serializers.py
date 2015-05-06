@@ -5,6 +5,7 @@ from greenwich.srs import SpatialReference
 from spillway.collections import (has_features, Feature,
     FeatureCollection, NamedCRS)
 from spillway.fields import GeometryField, NDArrayField
+from spillway.query import get_srid
 
 serializers.ModelSerializer.serializer_field_mapping.update({
     models.GeometryField: GeometryField,
@@ -57,8 +58,7 @@ class FeatureListSerializer(serializers.ListSerializer):
     def to_representation(self, data):
         data = super(FeatureListSerializer, self).to_representation(data)
         try:
-            srid = (self.instance.query.transformed_srid or
-                    self.instance.geo_field.srid)
+            srid = get_srid(self.instance)
         except AttributeError:
             srid = None
         return FeatureCollection(features=data, crs=srid)

@@ -8,12 +8,27 @@ def filter_geometry(queryset, **filters):
     Provide spatial lookup types as keywords without underscores instead of the
     usual "geometryfield__lookuptype" format.
     """
-    try:
-        fieldname = queryset.geo_field.name
-    except AttributeError:
-        fieldname = queryset.query._geo_field().name
+    fieldname = geo_field(queryset).name
     query = {'%s__%s' % (fieldname, k): v for k, v in filters.items()}
     return queryset.filter(**query)
+
+def geo_field(queryset):
+    try:
+        #1.8
+        return queryset._geo_field()
+    except AttributeError:
+        # <=1.7
+        return queryset.query._geo_field()
+
+def get_srid(queryset):
+    """Returns the GeoQuerySet spatial reference identifier."""
+    try:
+        # Django 1.8
+        srid = queryset.query.get_context('transformed_srid')
+    except AttributeError:
+        # Django<=1.7
+        srid = queryset.query.transformed_srid
+    return srid or queryset.geo_field.srid
 
 
 # Many GeoQuerySet methods cannot be chained as expected and extending
@@ -73,7 +88,12 @@ class GeoQuerySet(query.GeoQuerySet):
         except IndexError:
             return ()
         try:
-            return connection.ops.convert_extent(extent)
+            try:
+                # Django<=1.7
+                return connection.ops.convert_extent(extent)
+            except TypeError:
+                # Django 1.8
+                return connection.ops.convert_extent(extent, get_srid(self))
         except NotImplementedError:
             return geos.GEOSGeometry(extent, srid).extent
 
@@ -84,7 +104,7 @@ class GeoQuerySet(query.GeoQuerySet):
     @property
     def geo_field(self):
         """Returns model geometry field."""
-        return self.query._geo_field()
+        return geo_field(self)
 
     def has_format(self, format):
         return format in self._formats
