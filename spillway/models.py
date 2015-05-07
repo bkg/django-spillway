@@ -9,14 +9,16 @@ import numpy as np
 from spillway.compat import mapnik
 from spillway.query import GeoQuerySet
 
+try:
+    # Available in Django 1.7+
+    GeoManager = GeoQuerySet.as_manager
+except AttributeError:
+    class GeoManager(models.GeoManager):
+        def get_queryset(self):
+            return GeoQuerySet(self.model, using=self._db)
 
-# Temporary solution until QuerySet.as_manager() is available in 1.7.
-class GeoManager(models.GeoManager):
-    def get_queryset(self):
-        return GeoQuerySet(self.model, using=self._db)
-
-    def __getattr__(self, name):
-        return getattr(self.get_query_set(), name)
+        def __getattr__(self, name):
+            return getattr(self.get_queryset(), name)
 
 
 class AbstractRasterStore(models.Model):

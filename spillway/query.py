@@ -13,11 +13,10 @@ def filter_geometry(queryset, **filters):
     return queryset.filter(**query)
 
 def geo_field(queryset):
+    # Try Django 1.8 syntax first, then fall back to 1.7 and below.
     try:
-        #1.8
         return queryset._geo_field()
     except AttributeError:
-        # <=1.7
         return queryset.query._geo_field()
 
 def get_srid(queryset):
