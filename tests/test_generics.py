@@ -17,8 +17,10 @@ factory = APIRequestFactory()
 
 
 class PaginatedGeoListView(generics.GeoListView):
-    paginate_by_param = 'page_size'
-    paginate_by = 10
+    pass
+
+# Enable pagination for this view
+PaginatedGeoListView.pagination_class.page_size = 10
 
 
 class GeoDetailViewTestCase(TestCase):
@@ -171,7 +173,7 @@ class PaginatedGeoListViewTestCase(TestCase):
         response = self.view(request).render()
         data = json.loads(response.content)
         self.assertEqual(len(data['features']),
-                         PaginatedGeoListView.paginate_by)
+                         PaginatedGeoListView.pagination_class.page_size)
         self.assertEqual(data['count'], len(self.qs))
         self.assertTrue(*map(data.has_key, ('previous', 'next')))
         return data
