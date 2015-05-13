@@ -41,7 +41,10 @@ class GeoModelSerializer(serializers.ModelSerializer):
             pass
         else:
             geom_field = fields[self.Meta.geom_field]
-            if hasattr(self.instance, renderer.format):
+            obj = self.instance
+            if isinstance(obj, list):
+                obj = getattr(self.context.get('view'), 'queryset', obj)
+            if hasattr(obj, renderer.format):
                 geom_field.source = renderer.format
         return fields
 
