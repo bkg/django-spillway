@@ -42,11 +42,17 @@ class GeoModelSerializer(serializers.ModelSerializer):
         else:
             geom_field = fields[self.Meta.geom_field]
             obj = self.instance
-            if isinstance(obj, list):
-                obj = getattr(self.context.get('view'), 'queryset', obj)
+            if self._is_paginated():
+                obj = self.context['view'].queryset
             if hasattr(obj, renderer.format):
                 geom_field.source = renderer.format
         return fields
+
+    def _is_paginated(self):
+        try:
+            return hasattr(self.context['view'].paginator, 'page')
+        except (AttributeError, KeyError):
+            return False
 
 
 class FeatureListSerializer(serializers.ListSerializer):

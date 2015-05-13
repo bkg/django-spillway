@@ -2,13 +2,16 @@ import json
 
 from django.test import TestCase
 from rest_framework.serializers import Serializer
+from rest_framework.test import APIRequestFactory
 from greenwich.raster import Raster
 from greenwich.srs import SpatialReference
 
-from spillway import serializers, fields
+from spillway import fields, generics, serializers
 from spillway.collections import Feature, FeatureCollection
 from .models import Location, RasterStore, _geom
 from .test_models import RasterStoreTestBase
+
+factory = APIRequestFactory()
 
 
 class LocationSerializer(serializers.GeoModelSerializer):
@@ -30,6 +33,14 @@ class ArraySerializer(Serializer):
 class RasterStoreSerializer(serializers.RasterModelSerializer):
     class Meta:
         model = RasterStore
+
+
+class PaginatedGeoListView(generics.GeoListView):
+    queryset = Location.objects.all()
+    serializer_class = LocationFeatureSerializer
+
+# Enable pagination for this view
+PaginatedGeoListView.pagination_class.page_size = 10
 
 
 class ModelTestCase(TestCase):
@@ -55,7 +66,7 @@ class GeoModelSerializerTestCase(ModelTestCase):
         serializer = LocationSerializer(self.data)
         self.assertEqual(serializer.data, self.data)
 
-    def test_get_default_fields(self):
+    def test_get_fields(self):
         serializer = LocationSerializer()
         fields = serializer.get_fields()
         self.assertEqual(*map(sorted, (self.data, fields)))
@@ -95,6 +106,22 @@ class FeatureSerializerTestCase(ModelTestCase):
                               'coordinates': self.coords},
                  'properties': {'name': 'Argentina'}}
         self.expected = Feature(**attrs)
+
+    def test_geometry_field_source(self):
+        request = factory.get('/', {'format': 'geojson', 'page': 1})
+        response = PaginatedGeoListView.as_view()(request)
+        context = {'request': response,
+                   'view': response.renderer_context['view']}
+        serializer = LocationFeatureSerializer(
+            Location.objects.geojson(), many=True, context=context)
+        fields = serializer.child.fields
+        self.assertEqual(fields['geom'].source, 'geojson')
+        # Test serializing paginated objects.
+        page = response.renderer_context['view'].paginator.page
+        serializer = LocationFeatureSerializer(
+            page, many=True, context=context)
+        fields = serializer.child.fields
+        self.assertEqual(fields['geom'].source, 'geojson')
 
     def test_serialize(self):
         serializer = LocationFeatureSerializer(self.obj)
