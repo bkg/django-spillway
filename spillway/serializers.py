@@ -34,6 +34,7 @@ class GeoModelSerializer(serializers.ModelSerializer):
             for name, field in fields.items():
                 if isinstance(field, GeometryField):
                     self.Meta.geom_field = name
+                    break
         # Alter geometry field source based on requested format.
         try:
             renderer = self.context['request'].accepted_renderer
