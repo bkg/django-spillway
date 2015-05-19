@@ -29,8 +29,7 @@ class GeometryField(Field):
 
 class NDArrayField(FileField):
     def to_representation(self, value):
-        params = self.context.get('params', {})
-        geom = params.get('g')
+        geom = self.context.get('g')
         with Raster(getattr(value, 'path', value)) as r:
             if not geom:
                 return r.array().tolist()
