@@ -1,7 +1,11 @@
 """Serializer fields"""
+import os
+
 from django.contrib.gis import forms
 from rest_framework.fields import Field, FileField
-from greenwich import Raster
+from greenwich.geometry import Geometry
+from greenwich.io import MemFileIO
+from greenwich.raster import Raster, driver_for_path
 
 from spillway.compat import json
 
@@ -32,3 +36,28 @@ class NDArrayField(FileField):
                 return r.array().tolist()
             with r.clip(geom) as clipped:
                 return clipped.array().tolist()
+
+
+class GDALField(FileField):
+    def to_representation(self, value):
+        imgpath = value.path
+        geom = self.context.get('g')
+        # Handle format as .tif, tif, or tif.zip
+        ext = self.context.get('format') or os.path.splitext(imgpath)[-1][1:]
+        ext = os.path.splitext(ext)[0]
+        # No conversion is needed if the original format without clipping
+        # is requested.
+        if not geom and imgpath.endswith(ext):
+            return imgpath
+        driver = driver_for_path('base.%s' % ext)
+        if geom:
+            # Convert to wkb for ogr.Geometry
+            geom = Geometry(wkb=bytes(geom.wkb), srs=geom.srs.wkt)
+        memio = MemFileIO()
+        if geom:
+            with Raster(imgpath) as r:
+                with r.clip(geom) as clipped:
+                    clipped.save(memio, driver)
+        else:
+            driver.copy(imgpath, memio.name)
+        return memio

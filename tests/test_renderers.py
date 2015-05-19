@@ -6,6 +6,8 @@ import zipfile
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, TestCase
+from greenwich import Raster
+from greenwich.io import MemFileIO
 
 from spillway import renderers
 from spillway.collections import Feature, FeatureCollection
@@ -75,28 +77,21 @@ class SVGRendererTestCase(TestCase):
 class RasterRendererTestCase(RasterTestBase):
     img_header = 'EHFA_HEADER_TAG'
 
-    def test_render_geotiff(self):
-        fp = renderers.GeoTIFFRenderer().render(self.data)
-        self.assertEqual(fp.read(), self.f.read())
-
-    def test_render_hfa(self):
-        data = renderers.HFARenderer().render(self.data)
-        # Read the image header.
-        self.assertEqual(data[:15], self.img_header)
-
-    def test_render_hfazip(self):
-        fp = renderers.HFAZipRenderer().render(self.data)
-        zf = zipfile.ZipFile(fp)
-        self.assertTrue(all(name.endswith('.img') for name in zf.namelist()))
-        self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
+    def _save(self, drivername):
+        memio = MemFileIO()
+        with Raster(self.data['path']) as r:
+            r.save(memio, drivername)
+        return memio
 
     def assert_format(self, data, format):
         im = self._image(data)
         self.assertEqual(im.format, format)
 
     def assert_member_formats(self, obj, format):
-        imgs = [self.data]
+        memio = self._save(format)
+        imgs = [{'file': memio, 'path': 'test'}]
         fp = obj.render(imgs)
+        self.assertTrue(memio.closed)
         with zipfile.ZipFile(fp) as zf:
             for name in zf.namelist():
                 self.assert_format(zf.read(name), format)
@@ -104,15 +99,39 @@ class RasterRendererTestCase(RasterTestBase):
         self.assertEqual(filecount, len(imgs))
         fp.close()
 
+    def test_render_geotiff(self):
+        fp = renderers.GeoTIFFRenderer().render(self.data)
+        self.assertEqual(fp.read(), self.f.read())
+
+    def test_render_hfa(self):
+        memio = self._save('HFA')
+        data = renderers.HFARenderer().render(
+            {'file': memio, 'path': 'test.img'})
+        # Read the image header.
+        self.assertEqual(data[:15], self.img_header)
+        self.assertTrue(memio.closed)
+
+    def test_render_hfazip(self):
+        memio = self._save('HFA')
+        fp = renderers.HFAZipRenderer().render(
+            {'file': memio, 'path': 'test.img.zip'})
+        zf = zipfile.ZipFile(fp)
+        self.assertTrue(all(name.endswith('.img') for name in zf.namelist()))
+        self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
+
     def test_render_jpeg(self):
-        imgdata = renderers.JPEGRenderer().render(self.data)
+        memio = self._save('JPEG')
+        imgdata = renderers.JPEGRenderer().render(
+            {'file': memio, 'path': 'test.jpg'})
         self.assert_format(imgdata, 'JPEG')
 
     def test_render_jpegzip(self):
         self.assert_member_formats(renderers.JPEGZipRenderer(), 'JPEG')
 
     def test_render_png(self):
-        imgdata = renderers.PNGRenderer().render(self.data)
+        memio = self._save('PNG')
+        imgdata = renderers.JPEGRenderer().render(
+            {'file': memio, 'path': 'test.png'})
         self.assert_format(imgdata, 'PNG')
 
     def test_render_pngzip(self):

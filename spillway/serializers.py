@@ -3,7 +3,7 @@ from rest_framework import serializers
 from greenwich.srs import SpatialReference
 
 from spillway import query, collections as sc
-from spillway.fields import GeometryField, NDArrayField
+from spillway.fields import GeometryField, GDALField, NDArrayField
 
 serializers.ModelSerializer.serializer_field_mapping.update({
     models.GeometryField: GeometryField,
@@ -126,15 +126,15 @@ class RasterModelSerializer(GeoModelSerializer):
             for name, field in fields.items():
                 if isinstance(field, serializers.FileField):
                     self.Meta.raster_field = name
-        request = self.context.get('request')
-        render_format = request.accepted_renderer.format if request else None
+                    break
+        render_format = self.context.get('format')
         # Serialize image data as arrays when json is requested.
         if render_format == 'json':
             fields[self.Meta.raster_field] = NDArrayField()
         elif render_format in ('api', 'html'):
             pass
-        elif self.Meta.raster_field and 'path' not in fields:
-            # Add a filepath field for GDAL based renderers.
+        elif getattr(self.Meta, 'raster_field'):
             fields['path'] = serializers.CharField(
                 source='%s.path' % self.Meta.raster_field)
+            fields['file'] = GDALField(source=self.Meta.raster_field)
         return fields

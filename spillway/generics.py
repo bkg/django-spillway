@@ -47,9 +47,10 @@ class BaseRasterView(mixins.ModelSerializerMixin, mixins.QueryFormMixin):
             response._headers = headers
         return response
 
-    def get_renderer_context(self):
-        context = super(BaseRasterView, self).get_renderer_context()
-        context.update(params=self.clean_params())
+    def get_serializer_context(self):
+        context = super(BaseRasterView, self).get_serializer_context()
+        renderer = self.request.accepted_renderer
+        context.update(format=renderer.format, **self.clean_params())
         return context
 
 
