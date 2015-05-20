@@ -26,7 +26,7 @@ def create_image():
 class RasterTestBase(SimpleTestCase):
     def setUp(self):
         self.f = create_image()
-        self.data = {'path': self.f.name}
+        self.data = {'path': self.f.name, 'file': self.f.name}
 
     def tearDown(self):
         self.f.close()
