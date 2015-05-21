@@ -32,6 +32,10 @@ class GeoJSONRendererTestCase(SimpleTestCase):
         self.assertEqual(data, self.collection)
         self.assertEqual(self.r.render([]), str(FeatureCollection()))
 
+    def test_render_list(self):
+        data = json.loads(self.r.render([self.data]))
+        self.assertEqual(data, self.collection)
+
 
 class KMLRendererTestCase(SimpleTestCase):
     def setUp(self):
