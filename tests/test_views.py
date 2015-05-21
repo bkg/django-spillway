@@ -19,14 +19,20 @@ class TileViewTestCase(APITestCase):
                                            [14.14, 50.21] ]]}
         Location.create(name='Prague', geom=self.geometry)
 
-    def test_response(self):
-        response = self.client.get('/vectiles/10/553/347/')
+    def test_clipped_response(self):
+        response = self.client.get('/vectiles/10/553/347/?clip=true')
         d = json.loads(response.content)
         self.assertNotEqual(d['features'][0]['geometry']['coordinates'],
                             self.geometry['coordinates'])
         # This particular geometry clipped to a tile should have +1 coords.
         self.assertEqual(len(d['features'][0]['geometry']['coordinates'][0]),
                          len(self.geometry['coordinates'][0]) + 1)
+
+    def test_unclipped_response(self):
+        response = self.client.get('/vectiles/10/553/347/')
+        d = json.loads(response.content)
+        self.assertEqual(d['features'][0]['geometry']['coordinates'],
+                         self.geometry['coordinates'])
 
 
 class MapViewTestCase(RasterStoreTestBase, APITestCase):

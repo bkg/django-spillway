@@ -3,10 +3,9 @@ import math
 from django.contrib.gis import gdal, forms
 from greenwich.srs import transform_tile
 
-from spillway import styles
+from spillway import query, styles
 from spillway.compat import ALL_TERMS
 from spillway.forms import fields
-from spillway.query import GeoQuerySet, filter_geometry
 
 
 class GeoQuerySetForm(forms.Form):
@@ -62,7 +61,8 @@ class SpatialQueryForm(GeoQuerySetForm):
         return cleaned_data
 
     def select(self):
-        self.queryset = filter_geometry(self.queryset, **self.cleaned_data)
+        self.queryset = query.filter_geometry(
+            self.queryset, **self.cleaned_data)
 
 
 class GeometryQueryForm(GeoQuerySetForm):
@@ -116,6 +116,7 @@ class RasterQueryForm(forms.Form):
 class MapTile(GeoQuerySetForm):
     """Validates requested map tiling parameters."""
     bbox = fields.OGRGeometryField(srid=4326, required=False)
+    clip = forms.BooleanField(required=False, initial=False)
     x = forms.IntegerField()
     y = forms.IntegerField()
     z = forms.IntegerField()
@@ -152,10 +153,14 @@ class MapTile(GeoQuerySetForm):
             tolerance = self.tolerances[data['z']]
         except IndexError:
             tolerance = self.tolerances[-1]
-        self.queryset = (self.queryset.filter_geometry(intersects=geom_wkt)
-                                      .intersection(geom_wkt))
+        attrname = query.geo_field(self.queryset).name
+        self.queryset = query.filter_geometry(self.queryset,
+                                              intersects=geom_wkt)
+        if data['clip']:
+            self.queryset = self.queryset.intersection(geom_wkt)
+            attrname = 'intersection'
         for obj in self.queryset:
-            geom = obj.intersection
+            geom = getattr(obj, attrname)
             # Geometry must be in Web Mercator for simplification.
             if geom.srid != self.tile_srid:
                 # Result of intersection does not have SRID set properly.
