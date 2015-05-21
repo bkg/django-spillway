@@ -3,7 +3,7 @@ import datetime
 
 from django.contrib.gis.db import models
 from django.utils.translation import ugettext_lazy as _
-from greenwich import Raster, SpatialReference
+import greenwich
 import numpy as np
 
 from spillway.compat import mapnik
@@ -39,7 +39,7 @@ class AbstractRasterStore(models.Model):
     def bin(self, k=5, quantiles=False):
         if not quantiles:
             return np.linspace(self.minval, self.maxval, k)
-        with Raster(self.image.path) as rast:
+        with greenwich.Raster(self.image.path) as rast:
             arr = rast.masked_array()
         q = list(np.linspace(0, 100, k))
         return np.percentile(arr.compressed(), q)
@@ -49,7 +49,7 @@ class AbstractRasterStore(models.Model):
         # save() *or* manager methods like RasterStore.objects.create().
         if not self.image.storage.exists(self.image):
             self.image.save(self.image.name, self.image, save=False)
-        with Raster(self.image.path) as r:
+        with greenwich.Raster(self.image.path) as r:
             band = r[-1]
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
             if bmin is None or bmax is None:
@@ -72,6 +72,7 @@ class AbstractRasterStore(models.Model):
         super(AbstractRasterStore, self).save(*args, **kwargs)
 
     def layer(self, band=1):
-        layer = mapnik.Layer(str(self), SpatialReference(self.srs).proj4)
+        layer = mapnik.Layer(
+            str(self), greenwich.SpatialReference(self.srs).proj4)
         layer.datasource = mapnik.Gdal(file=self.image.path, band=band)
         return layer

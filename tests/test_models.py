@@ -6,7 +6,7 @@ from django.core.files.storage import default_storage
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase, TestCase
-from greenwich.raster import frombytes
+from greenwich import raster
 from PIL import Image
 
 from .models import RasterStore
@@ -14,7 +14,7 @@ from .models import RasterStore
 def create_image():
     tmpname = os.path.basename(tempfile.mktemp(suffix='.tif'))
     fp = default_storage.open(tmpname, 'w+b')
-    ras = frombytes(bytes(bytearray(range(25))), (5, 5))
+    ras = raster.frombytes(bytes(bytearray(range(25))), (5, 5))
     ras.affine = (-120, 2, 0, 38, 0, -2)
     ras.sref = 4326
     ras.save(fp)
