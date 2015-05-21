@@ -15,6 +15,10 @@ class GeoQuerySetTestCase(TestCase):
         Location.add_buffer((0, 0), self.radius)
         self.qs = Location.objects.all()
 
+    def test_filter_geometry(self):
+        qs = self.qs.filter_geometry(contains=self.qs[0].geom.centroid)
+        self.assertEqual(qs.count(), 1)
+
     def test_scale(self):
         sqs = self.qs.scale(0.5, 0.5, format='wkt')
         for obj, source in zip(sqs, self.qs):
