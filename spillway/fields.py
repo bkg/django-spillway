@@ -49,11 +49,10 @@ class GDALField(FileField):
         if not geom and imgpath.endswith(ext):
             return imgpath
         driver = driver_for_path('base.%s' % ext)
+        memio = MemFileIO()
         if geom:
             # Convert to wkb for ogr.Geometry
             geom = Geometry(wkb=bytes(geom.wkb), srs=geom.srs.wkt)
-        memio = MemFileIO()
-        if geom:
             with Raster(imgpath) as r:
                 with r.clip(geom) as clipped:
                     clipped.save(memio, driver)
