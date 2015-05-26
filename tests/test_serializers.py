@@ -1,5 +1,6 @@
 import json
 
+from django.contrib.gis import geos
 from django.test import TestCase
 from rest_framework.serializers import Serializer
 from rest_framework.test import APIRequestFactory
@@ -181,3 +182,18 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         data = serializer.data[0]
         self.assertEqual(SpatialReference(data['srs']), SpatialReference(4326))
         self.assertDictContainsSubset(expected, data)
+
+    def test_serialize_context(self):
+        with Raster(self.data['path']) as r:
+            extent = tuple(r.envelope)
+            geom = geos.Polygon.from_bbox(extent).buffer(-1)
+            geom.srid = r.sref.srid
+        ctx = {'g': geom, 'periods': 1, 'format': 'json'}
+        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        self.assertEqual(len(serializer.data), 1)
+        self.assertEqual(serializer.data[0]['image'], [9.0])
+        ctx.update(format='tif')
+        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        with open(self.data['path']) as f:
+            content = f.read()
+        self.assertNotEqual(serializer.data[0]['file'].read(), content)

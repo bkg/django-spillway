@@ -1,6 +1,7 @@
 from django.contrib.gis.db import models
 from rest_framework import serializers
 from greenwich.srs import SpatialReference
+import numpy as np
 
 from spillway import query, collections as sc
 from spillway.fields import GeometryField, GDALField, NDArrayField
@@ -115,9 +116,27 @@ class FeatureSerializer(GeoModelSerializer):
         return feature
 
 
+class RasterListSerializer(serializers.ListSerializer):
+    """Raster list serializer for raster models."""
+
+    def to_representation(self, data):
+        data = super(RasterListSerializer, self).to_representation(data)
+        periods = self.context.get('periods')
+        attr = self.child.Meta.raster_field
+        if periods and isinstance(self.child.fields[attr], NDArrayField):
+            arr = np.ma.array([row[attr] for row in data], copy=False)
+            arr = arr.reshape((periods, -1)).mean(axis=1)
+            obj = data[0]
+            obj[attr] = arr.tolist()
+            return [obj]
+        return data
+
+
 class RasterModelSerializer(GeoModelSerializer):
     def __new__(cls, *args, **kwargs):
         cls.Meta.raster_field = getattr(cls.Meta, 'raster_field', None)
+        cls.Meta.list_serializer_class = getattr(
+            cls.Meta, 'list_serializer_class', RasterListSerializer)
         return super(RasterModelSerializer, cls).__new__(cls, *args, **kwargs)
 
     def get_fields(self):
