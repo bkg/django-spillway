@@ -102,7 +102,7 @@ class RasterQueryForm(forms.Form):
     bbox = fields.BoundingBoxField(required=False)
     g = fields.OGRGeometryField(required=False)
     upload = fields.GeometryFileField(required=False)
-    step = forms.IntegerField(required=False)
+    periods = forms.IntegerField(required=False)
 
     def clean(self):
         """Return cleaned fields as a dict, determine which geom takes
