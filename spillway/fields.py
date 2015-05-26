@@ -3,7 +3,6 @@ import os
 
 from django.contrib.gis import forms
 from rest_framework.fields import Field, FileField
-from greenwich.geometry import Geometry
 from greenwich.io import MemFileIO
 from greenwich.raster import Raster, driver_for_path
 
@@ -51,8 +50,6 @@ class GDALField(FileField):
         driver = driver_for_path('base.%s' % ext)
         memio = MemFileIO()
         if geom:
-            # Convert to wkb for ogr.Geometry
-            geom = Geometry(wkb=bytes(geom.wkb), srs=geom.srs.wkt)
             with Raster(imgpath) as r:
                 with r.clip(geom) as clipped:
                     clipped.save(memio, driver)
