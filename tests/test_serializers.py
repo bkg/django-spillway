@@ -169,6 +169,11 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         self.assertEqual(serializer.data['path'].tolist(),
                          Raster(self.data['path']).array().tolist())
 
+    def test_invalid_periods(self):
+        ctx = {'periods': 3, 'format': 'json'}
+        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        self.assertEqual(len(serializer.data), len(self.qs))
+
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)
         path = serializer.data[0]['path']

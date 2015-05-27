@@ -128,9 +128,13 @@ class RasterListSerializer(serializers.ListSerializer):
             fill = record[attr].fill_value
             arr = np.ma.array([row[attr] for row in data],
                               fill_value=fill, copy=False)
-            arr = arr.reshape((periods, -1)).mean(axis=1)
-            record[attr] = arr.tolist(arr.fill_value)
-            return [record]
+            try:
+                arr = arr.reshape((periods, -1)).mean(axis=1)
+            except ValueError:
+                pass
+            else:
+                record[attr] = arr.tolist(arr.fill_value)
+                return [record]
         return data
 
 
