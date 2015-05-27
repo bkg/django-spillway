@@ -124,11 +124,13 @@ class RasterListSerializer(serializers.ListSerializer):
         periods = self.context.get('periods')
         attr = self.child.Meta.raster_field
         if periods and isinstance(self.child.fields[attr], NDArrayField):
-            arr = np.ma.array([row[attr] for row in data], copy=False)
+            record = data[0]
+            fill = record[attr].fill_value
+            arr = np.ma.array([row[attr] for row in data],
+                              fill_value=fill, copy=False)
             arr = arr.reshape((periods, -1)).mean(axis=1)
-            obj = data[0]
-            obj[attr] = arr
-            return [obj]
+            record[attr] = arr
+            return [record]
         return data
 
 
