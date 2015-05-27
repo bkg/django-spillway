@@ -166,8 +166,8 @@ class FeatureSerializerTestCase(ModelTestCase):
 class RasterSerializerTestCase(RasterStoreTestBase):
     def test_array_serializer(self):
         serializer = ArraySerializer(self.data)
-        arr = serializer.data['path']
-        self.assertEqual(arr, Raster(self.data['path']).array().tolist())
+        self.assertEqual(serializer.data['path'].tolist(),
+                         Raster(self.data['path']).array().tolist())
 
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)
