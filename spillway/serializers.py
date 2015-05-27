@@ -133,7 +133,7 @@ class RasterListSerializer(serializers.ListSerializer):
             except ValueError:
                 pass
             else:
-                record[attr] = arr.tolist(arr.fill_value)
+                record[attr] = arr
                 return [record]
         return data
 
