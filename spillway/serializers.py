@@ -129,7 +129,7 @@ class RasterListSerializer(serializers.ListSerializer):
             arr = np.ma.array([row[attr] for row in data],
                               fill_value=fill, copy=False)
             arr = arr.reshape((periods, -1)).mean(axis=1)
-            record[attr] = arr
+            record[attr] = arr.tolist(arr.fill_value)
             return [record]
         return data
 

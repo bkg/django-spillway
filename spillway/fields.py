@@ -31,7 +31,7 @@ class NDArrayField(FileField):
         geom = self.context.get('g')
         with Raster(getattr(value, 'path', value)) as r:
             if not geom:
-                return r.array()
+                return r.masked_array()
             with r.clip(geom) as clipped:
                 return clipped.masked_array()
 
