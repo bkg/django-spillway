@@ -29,11 +29,14 @@ class GeometryField(Field):
 class NDArrayField(FileField):
     def to_representation(self, value):
         geom = self.context.get('g')
+        stat = self.context.get('stat')
         with Raster(getattr(value, 'path', value)) as r:
-            if not geom:
-                return r.masked_array()
-            with r.clip(geom) as clipped:
-                return clipped.masked_array()
+            if geom:
+                with r.clip(geom) as clipped:
+                    arr = clipped.masked_array()
+            else:
+                arr = r.masked_array()
+        return arr if not stat else getattr(arr, stat)()
 
 
 class GDALField(FileField):

@@ -103,6 +103,9 @@ class RasterQueryForm(forms.Form):
     g = fields.OGRGeometryField(required=False)
     upload = fields.GeometryFileField(required=False)
     periods = forms.IntegerField(required=False)
+    stat = forms.ChoiceField(
+        choices=[(choice,) * 2 for choice in 'max', 'mean', 'min', 'std'],
+        required=False)
 
     def clean(self):
         """Return cleaned fields as a dict, determine which geom takes
