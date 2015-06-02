@@ -42,11 +42,11 @@ class GeoModelSerializer(serializers.ModelSerializer):
         except (AttributeError, KeyError):
             pass
         else:
-            geom_field = fields[self.Meta.geom_field]
+            geom_field = fields.get(self.Meta.geom_field)
             obj = self.instance
             if self._is_paginated():
                 obj = self.context['view'].queryset
-            if hasattr(obj, renderer.format):
+            if geom_field and hasattr(obj, renderer.format):
                 geom_field.source = renderer.format
         return fields
 
