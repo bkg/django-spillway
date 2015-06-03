@@ -23,7 +23,7 @@ class BaseGDALRenderer(BaseRenderer):
 
     @property
     def file_ext(self):
-        return os.extsep + os.path.splitext(self.format)[0]
+        return '.%s' % os.path.splitext(self.format)[0]
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         self.set_filename(self.basename(data), renderer_context)
@@ -68,7 +68,7 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
         if isinstance(data, dict):
             data = [data]
         self.set_filename(self.arcdirname, renderer_context)
-        fp = tempfile.TemporaryFile(suffix=os.extsep + self.format)
+        fp = tempfile.TemporaryFile(suffix='.%s' % self.format)
         with zipfile.ZipFile(fp, mode='w') as zf:
             for item in data:
                 arcname = os.path.join(self.arcdirname, self.basename(item))
