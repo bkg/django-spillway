@@ -118,9 +118,10 @@ class RasterRendererTestCase(RasterTestBase):
     def test_render_hfazip(self):
         memio = self._save('HFA')
         fp = renderers.HFAZipRenderer().render(
-            {'file': memio, 'path': 'test.img.zip'})
+            {'file': memio, 'path': 'test.img'})
         zf = zipfile.ZipFile(fp)
-        self.assertTrue(all(name.endswith('.img') for name in zf.namelist()))
+        for name in zf.namelist():
+            self.assertRegexpMatches(name, '(?<!\.img)\.img$')
         self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
 
     def test_render_jpeg(self):

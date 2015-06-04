@@ -39,7 +39,7 @@ class BaseGDALRenderer(BaseRenderer):
 
 
     def set_filename(self, name, renderer_context):
-        type_name = 'attachment; filename=%s.%s' % (name, self.format)
+        type_name = 'attachment; filename=%s' % name
         try:
             renderer_context['response']['Content-Disposition'] = type_name
         except (KeyError, TypeError):
@@ -67,7 +67,8 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         if isinstance(data, dict):
             data = [data]
-        self.set_filename(self.arcdirname, renderer_context)
+        zipname = '%s.%s' % (self.arcdirname, self.format)
+        self.set_filename(zipname, renderer_context)
         fp = tempfile.TemporaryFile(suffix='.%s' % self.format)
         with zipfile.ZipFile(fp, mode='w') as zf:
             for item in data:
