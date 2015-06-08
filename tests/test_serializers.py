@@ -2,6 +2,7 @@ import json
 
 from django.contrib.gis import geos
 from django.test import TestCase
+from rest_framework import renderers
 from rest_framework.serializers import Serializer
 from rest_framework.test import APIRequestFactory
 from greenwich.raster import Raster
@@ -13,6 +14,14 @@ from .models import Location, RasterStore, _geom
 from .test_models import RasterStoreTestBase
 
 factory = APIRequestFactory()
+
+
+class RequestMock(object):
+    def __init__(self):
+        self.accepted_renderer = renderers.JSONRenderer()
+
+    def build_absolute_uri(self, url):
+        return url
 
 
 class LocationSerializer(serializers.GeoModelSerializer):
@@ -170,7 +179,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
                          Raster(self.data['path']).array().tolist())
 
     def test_invalid_periods(self):
-        ctx = {'periods': 3, 'format': 'json'}
+        ctx = {'periods': 3, 'request': RequestMock()}
         serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), len(self.qs))
 
@@ -193,11 +202,11 @@ class RasterSerializerTestCase(RasterStoreTestBase):
             extent = tuple(r.envelope)
             geom = geos.Polygon.from_bbox(extent).buffer(-1)
             geom.srid = r.sref.srid
-        ctx = {'g': geom, 'periods': 1, 'format': 'json'}
+        ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
         serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
         self.assertEqual(serializer.data[0]['image'], [9.0])
-        ctx.update(format='tif')
+        ctx.pop('request')
         serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
         with open(self.data['path']) as f:
             content = f.read()

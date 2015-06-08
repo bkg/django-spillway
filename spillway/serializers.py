@@ -1,5 +1,5 @@
 from django.contrib.gis.db import models
-from rest_framework import serializers
+from rest_framework import renderers, serializers
 from greenwich.srs import SpatialReference
 import numpy as np
 
@@ -152,14 +152,16 @@ class RasterModelSerializer(GeoModelSerializer):
                 if isinstance(field, serializers.FileField):
                     self.Meta.raster_field = name
                     break
-        render_format = self.context.get('format')
-        # Serialize image data as arrays when json is requested.
-        if render_format == 'json':
-            fields[self.Meta.raster_field] = NDArrayField()
-        elif render_format in ('api', 'html'):
+        fieldname = self.Meta.raster_field
+        request = self.context.get('request')
+        renderer = getattr(request, 'accepted_renderer', None)
+        if isinstance(renderer, renderers.JSONRenderer):
+            fields[fieldname] = NDArrayField()
+        elif isinstance(renderer, (renderers.BrowsableAPIRenderer,
+                                   renderers.TemplateHTMLRenderer)):
             pass
-        elif getattr(self.Meta, 'raster_field'):
+        elif fieldname:
             fields['path'] = serializers.CharField(
-                source='%s.path' % self.Meta.raster_field)
-            fields['file'] = GDALField(source=self.Meta.raster_field)
+                source='%s.path' % fieldname)
+            fields['file'] = GDALField(source=fieldname)
         return fields
