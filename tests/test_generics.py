@@ -204,7 +204,10 @@ class RasterListViewTestCase(RasterStoreTestBase):
         d = json.loads(response.content)
         expected = [{'image': imdata, 'geom': g, 'srs': sref_wkt}]
         self.assertEqual(*map(len, (d, expected)))
-        self.assertDictContainsSubset(expected[0], d[0])
+        try:
+            self.assertDictContainsSubset(expected[0], d[0])
+        except:
+            print 'RESPONSE:', d
 
     def test_list_zip(self):
         request = factory.get('/', {'format': 'img.zip'})
