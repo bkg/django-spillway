@@ -156,7 +156,8 @@ class RasterModelSerializer(GeoModelSerializer):
         request = self.context.get('request')
         renderer = getattr(request, 'accepted_renderer', None)
         if isinstance(renderer, renderers.JSONRenderer):
-            fields[fieldname] = NDArrayField()
+            if self.context.get('g'):
+                fields[fieldname] = NDArrayField()
         elif isinstance(renderer, (renderers.BrowsableAPIRenderer,
                                    renderers.TemplateHTMLRenderer)):
             pass

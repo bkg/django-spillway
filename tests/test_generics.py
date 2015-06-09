@@ -199,7 +199,7 @@ class RasterListViewTestCase(RasterStoreTestBase):
             imdata = r.array().tolist()
             g = r.envelope.polygon.__geo_interface__
             sref_wkt = str(r.sref)
-        request = factory.get('/')
+        request = factory.get('/', {'g': g})
         response = self.view(request).render()
         d = json.loads(response.content)
         expected = [{'image': imdata, 'geom': g, 'srs': sref_wkt}]
