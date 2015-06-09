@@ -207,7 +207,7 @@ class RasterListViewTestCase(RasterStoreTestBase):
         try:
             self.assertDictContainsSubset(expected[0], d[0])
         except:
-            print 'RESPONSE:', d
+            print 'RESPONSE:', d, type(g), g
 
     def test_list_zip(self):
         request = factory.get('/', {'format': 'img.zip'})
