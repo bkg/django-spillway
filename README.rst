@@ -25,12 +25,12 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
 
     # models.py
     from django.contrib.gis.db import models
-    from spillway.models import GeoManager
+    from spillway.query import GeoQuerySet
 
     class Location(models.Model):
         slug = models.SlugField()
         geom = models.GeometryField()
-        objects = GeoManager()
+        objects = GeoQuerySet.as_manager()
 
     # urls.py
     from django.conf.urls import patterns, url
