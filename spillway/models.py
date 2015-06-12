@@ -14,13 +14,13 @@ from spillway.compat import mapnik
 # https://code.djangoproject.com/ticket/22999
 @deconstructible
 class UploadDir(object):
-    def __init__(self, path='data'):
+    def __init__(self, path):
         self.path = path
 
     def __call__(self, instance, filename):
         return os.path.join(self.path, filename)
 
-upload_to = UploadDir()
+upload_to = UploadDir('data')
 
 
 class AbstractRasterStore(models.Model):
