@@ -2,6 +2,7 @@ import os
 import datetime
 
 from django.contrib.gis.db import models
+from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
 import greenwich
 import numpy as np
@@ -9,11 +10,21 @@ import numpy as np
 from spillway.compat import mapnik
 
 
+# Workaround for migrations and FileField upload_to, see:
+# https://code.djangoproject.com/ticket/22999
+@deconstructible
+class UploadDir(object):
+    def __init__(self, path='data'):
+        self.path = path
+
+    def __call__(self, instance, filename):
+        return os.path.join(self.path, filename)
+
+upload_to = UploadDir()
+
+
 class AbstractRasterStore(models.Model):
     """Abstract model for raster data storage."""
-    def upload_to(self, filename):
-        return os.path.join('data', os.path.basename(filename))
-
     image = models.FileField(_('raster file'), upload_to=upload_to)
     width = models.IntegerField(_('width in pixels'))
     height = models.IntegerField(_('height in pixels'))
