@@ -5,6 +5,7 @@ from django.contrib.gis import forms
 from rest_framework.fields import Field, FileField
 from greenwich.io import MemFileIO
 from greenwich.raster import Raster, driver_for_path
+import numpy as np
 
 from spillway.compat import json
 
@@ -36,7 +37,7 @@ class NDArrayField(FileField):
                     arr = clipped.masked_array()
             else:
                 arr = r.masked_array()
-        return arr if not stat else getattr(arr, stat)()
+        return arr if not stat else getattr(np.ma, stat)(arr)
 
 
 class GDALField(FileField):

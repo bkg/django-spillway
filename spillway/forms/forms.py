@@ -104,7 +104,8 @@ class RasterQueryForm(forms.Form):
     upload = fields.GeometryFileField(required=False)
     periods = forms.IntegerField(required=False)
     stat = forms.ChoiceField(
-        choices=[(choice,) * 2 for choice in 'max', 'mean', 'min', 'std'],
+        choices=[(choice,) * 2 for choice in
+                 'max', 'mean', 'median', 'min', 'std', 'var'],
         required=False)
 
     def clean(self):
