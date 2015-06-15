@@ -1,7 +1,7 @@
 from django.core.files.storage import default_storage
 from rest_framework.renderers import BaseRenderer
 
-from spillway import styles
+from spillway import colors, styles
 from spillway.compat import mapnik
 
 
@@ -31,9 +31,9 @@ class MapnikRenderer(BaseRenderer):
         except KeyError:
             style = styles.make_raster_style()
             self.map.append_style(stylename, style)
-            colors = styles.colors.get(stylename)
-            bins = object.bin(k=len(colors))
-            styles.add_colorizer_stops(style, bins, colors)
+            rcolors = colors.colormap.get(stylename)
+            bins = object.bin(k=len(rcolors))
+            styles.add_colorizer_stops(style, bins, rcolors)
         try:
             layer = object.layer()
         except AttributeError:

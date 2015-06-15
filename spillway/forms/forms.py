@@ -3,7 +3,7 @@ import math
 from django.contrib.gis import gdal, forms
 from greenwich.srs import transform_tile
 
-from spillway import query, styles
+from spillway import colors, query
 from spillway.compat import ALL_TERMS
 from spillway.forms import fields
 
@@ -128,7 +128,7 @@ class MapTile(GeoQuerySetForm):
     band = forms.IntegerField(required=False, initial=1)
     size = forms.IntegerField(required=False, initial=256)
     style = forms.ChoiceField(
-        choices=[(k, k.lower()) for k in list(styles.colors)],
+        choices=[(k, k.lower()) for k in list(colors.colormap)],
         required=False)
     # Tile grid uses 3857, but coordinates should be in 4326 commonly.
     tile_srid = 3857
