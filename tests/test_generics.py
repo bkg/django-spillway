@@ -199,15 +199,20 @@ class RasterListViewTestCase(RasterStoreTestBase):
             imdata = r.array().tolist()
             g = r.envelope.polygon.__geo_interface__
             sref_wkt = str(r.sref)
+            point = r.envelope.polygon.Centroid()
         request = factory.get('/', {'g': json.dumps(g)})
         response = self.view(request).render()
         d = json.loads(response.content)
         expected = [{'image': imdata, 'geom': g, 'srs': sref_wkt}]
         self.assertEqual(*map(len, (d, expected)))
-        try:
-            self.assertDictContainsSubset(expected[0], d[0])
-        except:
-            print 'RESPONSE:', d, type(g), g
+        self.assertDictContainsSubset(expected[0], d[0])
+        # Test point geometry type.
+        request = factory.get('/', {'g': point.ExportToJson()})
+        response = self.view(request).render()
+        d = json.loads(response.content)
+        idx = len(imdata) / 2
+        expected[0]['image'] = imdata[idx][idx]
+        self.assertDictContainsSubset(expected[0], d[0])
 
     def test_list_zip(self):
         request = factory.get('/', {'format': 'img.zip'})

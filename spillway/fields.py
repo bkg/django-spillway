@@ -33,11 +33,16 @@ class NDArrayField(FileField):
         stat = self.context.get('stat')
         with Raster(getattr(value, 'path', value)) as r:
             if geom:
-                with r.clip(geom) as clipped:
-                    arr = clipped.masked_array()
+                if geom.num_coords > 1:
+                    with r.clip(geom) as clipped:
+                        arr = clipped.masked_array()
+                else:
+                    coord_px = r.affine.transform((geom.coords,)).pop()
+                    arr = r.ReadAsArray(*(coord_px + (1, 1))).item()
             else:
                 arr = r.masked_array()
-        return arr if not stat else getattr(np.ma, stat)(arr)
+            return arr if not stat else getattr(np.ma, stat)(arr)
+        raise ValueError('Failure reading array values')
 
 
 class GDALField(FileField):
