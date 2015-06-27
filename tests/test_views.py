@@ -48,6 +48,10 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
         zero_rgba = ((0, 0), (0, 0), (0, 0), (0, 0))
         self.assertEqual(stats, zero_rgba)
 
+    def test_nonexistent_tileset(self):
+        response = self.client.get('/maptiles/999/9/9/9/')
+        self.assertEqual(response.status_code, 404)
+
     def test_empty_tile(self):
         response = self.client.get('/maptiles/1/10/553/347/')
         self.assertEqual(response.status_code, 200)
