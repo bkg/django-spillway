@@ -44,7 +44,8 @@ class MapnikRenderer(BaseRenderer):
             self.map.layers.append(layer)
 
     def render(self, object, accepted_media_type=None, renderer_context=None):
-        if isinstance(object, dict):
+        response = renderer_context.get('response')
+        if getattr(response, 'exception', False):
             return object
         img = mapnik.Image(self.map.width, self.map.height)
         bbox = renderer_context.get('bbox') if renderer_context else None
