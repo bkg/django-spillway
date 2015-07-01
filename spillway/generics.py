@@ -35,6 +35,10 @@ class BaseRasterView(mixins.ModelSerializerMixin, mixins.QueryFormMixin):
     model_serializer_class = serializers.RasterModelSerializer
     query_form_class = forms.RasterQueryForm
     filter_backends = _default_filters
+    renderer_classes = _default_renderers + (
+        renderers.GeoTIFFZipRenderer,
+        renderers.HFAZipRenderer,
+    )
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(BaseRasterView, self).finalize_response(
@@ -65,7 +69,3 @@ class RasterDetailView(BaseRasterView, RetrieveAPIView):
 class RasterListView(BaseRasterView, ListAPIView):
     """View providing access to a Raster model QuerySet."""
     filter_backends = _default_filters + (filters.SpatialLookupFilter,)
-    renderer_classes = _default_renderers + (
-        renderers.GeoTIFFZipRenderer,
-        renderers.HFAZipRenderer,
-    )
