@@ -3,8 +3,8 @@ Django-Spillway
 
 .. image:: https://travis-ci.org/bkg/django-spillway.svg?branch=master
     :target: https://travis-ci.org/bkg/django-spillway
-.. image:: https://img.shields.io/coveralls/bkg/django-spillway.svg
-    :target: https://coveralls.io/r/bkg/django-spillway?branch=master
+.. image:: https://coveralls.io/repos/bkg/django-spillway/badge.svg?branch=master&service=github
+    :target: https://coveralls.io/github/bkg/django-spillway?branch=master
 
 `Django <http://www.djangoproject.com/>`_ and `Django REST Framework <http://www.django-rest-framework.org/>`_ integration of raster and feature based geodata.
 
