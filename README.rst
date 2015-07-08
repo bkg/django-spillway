@@ -13,7 +13,7 @@ facilities for the handling of geospatial formats such as GeoTIFF, GeoJSON, and
 KML/KMZ.
 
 Specific attention has been paid to speedy serialization of geometries from
-spatial backends which avoids the cost of unneccessary re-serialization in
+spatial backends which avoids the cost of unnecessary re-serialization in
 Python.
 
 
@@ -65,16 +65,24 @@ Raster data support is provided as well.
 
 .. code-block:: python
 
+    # models.py
+    from spillway.models import AbstractRasterStore
+    from spillway.query import GeoQuerySet
+
+    class RasterStore(AbstractRasterStore):
+        objects = GeoQuerySet.as_manager()
+
+    # urls.py
     from django.conf.urls import patterns, url
-    from spillway.generics import RasterDetailView, RasterListView
+    from spillway import generics
     from .models import RasterStore
 
     urlpatterns = patterns('',
         url(r'^rstores/(?P<slug>[\w-]+)/$',
-            RasterDetailView.as_view(queryset=RasterStore.objects.all()),
+            generics.RasterDetailView.as_view(queryset=RasterStore.objects.all()),
             name='rasterstore'),
         url(r'^rstores/$',
-            RasterListView.as_view(queryset=RasterStore.objects.all()),
+            generics.RasterListView.as_view(queryset=RasterStore.objects.all()),
             name='rasterstore-list'),
     )
 
@@ -93,6 +101,25 @@ Generic Views
 Spillway extends REST framework generic views with GeoJSON and KML/KMZ
 renderers for geographic data. This includes pagination of features and all
 available spatial lookups/filters for the spatial backend in use.
+
+
+ViewSets
+--------
+View sets exist for geo and raster enabled models following the familiar usage
+pattern of Django REST Framework. Currently, a writable raster viewset needs to
+be added and tested though the read-only variety is available.
+
+.. code-block:: python
+
+    from spillway import viewsets
+
+    class LocationViewSet(viewsets.GeoModelViewSet):
+        queryset = Location.objects.all()
+        serializer_class = LocationFeatureSerializer
+
+    class RasterViewSet(viewsets.ReadOnlyRasterModelViewSet):
+        queryset = RasterStore.objects.all()
+        serializer_class = RasterStoreSerializer
 
 
 Renderers
