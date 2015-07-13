@@ -30,7 +30,7 @@ class AbstractRasterStore(models.Model):
     height = models.IntegerField(_('height in pixels'))
     geom = models.PolygonField(_('raster bounding polygon'))
     event = models.DateField()
-    srs = models.CharField(_('spatial reference system'), max_length=256)
+    srs = models.TextField(_('spatial reference system'))
     minval = models.FloatField(_('minimum value'))
     maxval = models.FloatField(_('maximum value'))
     nodata = models.FloatField(_('nodata value'), blank=True, null=True)
