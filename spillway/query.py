@@ -19,6 +19,11 @@ def geo_field(queryset):
     except AttributeError:
         return queryset.query._geo_field()
 
+def geo_db_column(queryset):
+    column = queryset._geo_field().column
+    table = queryset.query.tables[0]
+    return '{}.{}'.format(table, column)
+
 def get_srid(queryset):
     """Returns the GeoQuerySet spatial reference identifier."""
     try:
@@ -105,6 +110,10 @@ class GeoQuerySet(query.GeoQuerySet):
         """Returns model geometry field."""
         return geo_field(self)
 
+    @property
+    def geo_db_column(self):
+        return geo_db_column(self)
+
     def has_format(self, format):
         return format in self._formats
 
@@ -115,7 +124,7 @@ class GeoQuerySet(query.GeoQuerySet):
         """
         if not any((tolerance, srid, format)):
             return super(GeoQuerySet, self).scale(x, y, z, **kwargs)
-        transform = self._transform(self.geo_field.column, srid)
+        transform = self._transform(self.geo_db_column, srid)
         scale = self._scale % (transform, x, y)
         simplify = self._simplify(scale, tolerance)
         return self._as_format(simplify, format, precision)
@@ -125,7 +134,7 @@ class GeoQuerySet(query.GeoQuerySet):
         a supported geometry format.
         """
         # Transform first, then simplify.
-        transform = self._transform(self.geo_field.column, srid)
+        transform = self._transform(self.geo_db_column, srid)
         simplify = self._simplify(transform, tolerance)
         if format:
             return self._as_format(simplify, format, precision)
