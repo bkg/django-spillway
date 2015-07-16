@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.contrib.gis import geos
 
 from spillway.query import GeoQuerySet
-from .models import Location
+from .models import Location, FkLocation
 
 
 class GeoQuerySetTestCase(TestCase):
@@ -56,3 +56,19 @@ class GeoQuerySetTestCase(TestCase):
         ex = self.qs.extent(self.srid)
         self.assertEqual(len(ex), 4)
         self.assertLess(ex[0], -180)
+
+
+class TestFkRelations(TestCase):
+    def setUp(self):
+        geometry = geos.GEOSGeometry('POINT(5 23)')
+        location = Location(geom=geometry, name='location')
+        location.save()
+        other_location = FkLocation(geom=geometry, fk=location, name='other')
+        other_location.save()
+
+    def test_query(self):
+        # this would throw a Programming Error: column reference "geometry" is ambigous 
+        # without the patch
+        list(FkLocation.objects.filter(fk__name='location').simplify(format='geojson'))
+
+        
