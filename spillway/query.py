@@ -20,8 +20,13 @@ def geo_field(queryset):
         return queryset.query._geo_field()
 
 def geo_db_column(queryset):
-    column = queryset._geo_field().column
-    table = queryset.query.tables[0]
+    try:
+        # Django 1.8
+        column = queryset._geo_field().column
+    except AttributeError:
+        # Django 1.7
+        column = queryset.query._geo_field().column
+    table = queryset.model._meta.db_table
     return '{}.{}'.format(table, column)
 
 def get_srid(queryset):
