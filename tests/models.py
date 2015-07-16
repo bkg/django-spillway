@@ -55,3 +55,8 @@ class GeoLocation(AbstractLocation):
 
 class RasterStore(AbstractRasterStore):
     objects = GeoQuerySet.as_manager()
+
+
+class FkLocation(AbstractLocation):
+    fk = models.ForeignKey(Location)
+    objects = GeoQuerySet.as_manager()
