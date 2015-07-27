@@ -15,6 +15,11 @@ class GeoQuerySetTestCase(TestCase):
         Location.add_buffer((0, 0), self.radius)
         self.qs = Location.objects.all()
 
+    def test_extent(self):
+        ex = self.qs.extent(self.srid)
+        self.assertEqual(len(ex), 4)
+        self.assertLess(ex[0], -180)
+
     def test_filter_geometry(self):
         qs = self.qs.filter_geometry(contains=self.qs[0].geom.centroid)
         self.assertEqual(qs.count(), 1)
@@ -52,7 +57,11 @@ class GeoQuerySetTestCase(TestCase):
         self.assertNotIn('<coordinates></coordinates>', sqs[0].kml)
         self.assertXMLNotEqual(sqs[0].kml, self.qs[0].geom.kml)
 
-    def test_extent(self):
-        ex = self.qs.extent(self.srid)
-        self.assertEqual(len(ex), 4)
-        self.assertLess(ex[0], -180)
+    def test_transform(self):
+        sql = self.qs._transform(self.srid)
+        col = '"%s"."%s"' % (self.qs.model._meta.db_table,
+                             self.qs.geo_field.column)
+        expected = 'Transform(%s, %s)' % (col, self.srid)
+        self.assertEqual(sql, expected)
+        self.assertEqual(self.qs.query.get_context('transformed_srid'),
+                         self.srid)

@@ -49,11 +49,17 @@ class GeoQuerySet(query.GeoQuerySet):
         val = self._formats.get(format, self._formats['geojson'])
         return self.extra(select={format: val % (sql, precision)})
 
-    def _transform(self, colname, srid=None):
-        if srid:
-            self.transform(srid)
-        return ('%s(%s, %s)' % (connection.ops.transform, colname, srid)
-                if srid else colname)
+    def _transform(self, srid=None):
+        args, geo_field = self._spatial_setup('transform')
+        if not srid:
+            return args['geo_col']
+        try:
+            # Django 1.8
+            self.query.add_context('transformed_srid', srid)
+        except AttributeError:
+            # Django<=1.7
+            self.query.transformed_srid = srid
+        return '%s(%s, %s)' % (args['function'], args['geo_col'], srid)
 
     def _simplify(self, colname, tolerance=0.0):
         # connection.ops does not have simplify available for PostGIS.
@@ -72,7 +78,7 @@ class GeoQuerySet(query.GeoQuerySet):
         """
         if not srid and not connection.ops.spatialite:
             return super(GeoQuerySet, self).extent()
-        transform = self._transform(self.geo_field.column, srid)
+        transform = self._transform(srid)
         # Spatialite extent() is supported post-1.7.
         if connection.ops.spatialite:
             ext = {'extent': 'AsText(%s(%s))' % ('Extent', transform)}
@@ -115,7 +121,7 @@ class GeoQuerySet(query.GeoQuerySet):
         """
         if not any((tolerance, srid, format)):
             return super(GeoQuerySet, self).scale(x, y, z, **kwargs)
-        transform = self._transform(self.geo_field.column, srid)
+        transform = self._transform(srid)
         scale = self._scale % (transform, x, y)
         simplify = self._simplify(scale, tolerance)
         return self._as_format(simplify, format, precision)
@@ -125,7 +131,7 @@ class GeoQuerySet(query.GeoQuerySet):
         a supported geometry format.
         """
         # Transform first, then simplify.
-        transform = self._transform(self.geo_field.column, srid)
+        transform = self._transform(srid)
         simplify = self._simplify(transform, tolerance)
         if format:
             return self._as_format(simplify, format, precision)
