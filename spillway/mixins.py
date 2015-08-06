@@ -21,8 +21,7 @@ class QueryFormMixin(object):
     def clean_params(self):
         """Returns a validated form dict from Request parameters."""
         form = self.query_form_class(
-            self.request.query_params or self.request.data,
-            self.request.FILES or None)
+            self.request.query_params or self.request.data)
         if form.is_valid():
             return form.cleaned_data
         raise ValidationError(form.errors)
