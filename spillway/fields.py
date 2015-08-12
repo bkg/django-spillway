@@ -38,10 +38,14 @@ class NDArrayField(FileField):
                         arr = clipped.masked_array()
                 else:
                     coord_px = r.affine.transform((geom.coords,)).pop()
-                    arr = r.ReadAsArray(*(coord_px + (1, 1))).item()
+                    arr = r.ReadAsArray(*(coord_px + (1, 1)))
             else:
                 arr = r.masked_array()
-            return arr if not stat else getattr(np.ma, stat)(arr)
+            if stat:
+                arr = getattr(np.ma, stat)(arr)
+            if arr.size == 1:
+                arr = arr.item()
+            return arr
         raise ValueError('Failure reading array values')
 
 
