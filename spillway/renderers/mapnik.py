@@ -16,6 +16,7 @@ class MapnikRenderer(BaseRenderer):
     def __init__(self, *args, **kwargs):
         super(MapnikRenderer, self).__init__(*args, **kwargs)
         self.stylename = 'Spectral_r'
+        self.context = {}
         m = mapnik.Map(256, 256)
         try:
             mapnik.load_map(m, str(self.mapfile))
@@ -35,7 +36,7 @@ class MapnikRenderer(BaseRenderer):
             bins = object.bin(k=len(rcolors))
             styles.add_colorizer_stops(style, bins, rcolors)
         try:
-            layer = object.layer()
+            layer = object.layer(self.context.get('band'))
         except AttributeError:
             pass
         else:
@@ -44,6 +45,7 @@ class MapnikRenderer(BaseRenderer):
             self.map.layers.append(layer)
 
     def render(self, object, accepted_media_type=None, renderer_context=None):
+        self.context.update(renderer_context)
         response = renderer_context.get('response')
         if getattr(response, 'exception', False):
             return object

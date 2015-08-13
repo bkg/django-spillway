@@ -148,6 +148,9 @@ class MapTile(GeoQuerySetForm):
         cleaned['bbox'] = geom
         return cleaned
 
+    def clean_band(self):
+        return self.cleaned_data['band'] or self.fields['band'].initial
+
     def select(self):
         data = self.cleaned_data
         bbox = data['bbox']
