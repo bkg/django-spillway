@@ -125,7 +125,7 @@ class RasterListSerializer(serializers.ListSerializer):
         attr = self.child.Meta.raster_field
         if periods and isinstance(self.child.fields[attr], NDArrayField):
             record = data[0]
-            fill = record[attr].fill_value
+            fill = getattr(record[attr], 'fill_value', None)
             arr = np.ma.array([row[attr] for row in data],
                               fill_value=fill, copy=False)
             try:
