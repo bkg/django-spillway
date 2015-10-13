@@ -22,32 +22,31 @@ class CommaSepFloatField(forms.FloatField):
 
     def to_python(self, value):
         "Normalize data to a list of floats."
-        # Return an empty list if no input was given.
         if not value:
             return []
         return map(super(CommaSepFloatField, self).to_python, value.split(','))
 
-    def run_validators(self, value):
+    def run_validators(self, values):
         """Run validators for each item separately."""
-        for i in value:
-            super(CommaSepFloatField, self).run_validators(i)
+        for val in values:
+            super(CommaSepFloatField, self).run_validators(val)
 
 
 class BoundingBoxField(CommaSepFloatField):
     """A Field for comma separated bounding box coordinates."""
-    # Default to EPSG:4326.
-    default_srid = 4326
+
+    def __init__(self, srid=4326, *args, **kwargs):
+        super(BoundingBoxField, self).__init__(*args, **kwargs)
+        self.srid = srid
 
     def to_python(self, value):
-        """Returns a OGR Polygon from bounding box values."""
-        # Return an empty list if no input was given.
+        """Returns a GEOS Polygon from bounding box values."""
         value = super(BoundingBoxField, self).to_python(value)
         try:
             bbox = gdal.OGRGeometry.from_bbox(value).geos
         except (ValueError, AttributeError):
-            #raise forms.ValidationError('Not a valid bounding box.')
             return []
-        bbox.srid = self.default_srid
+        bbox.srid = self.srid
         return bbox
 
 
