@@ -36,25 +36,17 @@ class GeoModelSerializer(serializers.ModelSerializer):
                 if isinstance(field, GeometryField):
                     self.Meta.geom_field = name
                     break
-        # Alter geometry field source based on requested format.
+        # Alter geometry field source based on the requested format.
         try:
             renderer = self.context['request'].accepted_renderer
         except (AttributeError, KeyError):
             pass
         else:
             geom_field = fields.get(self.Meta.geom_field)
-            obj = self.instance
-            if self._is_paginated():
-                obj = self.context['view'].queryset
+            obj = getattr(self.context.get('view'), 'queryset', self.instance)
             if geom_field and hasattr(obj, renderer.format):
                 geom_field.source = renderer.format
         return fields
-
-    def _is_paginated(self):
-        try:
-            return hasattr(self.context['view'].paginator, 'page')
-        except (AttributeError, KeyError):
-            return False
 
 
 class FeatureListSerializer(serializers.ListSerializer):
