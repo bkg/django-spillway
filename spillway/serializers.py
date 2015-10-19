@@ -76,10 +76,13 @@ class FeatureListSerializer(serializers.ListSerializer):
 class FeatureSerializer(GeoModelSerializer):
     """Feature serializer for GeoModels."""
 
-    def __new__(cls, *args, **kwargs):
-        cls.Meta.list_serializer_class = getattr(
-            cls.Meta, 'list_serializer_class', FeatureListSerializer)
-        return super(FeatureSerializer, cls).__new__(cls, *args, **kwargs)
+    @classmethod
+    def many_init(cls, *args, **kwargs):
+        kwargs['child'] = cls()
+        meta = getattr(cls, 'Meta', None)
+        list_serializer_cls = getattr(
+            meta, 'list_serializer_cls', FeatureListSerializer)
+        return list_serializer_cls(*args, **kwargs)
 
     @property
     def data(self):
