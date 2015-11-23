@@ -120,16 +120,19 @@ class RasterListSerializer(serializers.ListSerializer):
         attr = self.child.Meta.raster_field
         if periods and isinstance(self.child.fields[attr], NDArrayField):
             record = data[0]
-            fill = getattr(record[attr], 'fill_value', None)
-            arr = np.ma.array([row[attr] for row in data],
-                              fill_value=fill, copy=False)
+            arr = record[attr]
+            fill = getattr(arr, 'fill_value', None)
+            arrays = [row[attr] for row in data]
+            if arr.ndim > 2:
+                arrays = np.vstack(arrays)
+            marr = np.ma.array(arrays, fill_value=fill, copy=False)
+            # Try to reshape using equal sizes first and fall back to unequal splits.
             try:
-                arr = arr.reshape((periods, -1)).mean(axis=1)
+                means = marr.reshape((periods, -1)).mean(axis=1)
             except ValueError:
-                pass
-            else:
-                record[attr] = arr
-                return [record]
+                means = [a.mean() for a in np.array_split(marr, periods)]
+            record[attr] = means
+            return [record]
         return data
 
 
