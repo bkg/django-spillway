@@ -137,6 +137,8 @@ class RasterListSerializer(serializers.ListSerializer):
 
 
 class RasterModelSerializer(GeoModelSerializer):
+    """Serializer class for raster models."""
+
     def __new__(cls, *args, **kwargs):
         cls.Meta.raster_field = getattr(cls.Meta, 'raster_field', None)
         cls.Meta.list_serializer_class = getattr(
