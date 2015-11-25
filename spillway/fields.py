@@ -41,10 +41,11 @@ class NDArrayField(FileField):
                     arr = r.ReadAsArray(*(coord_px + (1, 1)))
             else:
                 arr = r.masked_array()
-            if stat:
-                arr = getattr(np.ma, stat)(arr)
-            if arr.size == 1:
-                arr = arr.item()
+            if arr is not None:
+                if stat:
+                    arr = getattr(np.ma, stat)(arr)
+                if arr.size == 1:
+                    arr = arr.item()
             return arr
         raise ValueError('Failure reading array values')
 
