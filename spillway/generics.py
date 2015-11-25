@@ -57,6 +57,13 @@ class BaseRasterView(mixins.ModelSerializerMixin, mixins.QueryFormMixin):
         context.update(format=renderer.format, **self.clean_params())
         return context
 
+    @property
+    def paginator(self):
+        # Disable pagination for GDAL Renderers.
+        if not isinstance(self.request.accepted_renderer, _default_renderers):
+            self.pagination_class = None
+        return super(BaseRasterView, self).paginator
+
 
 class RasterDetailView(BaseRasterView, RetrieveAPIView):
     """View providing access to a Raster model instance."""
