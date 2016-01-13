@@ -2,6 +2,7 @@ import json
 from io import BytesIO
 
 from django.core.files import File
+from django.contrib.gis import geos
 from rest_framework.test import APIRequestFactory, APITestCase
 from PIL import Image
 
@@ -18,12 +19,18 @@ class TileViewTestCase(APITestCase):
                                            [14.89, 50.20],
                                            [14.14, 50.21] ]]}
         Location.create(name='Prague', geom=self.geometry)
+        self.g = Location.objects.first().geom
+        self.tolerance = .0000001
+
+    def is_polygon_equal(self, d):
+        g = geos.Polygon(d['features'][0]['geometry']['coordinates'][0])
+        g.srid = self.g.srid
+        return g.equals_exact(self.g, self.tolerance)
 
     def test_clipped_response(self):
         response = self.client.get('/vectiles/10/553/347/?clip=true')
         d = json.loads(response.content)
-        self.assertNotEqual(d['features'][0]['geometry']['coordinates'],
-                            self.geometry['coordinates'])
+        self.assertFalse(self.is_polygon_equal(d))
         # This particular geometry clipped to a tile should have +1 coords.
         self.assertEqual(len(d['features'][0]['geometry']['coordinates'][0]),
                          len(self.geometry['coordinates'][0]) + 1)
@@ -31,8 +38,7 @@ class TileViewTestCase(APITestCase):
     def test_unclipped_response(self):
         response = self.client.get('/vectiles/10/553/347/')
         d = json.loads(response.content)
-        self.assertEqual(d['features'][0]['geometry']['coordinates'],
-                         self.geometry['coordinates'])
+        self.assertTrue(self.is_polygon_equal(d))
 
 
 class MapViewTestCase(RasterStoreTestBase, APITestCase):
