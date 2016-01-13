@@ -10,6 +10,15 @@ from .test_serializers import LocationFeatureSerializer, RasterStoreSerializer
 factory = APIRequestFactory()
 
 
+class SimpleQueryTestCase(SimpleTestCase):
+    """A test case class that allows db queries.
+
+    This avoids the slow fixture (re-)loading machinery of TestCase for each
+    test when all we care about are simple select queries.
+    """
+    allow_database_queries = True
+
+
 class LocationViewSet(viewsets.GeoModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationFeatureSerializer
@@ -20,7 +29,7 @@ class RasterViewSet(viewsets.ReadOnlyRasterModelViewSet):
     serializer_class = RasterStoreSerializer
 
 
-class GeoModelViewSetTestCase(SimpleTestCase):
+class GeoModelViewSetTestCase(SimpleQueryTestCase):
     def setUp(self):
         self.router = DefaultRouter()
         self.router.register(r'locations', LocationViewSet)
@@ -36,7 +45,7 @@ class GeoModelViewSetTestCase(SimpleTestCase):
         self.assertGreater(len(self.router.urls), 0)
 
 
-class RasterViewSetTestCase(SimpleTestCase):
+class RasterViewSetTestCase(SimpleQueryTestCase):
     def setUp(self):
         self.router = DefaultRouter()
         self.router.register(r'rasters', RasterViewSet)
