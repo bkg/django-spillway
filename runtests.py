@@ -26,7 +26,12 @@ DEFAULT_SETTINGS = {
         'django.middleware.common.CommonMiddleware',
         'django.middleware.csrf.CsrfViewMiddleware',
     ),
-    'ROOT_URLCONF': 'tests.urls'
+    'ROOT_URLCONF': 'tests.urls',
+    'REST_FRAMEWORK': {
+        # Fix for Django 1.9:
+        # https://github.com/tomchristie/django-rest-framework/issues/3494
+        'UNAUTHENTICATED_USER': None
+    }
 }
 
 def teardown():
