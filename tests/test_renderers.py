@@ -135,7 +135,7 @@ class RasterRendererTestCase(RasterTestBase):
 
     def test_render_png(self):
         memio = self._save('PNG')
-        imgdata = renderers.JPEGRenderer().render(
+        imgdata = renderers.PNGRenderer().render(
             {'file': memio, 'path': 'test.png'})
         self.assert_format(imgdata, 'PNG')
 
