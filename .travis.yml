@@ -9,7 +9,7 @@ before_install:
   - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
   - sudo add-apt-repository -y ppa:mapnik/v2.2.0
   - sudo apt-get -qq update
-  - sudo apt-get -y install libgdal-dev libgdal1h libjpeg-dev libmapnik-dev gdal-bin
+  - sudo apt-get -y install libgdal-dev libgdal1h libmapnik-dev gdal-bin
   - sudo apt-get -y build-dep python-mapnik
 
 install: 

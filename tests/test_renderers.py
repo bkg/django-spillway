@@ -128,6 +128,7 @@ class RasterRendererTestCase(RasterTestBase):
         memio = self._save('JPEG')
         imgdata = renderers.JPEGRenderer().render(
             {'file': memio, 'path': 'test.jpg'})
+        self.assertEqual(imgdata[:10], '\xff\xd8\xff\xe0\x00\x10JFIF')
         self.assert_format(imgdata, 'JPEG')
 
     def test_render_jpegzip(self):
