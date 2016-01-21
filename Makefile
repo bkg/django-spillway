@@ -13,11 +13,11 @@ clean:
 
 coverage:
 	coverage run --source=$(PKGNAME) setup.py test
-	[ -z "$$TRAVIS" ] && \
+	@[ -n "$$TRAVIS" ] || { \
 		coverage report -m && \
 		coverage html && \
 		type xdg-open > /dev/null && \
-		xdg-open htmlcov/index.html
+		xdg-open htmlcov/index.html; }
 
 dist: clean
 	$(PYTHON) setup.py sdist
