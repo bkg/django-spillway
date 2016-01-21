@@ -13,7 +13,7 @@ clean:
 
 coverage:
 	coverage run --source=$(PKGNAME) setup.py test
-	[ -n $$DISPLAY ] && \
+	[ -n "$$TRAVIS" ] && \
 		coverage report -m && \
 		coverage html && \
 		type xdg-open > /dev/null && \

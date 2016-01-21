@@ -12,11 +12,11 @@ before_install:
   - sudo apt-get -y install libgdal-dev libgdal1h libmapnik-dev gdal-bin
   - sudo apt-get -y build-dep python-mapnik
 
-install: 
+install:
   - pip install --global-option=build_ext --global-option='-USQLITE_OMIT_LOAD_EXTENSION' pysqlite
   - pip install GDAL==1.10.0
   - pip install -r requirements.txt
   - pip install coveralls
 
-script: coverage run --source=spillway setup.py test
+script: make coverage
 after_success: coveralls
