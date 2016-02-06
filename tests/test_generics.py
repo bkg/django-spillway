@@ -221,3 +221,8 @@ class RasterListViewTestCase(RasterStoreTestBase):
         bio = io.BytesIO(''.join(response.streaming_content))
         zf = zipfile.ZipFile(bio)
         self.assertEqual(len(zf.filelist), len(self.qs))
+
+    def test_404(self):
+        response = self.client.get('/rasters/nowhere/',
+                                   {'format': 'img.zip'})
+        self.assertEqual(response.status_code, 404)

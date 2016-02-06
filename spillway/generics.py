@@ -57,6 +57,18 @@ class BaseRasterView(mixins.ModelSerializerMixin, mixins.QueryFormMixin):
         context.update(format=renderer.format, **self.clean_params())
         return context
 
+    def handle_exception(self, exc):
+        response = super(BaseRasterView, self).handle_exception(exc)
+        # Avoid using any GDAL based renderer to properly return error
+        # responses.
+        if response.exception:
+            renderers = api_settings.DEFAULT_RENDERER_CLASSES
+            conneg = self.get_content_negotiator()
+            neg = conneg.select_renderer(
+                self.request, renderers, self.format_kwarg)
+            self.request.accepted_renderer, self.request.accepted_media_type = neg
+        return response
+
     @property
     def paginator(self):
         # Disable pagination for GDAL Renderers.
