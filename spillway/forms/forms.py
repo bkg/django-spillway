@@ -118,28 +118,16 @@ class RasterQueryForm(forms.Form):
         return cleaned
 
 
-class MapTile(GeoQuerySetForm):
+class TileForm(GeoQuerySetForm):
     """Validates requested map tiling parameters."""
     bbox = fields.OGRGeometryField(srid=4326, required=False)
-    clip = forms.BooleanField(required=False, initial=False)
+    size = forms.IntegerField(required=False, initial=256)
     x = forms.IntegerField()
     y = forms.IntegerField()
     z = forms.IntegerField()
-    band = forms.IntegerField(required=False, initial=1)
-    size = forms.IntegerField(required=False, initial=256)
-    style = forms.ChoiceField(
-        choices=[(k, k.lower()) for k in list(colors.colormap)],
-        required=False)
-    # Tile grid uses 3857, but coordinates should be in 4326 commonly.
-    tile_srid = 3857
-    # Geometry simplification tolerances based on tile zlevel, see
-    # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames.
-    #SpatialReference(3857).GetSemiMajor() == 6378137.0
-    tolerances = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
-                  for zoom in range(20)]
 
     def clean(self):
-        cleaned = super(MapTile, self).clean()
+        cleaned = super(TileForm, self).clean()
         x, y, z = map(cleaned.get, ('x', 'y', 'z'))
         # Create bbox from NW and SE tile corners.
         extent = transform_tile(x, y, z) + transform_tile(x + 1, y + 1, z)
@@ -148,8 +136,27 @@ class MapTile(GeoQuerySetForm):
         cleaned['bbox'] = geom
         return cleaned
 
+
+class RasterTileForm(TileForm):
+    band = forms.IntegerField(required=False, initial=1)
+    size = forms.IntegerField(required=False, initial=256)
+    limits = fields.CommaSepFloatField(required=False)
+    style = forms.ChoiceField(
+        choices=[(k, k.lower()) for k in list(colors.colormap)],
+        required=False)
+
     def clean_band(self):
         return self.cleaned_data['band'] or self.fields['band'].initial
+
+
+class VectorTileForm(TileForm):
+    clip = forms.BooleanField(required=False, initial=False)
+    # Tile grid uses 3857, but coordinates should be in 4326 commonly.
+    tile_srid = 3857
+    # Geometry simplification tolerances based on tile zlevel, see
+    # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames.
+    tolerances = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
+                  for zoom in range(20)]
 
     def select(self):
         data = self.cleaned_data

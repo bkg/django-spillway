@@ -32,4 +32,4 @@ class SpatialLookupFilter(FormFilterBackend):
 
 
 class TileFilter(FormFilterBackend):
-    queryset_form = forms.MapTile
+    queryset_form = forms.VectorTileForm
