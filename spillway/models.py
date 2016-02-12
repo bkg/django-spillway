@@ -47,14 +47,6 @@ class AbstractRasterStore(models.Model):
     def __unicode__(self):
         return self.image.name
 
-    def bin(self, k=5, quantiles=False):
-        if not quantiles:
-            return np.linspace(self.minval, self.maxval, k)
-        with greenwich.Raster(self.image.path) as rast:
-            arr = rast.masked_array()
-        q = list(np.linspace(0, 100, k))
-        return np.percentile(arr.compressed(), q)
-
     def clean_fields(self, *args, **kwargs):
         # Override this instead of save() so that fields are populated on
         # save() *or* manager methods like RasterStore.objects.create().
@@ -77,6 +69,18 @@ class AbstractRasterStore(models.Model):
         if self.event is None:
             self.event = datetime.date.today()
         super(AbstractRasterStore, self).clean_fields(*args, **kwargs)
+
+    def linear(self, limits=None, k=5):
+        """Returns an ndarray of linear breaks."""
+        start, stop = limits or (self.minval, self.maxval)
+        return np.linspace(start, stop, k)
+
+    def quantiles(self, k=5):
+        """Returns an ndarray of quantile breaks."""
+        with greenwich.Raster(self.image.path) as rast:
+            arr = rast.masked_array()
+        q = list(np.linspace(0, 100, k))
+        return np.percentile(arr.compressed(), q)
 
     def save(self, *args, **kwargs):
         self.full_clean()

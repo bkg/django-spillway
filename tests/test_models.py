@@ -49,3 +49,13 @@ class RasterStoreTestCase(RasterStoreTestBase):
         rstore.save()
         self.assertTrue(default_storage.exists(rstore.image))
         self.assertEqual(rstore.image.size, self.f.size)
+
+    def test_linear(self):
+        self.assertEqual(list(self.object.linear()),
+                         [0., 6., 12., 18., 24.])
+        self.assertEqual(list(self.object.linear((2, 20))),
+                         [2., 6.5, 11., 15.5, 20.])
+
+    def test_quantiles(self):
+        self.assertEqual(list(self.object.quantiles()),
+                         [0., 6., 12., 18., 24.])

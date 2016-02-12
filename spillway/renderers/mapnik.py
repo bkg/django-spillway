@@ -33,7 +33,7 @@ class MapnikRenderer(BaseRenderer):
             style = styles.make_raster_style()
             self.map.append_style(stylename, style)
             rcolors = colors.colormap.get(stylename)
-            bins = object.bin(k=len(rcolors))
+            bins = object.linear(self.context.get('limits'), k=len(rcolors))
             styles.add_colorizer_stops(style, bins, rcolors)
         try:
             layer = object.layer(self.context.get('band'))
