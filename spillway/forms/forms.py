@@ -130,10 +130,15 @@ class TileForm(GeoQuerySetForm):
         cleaned = super(TileForm, self).clean()
         x, y, z = map(cleaned.get, ('x', 'y', 'z'))
         # Create bbox from NW and SE tile corners.
-        extent = transform_tile(x, y, z) + transform_tile(x + 1, y + 1, z)
-        geom = gdal.OGRGeometry.from_bbox(extent)
-        geom.srid = self.fields['bbox'].srid
-        cleaned['bbox'] = geom
+        try:
+            extent = (transform_tile(x, y, z) +
+                      transform_tile(x + 1, y + 1, z))
+        except TypeError:
+            pass
+        else:
+            geom = gdal.OGRGeometry.from_bbox(extent)
+            geom.srid = self.fields['bbox'].srid
+            cleaned['bbox'] = geom
         return cleaned
 
 
