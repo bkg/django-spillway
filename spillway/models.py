@@ -85,9 +85,3 @@ class AbstractRasterStore(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super(AbstractRasterStore, self).save(*args, **kwargs)
-
-    def layer(self, band=1):
-        layer = mapnik.Layer(
-            str(self), greenwich.SpatialReference(self.srs).proj4)
-        layer.datasource = mapnik.Gdal(file=self.image.path, band=band)
-        return layer
