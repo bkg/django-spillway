@@ -30,10 +30,9 @@ class GeoListCreateAPIView(BaseGeoView, ListCreateAPIView):
     """Generic view for listing or creating geomodel instances."""
 
 
-class BaseRasterView(mixins.ModelSerializerMixin, mixins.QueryFormMixin):
+class BaseRasterView(mixins.ModelSerializerMixin):
     """Base view for raster models."""
     model_serializer_class = serializers.RasterModelSerializer
-    query_form_class = forms.RasterQueryForm
     filter_backends = _default_filters
     renderer_classes = _default_renderers + (
         renderers.GeoTIFFZipRenderer,
@@ -53,8 +52,11 @@ class BaseRasterView(mixins.ModelSerializerMixin, mixins.QueryFormMixin):
 
     def get_serializer_context(self):
         context = super(BaseRasterView, self).get_serializer_context()
+        form = forms.RasterQueryForm(
+            self.request.query_params or self.request.data)
+        data = form.cleaned_data if form.is_valid() else {}
         renderer = self.request.accepted_renderer
-        context.update(format=renderer.format, **self.clean_params())
+        context.update(format=renderer.format, **data)
         return context
 
     def handle_exception(self, exc):
