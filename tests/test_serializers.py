@@ -198,10 +198,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         self.assertDictContainsSubset(expected, data)
 
     def test_serialize_context(self):
-        with Raster(self.data['path']) as r:
-            extent = tuple(r.envelope)
-            geom = geos.Polygon.from_bbox(extent).buffer(-1)
-            geom.srid = r.sref.srid
+        geom = self.object.geom.buffer(-1)
         ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
         serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
@@ -213,7 +210,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         self.assertNotEqual(serializer.data[0]['file'].read(), content)
 
     def test_serialize_point_context(self):
-        geom = self.qs[0].geom.centroid
+        geom = self.object.geom.centroid
         ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
         serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
