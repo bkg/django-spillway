@@ -123,7 +123,7 @@ class RasterListSerializer(serializers.ListSerializer):
             arr = record[attr]
             fill = getattr(arr, 'fill_value', None)
             arrays = [row[attr] for row in data]
-            if arr.ndim > 2:
+            if getattr(arr, 'ndim', 0) > 2:
                 arrays = np.vstack(arrays)
             marr = np.ma.array(arrays, fill_value=fill, copy=False)
             # Try to reshape using equal sizes first and fall back to unequal splits.

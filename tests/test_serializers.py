@@ -211,3 +211,9 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         with open(self.data['path']) as f:
             content = f.read()
         self.assertNotEqual(serializer.data[0]['file'].read(), content)
+
+    def test_serialize_point_context(self):
+        geom = self.qs[0].geom.centroid
+        ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
+        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        self.assertEqual(len(serializer.data), 1)
