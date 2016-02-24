@@ -195,7 +195,7 @@ class RasterListViewTestCase(RasterStoreTestBase):
             queryset=RasterStore.objects.all())
 
     def test_list_json(self):
-        with Raster(self.qs[0].image.path) as r:
+        with Raster(self.object.image.path) as r:
             imdata = r.array().tolist()
             g = r.envelope.polygon.__geo_interface__
             sref_wkt = str(r.sref)
