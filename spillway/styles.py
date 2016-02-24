@@ -44,10 +44,6 @@ class Map(object):
         m.srs = '+init=epsg:3857'
         self.map = m
 
-    def append_style(self, stylename, style):
-        self.map.append_style(stylename, style)
-        self.styles.append(style)
-
     def layer(self, queryset, stylename=None):
         cls = VectorLayer if hasattr(queryset, 'geojson') else RasterLayer
         layer = cls(queryset)
