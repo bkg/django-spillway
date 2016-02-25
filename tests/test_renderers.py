@@ -11,7 +11,7 @@ from django.test import SimpleTestCase, TestCase
 from greenwich import Raster
 from greenwich.io import MemFileIO
 
-from spillway import forms, renderers, styles
+from spillway import carto, forms, renderers
 from spillway.collections import Feature, FeatureCollection
 from .models import Location, _geom
 from .test_models import RasterTestBase, RasterStoreTestBase
@@ -160,7 +160,7 @@ class MapnikRendererTestCase(RasterStoreTestBase):
         ctx = {'y': 51, 'x': 23, 'z': 7}
         form = forms.RasterTileForm(ctx)
         imgdata = renderers.MapnikRenderer().render(
-            styles.build_map(self.object, form))
+            carto.build_map(self.object, form))
         im = self._image(imgdata)
         self.assertEqual(im.size, (256, 256))
         self.assertNotEqual(im.getpixel((100, 100)), (0, 0, 0, 0))

@@ -1,7 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView, ListAPIView
 
-from spillway import filters, forms, renderers, styles
+from spillway import carto, filters, forms, renderers
 from spillway.generics import BaseGeoView
 
 
@@ -13,7 +13,7 @@ class MapView(GenericAPIView):
     def get(self, request, *args, **kwargs):
         form = forms.RasterTileForm(dict(self.request.query_params.dict(),
                                     **self.kwargs))
-        return Response(styles.build_map(self.get_object(), form))
+        return Response(carto.build_map(self.get_object(), form))
 
 
 class TileView(BaseGeoView, ListAPIView):
@@ -29,4 +29,4 @@ class TileView(BaseGeoView, ListAPIView):
         form = forms.VectorTileForm(dict(self.request.query_params.dict(),
                                     **self.kwargs))
         queryset = self.filter_queryset(self.get_queryset())
-        return Response(styles.build_map(queryset, form))
+        return Response(carto.build_map(queryset, form))
