@@ -13,6 +13,7 @@ def add_colorizer_stops(style, bins, mcolors):
     return style
 
 def make_dbsource(**kwargs):
+    """Returns a mapnik PostGIS or SQLite Datasource."""
     if 'spatialite' in connection.settings_dict.get('ENGINE'):
         kwargs.setdefault('file', connection.settings_dict['NAME'])
         return mapnik.SQLite(wkb_format='spatialite', **kwargs)
@@ -58,8 +59,7 @@ class Map(object):
         try:
             style = self.map.find_style(stylename)
         except KeyError:
-            style = layer.make_style()
-            self.map.append_style(stylename, style)
+            self.map.append_style(stylename, layer.style())
         layer.styles.append(stylename)
         self.map.layers.append(layer._layer)
         return layer
@@ -89,16 +89,16 @@ class Layer(object):
     def __getattr__(self, attr):
         return getattr(self._layer, attr)
 
-    def make_style(self):
+    def style(self):
         """Returns a default Style."""
         style = mapnik.Style()
         rule = mapnik.Rule()
-        symbolizer = self.make_symbolizer()
+        symbolizer = self.symbolizer()
         rule.symbols.append(symbolizer)
         style.rules.append(rule)
         return style
 
-    def make_symbolizer(self):
+    def symbolizer(self):
         raise NotImplementedError
 
 
@@ -112,7 +112,7 @@ class RasterLayer(Layer):
         self._layer = layer
         self.stylename = self.default_style
 
-    def make_symbolizer(self):
+    def symbolizer(self):
         symbolizer = mapnik.RasterSymbolizer()
         symbolizer.colorizer = mapnik.RasterColorizer(
             mapnik.COLORIZER_LINEAR, mapnik.Color(0, 0, 0, 255))
@@ -122,5 +122,5 @@ class RasterLayer(Layer):
 class VectorLayer(Layer):
     default_style = 'polygon'
 
-    def make_symbolizer(self):
+    def symbolizer(self):
         return mapnik.PolygonSymbolizer()
