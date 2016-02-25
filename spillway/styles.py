@@ -68,7 +68,34 @@ class Map(object):
             self.map.zoom_to_box(mapnik.Box2d(*bbox.extent))
 
 
-class RasterLayer(object):
+class Layer(object):
+    default_style = None
+
+    def __init__(self, queryset):
+        table = str(queryset.model._meta.db_table)
+        sref = srs.SpatialReference(query.get_srid(queryset))
+        layer = mapnik.Layer(table, sref.proj4)
+        layer.datasource = postgis_datasource(table=table)
+        self._layer = layer
+        self.stylename = self.default_style
+
+    def __getattr__(self, attr):
+        return getattr(self._layer, attr)
+
+    def make_style(self):
+        """Returns a default Style."""
+        style = mapnik.Style()
+        rule = mapnik.Rule()
+        symbolizer = self.make_symbolizer()
+        rule.symbols.append(symbolizer)
+        style.rules.append(rule)
+        return style
+
+    def make_symbolizer(self):
+        raise NotImplementedError
+
+
+class RasterLayer(Layer):
     default_style = 'Spectral_r'
 
     def __init__(self, obj, band=1):
@@ -78,17 +105,6 @@ class RasterLayer(object):
         self._layer = layer
         self.stylename = self.default_style
 
-    def __getattr__(self, attr):
-        return getattr(self._layer, attr)
-
-    def make_style(self):
-        style = mapnik.Style()
-        rule = mapnik.Rule()
-        symbolizer = self.make_symbolizer()
-        rule.symbols.append(symbolizer)
-        style.rules.append(rule)
-        return style
-
     def make_symbolizer(self):
         symbolizer = mapnik.RasterSymbolizer()
         symbolizer.colorizer = mapnik.RasterColorizer(
@@ -96,16 +112,8 @@ class RasterLayer(object):
         return symbolizer
 
 
-class VectorLayer(RasterLayer):
+class VectorLayer(Layer):
     default_style = 'polygon'
-
-    def __init__(self, queryset):
-        table = str(queryset.model._meta.db_table)
-        sref = srs.SpatialReference(query.get_srid(queryset))
-        layer = mapnik.Layer(table, sref.proj4)
-        layer.datasource = postgis_datasource(table=table)
-        self._layer = layer
-        self.stylename = self.default_style
 
     def make_symbolizer(self):
         return mapnik.PolygonSymbolizer()
