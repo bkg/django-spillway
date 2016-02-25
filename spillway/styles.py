@@ -12,9 +12,16 @@ def add_colorizer_stops(style, bins, mcolors):
         symbolizer.colorizer.add_stop(value, mapnik.Color(color))
     return style
 
-def postgis_datasource(**kwargs):
-    kwargs.setdefault('dbname', connection.settings_dict['NAME'])
-    kwargs.setdefault('user', connection.settings_dict['USER'])
+def make_dbsource(**kwargs):
+    if 'spatialite' in connection.settings_dict.get('ENGINE'):
+        kwargs.setdefault('file', connection.settings_dict['NAME'])
+        return mapnik.SQLite(wkb_format='spatialite', **kwargs)
+    names = (('dbname', 'NAME'), ('user', 'USER'),
+             ('password', 'PASSWORD'), ('host', 'HOST'), ('port', 'PORT'))
+    for mopt, dopt in names:
+        val = connection.settings_dict.get(dopt)
+        if val:
+            kwargs.setdefault(mopt, val)
     return mapnik.PostGIS(**kwargs)
 
 def build_map(queryset, tileform):
@@ -75,7 +82,7 @@ class Layer(object):
         table = str(queryset.model._meta.db_table)
         sref = srs.SpatialReference(query.get_srid(queryset))
         layer = mapnik.Layer(table, sref.proj4)
-        layer.datasource = postgis_datasource(table=table)
+        layer.datasource = make_dbsource(table=table)
         self._layer = layer
         self.stylename = self.default_style
 
