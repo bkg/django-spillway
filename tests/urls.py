@@ -8,7 +8,8 @@ from .test_viewsets import RasterViewSet
 router = DefaultRouter()
 router.register(r'rasters', RasterViewSet)
 
-_tile = r'(?P<z>\d+)/(?P<x>\d+)/(?P<y>\d+)/$'
+_format_suffix = r'(?:\.(?P<format>[\w.]+))?'
+_tile = r'(?P<z>\d+)/(?P<x>\d+)/(?P<y>\d+)%s/?$' % _format_suffix
 
 urlpatterns = patterns('',
     url(r'^', include(router.urls)),

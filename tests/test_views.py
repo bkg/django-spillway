@@ -40,6 +40,12 @@ class TileViewTestCase(APITestCase):
         d = json.loads(response.content)
         self.assertTrue(self.is_polygon_equal(d))
 
+    def test_png_response(self):
+        response = self.client.get('/vectiles/10/553/347.png')
+        self.assertEqual(response['content-type'], 'image/png')
+        im = Image.open(BytesIO(response.content))
+        self.assertEqual(im.size, (256, 256))
+
 
 class MapViewTestCase(RasterStoreTestBase, APITestCase):
     def test_response(self):

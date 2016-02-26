@@ -9,8 +9,8 @@ class FormFilterBackend(BaseFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         params = dict(request.query_params.dict(),
-                      format=request.accepted_renderer.format,
                       **getattr(view, 'kwargs', {}))
+        params['format'] = request.accepted_renderer.format
         form = self.queryset_form(params, queryset)
         try:
             form.query()
