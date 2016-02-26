@@ -18,7 +18,8 @@ DEFAULT_SETTINGS = {
     'DATABASES': {
         'default': {
             'ENGINE': 'django.contrib.gis.db.backends.spatialite',
-            'NAME': ':memory:'
+            'NAME': 'spillway.db',
+            'TEST': {'NAME': os.path.join(TMPDIR, 'test.db')}
         }
     },
     'MEDIA_ROOT': TMPDIR,
