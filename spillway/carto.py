@@ -80,9 +80,11 @@ class Layer(object):
 
     def __init__(self, queryset):
         table = str(queryset.model._meta.db_table)
+        field = query.geo_field(queryset)
         sref = srs.SpatialReference(query.get_srid(queryset))
         layer = mapnik.Layer(table, sref.proj4)
-        layer.datasource = make_dbsource(table=table)
+        layer.datasource = make_dbsource(
+            table=table, geometry_field=field.name)
         self._layer = layer
         self.stylename = self.default_style
 
