@@ -130,4 +130,5 @@ class VectorLayer(Layer):
             mapnik.DataGeometryType.LineString: mapnik.LineSymbolizer,
             mapnik.DataGeometryType.Polygon: mapnik.PolygonSymbolizer
         }
-        return symbolizers[self._layer.datasource.geometry_type()]()
+        return symbolizers.get(self._layer.datasource.geometry_type(),
+                               mapnik.PolygonSymbolizer)()
