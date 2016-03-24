@@ -76,7 +76,7 @@ class Map(object):
 
 
 class Layer(object):
-    default_style = None
+    """Base class for a Mapnik layer."""
 
     def __init__(self, queryset):
         table = str(queryset.model._meta.db_table)
@@ -86,7 +86,7 @@ class Layer(object):
         layer.datasource = make_dbsource(
             table=table, geometry_field=field.name)
         self._layer = layer
-        self.stylename = self.default_style
+        self.stylename = self._layer.name
 
     def __getattr__(self, attr):
         return getattr(self._layer, attr)
@@ -105,14 +105,14 @@ class Layer(object):
 
 
 class RasterLayer(Layer):
-    default_style = 'Spectral_r'
+    """A Mapnik layer for raster data types."""
 
-    def __init__(self, obj, band=1):
+    def __init__(self, obj, band=1, style='Spectral_r'):
         layer = mapnik.Layer(
             str(obj), srs.SpatialReference(obj.srs).proj4)
         layer.datasource = mapnik.Gdal(file=obj.image.path, band=band)
         self._layer = layer
-        self.stylename = self.default_style
+        self.stylename = style
 
     def symbolizer(self):
         symbolizer = mapnik.RasterSymbolizer()
@@ -122,7 +122,7 @@ class RasterLayer(Layer):
 
 
 class VectorLayer(Layer):
-    default_style = 'polygon'
+    """A Mapnik layer for vector data types."""
 
     def symbolizer(self):
         symbolizers = {
