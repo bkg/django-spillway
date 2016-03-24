@@ -125,4 +125,9 @@ class VectorLayer(Layer):
     default_style = 'polygon'
 
     def symbolizer(self):
-        return mapnik.PolygonSymbolizer()
+        symbolizers = {
+            mapnik.DataGeometryType.Point: mapnik.PointSymbolizer,
+            mapnik.DataGeometryType.LineString: mapnik.LineSymbolizer,
+            mapnik.DataGeometryType.Polygon: mapnik.PolygonSymbolizer
+        }
+        return symbolizers[self._layer.datasource.geometry_type()]()
