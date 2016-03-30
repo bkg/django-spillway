@@ -15,8 +15,8 @@ class TileViewTestCase(APITestCase):
     def setUp(self):
         self.geometry = {'type': 'Polygon',
                          'coordinates': [[ [14.14, 50.21],
-                                           [14.39, 49.76],
                                            [14.89, 50.20],
+                                           [14.39, 49.76],
                                            [14.14, 50.21] ]]}
         Location.create(name='Prague', geom=self.geometry)
         self.g = Location.objects.first().geom
