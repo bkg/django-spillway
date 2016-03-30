@@ -143,3 +143,19 @@ class GeoQuerySet(query.GeoQuerySet):
                 return self
             simplify = 'AsEWKT(%s)' % simplify
         return self.extra(select={self.geo_field.name: simplify})
+
+    def tile_geojson(self, bbox, tolerance=0.0, clip=False):
+        # Tile grid uses 3857, but coordinates should be in 4326 commonly.
+        tile_srid = 3857
+        coord_srid = bbox.srid
+        transform = self._transform()
+        if clip:
+            ewkt = ('GeomFromEWKT' if connection.ops.spatialite else
+                    'ST_GeomFromEWKT')
+            transform = "ST_Intersection(%s, %s('%s'))" % (
+                transform, ewkt, bbox.ewkt)
+        if self.geo_field.srid != tile_srid:
+            transform = 'ST_Transform(%s, %s)' % (transform, tile_srid)
+        simplify = self._simplify(transform, tolerance)
+        latlng = 'ST_Transform(%s, %s)' % (simplify, coord_srid)
+        return self._as_format(latlng, 'geojson')

@@ -166,27 +166,9 @@ class VectorTileForm(TileForm):
     def select(self):
         data = self.cleaned_data
         bbox = data['bbox']
-        geom_wkt = bbox.ewkt
-        coord_srid = bbox.srid
-        original_srid = self.queryset.geo_field.srid
         try:
             tolerance = self.tolerances[data['z']]
         except IndexError:
             tolerance = self.tolerances[-1]
-        attrname = query.geo_field(self.queryset).name
-        self.queryset = query.filter_geometry(self.queryset,
-                                              intersects=geom_wkt)
-        if data['clip']:
-            self.queryset = self.queryset.intersection(geom_wkt)
-            attrname = 'intersection'
-        for obj in self.queryset:
-            geom = getattr(obj, attrname)
-            # Geometry must be in Web Mercator for simplification.
-            if geom.srid != self.tile_srid:
-                # Result of intersection does not have SRID set properly.
-                if geom.srid is None:
-                    geom.srid = original_srid
-                geom.transform(self.tile_srid)
-            geom = geom.simplify(tolerance, preserve_topology=True)
-            geom.transform(coord_srid)
-            obj.geojson = geom.geojson
+        queryset = query.filter_geometry(self.queryset, intersects=bbox.ewkt)
+        self.queryset = queryset.tile_geojson(bbox, tolerance, data['clip'])
