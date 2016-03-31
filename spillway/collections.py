@@ -16,6 +16,8 @@ def as_feature(data):
             data = FeatureCollection(**data)
         elif isinstance(data, collections.Sequence):
             data = FeatureCollection(features=data)
+        elif has_layer(data):
+            data = LayerCollection(data)
         elif isinstance(data, dict) and not data:
             data = Feature()
     return data
@@ -34,6 +36,13 @@ def is_featurelike(feature):
         return 'geometry' in feature and 'properties' in feature
     except (AttributeError, TypeError):
         return False
+
+def has_layer(fcollection):
+    """Returns true for a multi-layer dict of FeatureCollections."""
+    for val in fcollection.itervalues():
+        if has_features(val):
+            return True
+    return False
 
 
 class LinkedCRS(dict):
@@ -135,3 +144,20 @@ class FeatureCollection(AbstractFeature):
     @property
     def has_serialized_geom(self):
         return any(feat.is_serialized('geometry') for feat in self['features'])
+
+
+class LayerCollection(AbstractFeature):
+    """Layer dict of FeatureCollections."""
+
+    def __init__(self, iterable=(), **kwargs):
+        super(LayerCollection, self).__init__()
+        self.update(iterable, **kwargs)
+        for key, val in self.iteritems():
+            if not isinstance(val, FeatureCollection):
+                self[key] = FeatureCollection(**val)
+
+    @property
+    def geojson(self):
+        layers = ','.join(['"%s": %s' % (k, v.geojson)
+                           for k, v in self.iteritems()])
+        return '{%s}' % layers

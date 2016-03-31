@@ -1,7 +1,8 @@
 import datetime
 
 from django.test import SimpleTestCase
-from spillway.collections import Feature, LinkedCRS, NamedCRS
+from spillway.collections import (Feature, FeatureCollection, LayerCollection,
+    LinkedCRS, NamedCRS)
 
 
 class FeatureTestCase(SimpleTestCase):
@@ -42,6 +43,19 @@ class FeatureTestCase(SimpleTestCase):
     def test_str(self):
         feat = Feature(properties={'event': datetime.date(1899, 1, 1)})
         self.assertIn('"properties": {"event": "1899-01-01"}}', str(feat))
+
+
+class LayerCollectionTestCase(SimpleTestCase):
+    def setUp(self):
+        # Instantiate using a plain dict as we want to test for conversion to a
+        # layer FeatureCollection below.
+        self.lc = LayerCollection({'layer': dict(**FeatureCollection())})
+
+    def test_has_featurecollection(self):
+        self.assertIsInstance(self.lc['layer'], FeatureCollection)
+
+    def test_geojson(self):
+        self.assertIn('{"layer":', self.lc.geojson)
 
 
 class LinkedCRSTestCase(SimpleTestCase):
