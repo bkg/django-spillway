@@ -61,6 +61,13 @@ class GeoQuerySet(query.GeoQuerySet):
             self.query.transformed_srid = srid
         return '%s(%s, %s)' % (args['function'], args['geo_col'], srid)
 
+    def _trans_scale(self, colname, deltax, deltay, xfactor, yfactor):
+        if connection.ops.spatialite:
+            sql = 'ScaleCoords(ShiftCoords(%s, %.12f, %.12f), %.12f, %.12f)'
+        else:
+            sql = 'ST_TransScale(%s, %.12f, %.12f, %.12f, %.12f)'
+        return sql % (colname, deltax, deltay, xfactor, yfactor)
+
     def _simplify(self, colname, tolerance=0.0):
         # connection.ops does not have simplify available for PostGIS.
         return ('ST_Simplify(%s, %s)' % (colname, tolerance)
@@ -114,6 +121,17 @@ class GeoQuerySet(query.GeoQuerySet):
     def has_format(self, format):
         return format in self._formats
 
+    def pbf(self, bbox, geo_col=None, scale=4096):
+        """Returns tranlated and scaled geometries suitable for Mapbox vector
+        tiles.
+        """
+        col = geo_col or self._transform()
+        w, s, e, n = bbox.extent
+        trans = self._trans_scale(col, -w, -s,
+                                  scale / (e - w),
+                                  scale / (n - s))
+        return self.extra(select={'pbf': 'ST_AsText(%s)' % trans})
+
     def scale(self, x, y, z=0.0, tolerance=0.0, precision=8, srid=None,
               format=None, **kwargs):
         """Returns a GeoQuerySet with scaled and optionally reprojected and
@@ -144,18 +162,21 @@ class GeoQuerySet(query.GeoQuerySet):
             simplify = 'AsEWKT(%s)' % simplify
         return self.extra(select={self.geo_field.name: simplify})
 
-    def tile_geojson(self, bbox, tolerance=0.0, clip=False):
+    def tile(self, bbox, tolerance=0.0, format=None, clip=False):
+        clone = filter_geometry(self, intersects=bbox.ewkt)
         # Tile grid uses 3857, but coordinates should be in 4326 commonly.
         tile_srid = 3857
         coord_srid = bbox.srid
-        transform = self._transform()
+        transform = clone._transform()
         if clip:
             ewkt = ('GeomFromEWKT' if connection.ops.spatialite else
                     'ST_GeomFromEWKT')
             transform = "ST_Intersection(%s, %s('%s'))" % (
                 transform, ewkt, bbox.ewkt)
-        if self.geo_field.srid != tile_srid:
+        if clone.geo_field.srid != tile_srid:
             transform = 'ST_Transform(%s, %s)' % (transform, tile_srid)
-        simplify = self._simplify(transform, tolerance)
+        simplify = clone._simplify(transform, tolerance)
         latlng = 'ST_Transform(%s, %s)' % (simplify, coord_srid)
-        return self._as_format(latlng, 'geojson')
+        if format == 'pbf':
+            return clone.pbf(bbox, geo_col=latlng)
+        return clone._as_format(latlng, format)

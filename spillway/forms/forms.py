@@ -170,5 +170,5 @@ class VectorTileForm(TileForm):
             tolerance = self.tolerances[data['z']]
         except IndexError:
             tolerance = self.tolerances[-1]
-        queryset = query.filter_geometry(self.queryset, intersects=bbox.ewkt)
-        self.queryset = queryset.tile_geojson(bbox, tolerance, data['clip'])
+        self.queryset = self.queryset.tile(
+            bbox, tolerance, data['format'], data['clip'])
