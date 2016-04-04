@@ -25,17 +25,18 @@ def make_dbsource(**kwargs):
             kwargs.setdefault(mopt, val)
     return mapnik.PostGIS(**kwargs)
 
-def build_map(queryset, tileform):
+def build_map(querysets, tileform):
     data = tileform.cleaned_data if tileform.is_valid() else {}
     stylename = data.get('style')
     m = Map()
-    layer = m.layer(queryset, stylename)
     m.zoom_bbox(data.get('bbox'))
-    if layer.datasource.type() == mapnik.DataType.Raster:
-        rcolors = colors.colormap.get(layer.stylename)
-        bins = queryset.linear(data.get('limits'), k=len(rcolors))
-        style = dict(m.map.styles).get(layer.stylename)
-        add_colorizer_stops(style, bins, rcolors)
+    for queryset in querysets:
+        layer = m.layer(queryset, stylename)
+        if layer.datasource.type() == mapnik.DataType.Raster:
+            rcolors = colors.colormap.get(layer.stylename)
+            bins = queryset.linear(data.get('limits'), k=len(rcolors))
+            style = dict(m.map.styles).get(layer.stylename)
+            add_colorizer_stops(style, bins, rcolors)
     return m
 
 
