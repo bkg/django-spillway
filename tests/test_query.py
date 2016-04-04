@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.contrib.gis import geos
 
+from spillway import forms
 from spillway.query import GeoQuerySet
 from .models import Location
 
@@ -56,6 +57,13 @@ class GeoQuerySetTestCase(TestCase):
         self.assertTrue(sqs[0].kml.startswith('<Polygon>'))
         self.assertNotIn('<coordinates></coordinates>', sqs[0].kml)
         self.assertXMLNotEqual(sqs[0].kml, self.qs[0].geom.kml)
+
+    def test_tile_pbf(self):
+        tf = forms.VectorTileForm({'z': 6, 'x': 32, 'y': 32})
+        self.assertTrue(tf.is_valid())
+        qs = self.qs.tile(
+            tf.cleaned_data['bbox'], format='pbf', clip=True)
+        self.assertTrue(qs[0].pbf.startswith('POLYGON((1456.355556 4096'))
 
     def test_transform(self):
         sql = self.qs._transform(self.srid)
