@@ -97,7 +97,6 @@ class RasterRendererTestCase(RasterTestBase):
         memio = self._save(format)
         imgs = [{'file': memio, 'path': 'test'}]
         fp = obj.render(imgs)
-        self.assertTrue(memio.closed)
         with zipfile.ZipFile(fp) as zf:
             for name in zf.namelist():
                 self.assert_format(zf.read(name), format)
@@ -111,11 +110,10 @@ class RasterRendererTestCase(RasterTestBase):
 
     def test_render_hfa(self):
         memio = self._save('HFA')
-        data = renderers.HFARenderer().render(
+        fp = renderers.HFARenderer().render(
             {'file': memio, 'path': 'test.img'})
         # Read the image header.
-        self.assertEqual(data[:15], self.img_header)
-        self.assertTrue(memio.closed)
+        self.assertEqual(fp.read()[:15], self.img_header)
 
     def test_render_hfazip(self):
         memio = self._save('HFA')
@@ -128,8 +126,9 @@ class RasterRendererTestCase(RasterTestBase):
 
     def test_render_jpeg(self):
         memio = self._save('JPEG')
-        imgdata = renderers.JPEGRenderer().render(
+        fp = renderers.JPEGRenderer().render(
             {'file': memio, 'path': 'test.jpg'})
+        imgdata = fp.read()
         self.assertEqual(imgdata[:10], '\xff\xd8\xff\xe0\x00\x10JFIF')
 
     @unittest.skipIf('TRAVIS' in os.environ,
@@ -140,9 +139,9 @@ class RasterRendererTestCase(RasterTestBase):
 
     def test_render_png(self):
         memio = self._save('PNG')
-        imgdata = renderers.PNGRenderer().render(
+        fp = renderers.PNGRenderer().render(
             {'file': memio, 'path': 'test.png'})
-        self.assert_format(imgdata, 'PNG')
+        self.assert_format(fp.read(), 'PNG')
 
     def test_render_pngzip(self):
         self.assert_member_formats(renderers.PNGZipRenderer(), 'PNG')

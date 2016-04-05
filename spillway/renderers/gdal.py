@@ -27,16 +27,17 @@ class BaseGDALRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         self.set_filename(self.basename(data), renderer_context)
-        img = data['file']
+        fp = data['file']
         try:
-            imgdata = img.read()
+            fp.seek(0, 2)
         except AttributeError:
-            self.set_response_length(os.path.getsize(img), renderer_context)
-            imgdata = open(img)
+            size = os.path.getsize(fp)
+            fp = open(fp)
         else:
-            img.close()
-        return imgdata
-
+            size = fp.tell()
+            fp.seek(0)
+        self.set_response_length(size, renderer_context)
+        return fp
 
     def set_filename(self, name, renderer_context):
         type_name = 'attachment; filename=%s' % name
