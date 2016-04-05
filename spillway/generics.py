@@ -1,4 +1,4 @@
-from django.http import StreamingHttpResponse
+from django.http import FileResponse
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.settings import api_settings
 
@@ -42,11 +42,11 @@ class BaseRasterView(mixins.ModelSerializerMixin):
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(BaseRasterView, self).finalize_response(
             request, response, *args, **kwargs)
-        # Use streaming responses for GDAL formats.
+        # Use streaming file responses for GDAL formats.
         if isinstance(response.accepted_renderer,
                       renderers.gdal.BaseGDALRenderer):
             headers = response._headers
-            response = StreamingHttpResponse(response.rendered_content)
+            response = FileResponse(response.rendered_content)
             response._headers = headers
         return response
 
