@@ -36,7 +36,7 @@ class TileViewTestCase(APITestCase):
                          len(self.geometry['coordinates'][0]) + 1)
 
     def test_unclipped_response(self):
-        response = self.client.get('/vectiles/10/553/347/')
+        response = self.client.get('/vectiles/10/553/347.geojson')
         d = json.loads(response.content)
         self.assertTrue(self.is_polygon_equal(d))
 
@@ -63,6 +63,7 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
     def test_nonexistent_tileset(self):
         response = self.client.get('/maptiles/999/9/9/9/')
         self.assertEqual(response.status_code, 404)
+        self.assertEqual(response['Content-Type'], 'text/html')
 
     def test_empty_tile(self):
         response = self.client.get('/maptiles/1/10/553/347/')

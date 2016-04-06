@@ -1,3 +1,4 @@
+from django.http import Http404
 from rest_framework.renderers import BaseRenderer
 
 
@@ -11,7 +12,7 @@ class MapnikRenderer(BaseRenderer):
     def render(self, map, accepted_media_type=None, renderer_context=None):
         response = renderer_context and renderer_context.get('response')
         if getattr(response, 'exception', False):
-            return map
+            raise Http404
         return map.render(self.format)
 
 
