@@ -1,6 +1,3 @@
-from rest_framework.exceptions import ValidationError
-
-
 class ModelSerializerMixin(object):
     """Provides generic model serializer classes to views."""
     model_serializer_class = None
