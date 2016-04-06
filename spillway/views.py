@@ -12,7 +12,7 @@ class MapView(GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         form = forms.RasterTileForm(dict(self.request.query_params.dict(),
-                                    **self.kwargs))
+                                         **self.kwargs))
         return Response(carto.build_map([self.get_object()], form))
 
 
@@ -27,6 +27,6 @@ class TileView(BaseGeoView, ListAPIView):
                       renderers.GeoJSONRenderer):
             return super(TileView, self).get(request, *args, **kwargs)
         form = forms.VectorTileForm(dict(self.request.query_params.dict(),
-                                    **self.kwargs))
-        querysets = [self.filter_queryset(self.get_queryset())]
+                                         **self.kwargs))
+        querysets = [self.get_queryset()]
         return Response(carto.build_map(querysets, form))
