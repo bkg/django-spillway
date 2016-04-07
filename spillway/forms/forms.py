@@ -157,8 +157,6 @@ class RasterTileForm(TileForm):
 class VectorTileForm(TileForm):
     clip = forms.BooleanField(required=False, initial=False)
     format = forms.CharField(required=False)
-    # Tile grid uses 3857, but coordinates should be in 4326 commonly.
-    tile_srid = 3857
     # Geometry simplification tolerances based on tile zlevel, see
     # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames.
     tolerances = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
