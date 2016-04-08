@@ -1,11 +1,11 @@
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView, ListAPIView
 
-from spillway import carto, filters, forms, renderers
+from spillway import carto, filters, forms, mixins, renderers
 from spillway.generics import BaseGeoView
 
 
-class MapView(GenericAPIView):
+class MapView(mixins.ResponseExceptionMixin, GenericAPIView):
     """View for rendering map tiles from /{z}/{x}/{y}/ tile coordinates."""
     renderer_classes = (renderers.MapnikRenderer,
                         renderers.MapnikJPEGRenderer)
