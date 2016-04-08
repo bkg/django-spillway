@@ -8,7 +8,8 @@ _default_filters = tuple(api_settings.DEFAULT_FILTER_BACKENDS)
 _default_renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
 
 
-class BaseGeoView(mixins.ModelSerializerMixin):
+class BaseGeoView(mixins.ModelSerializerMixin,
+                  mixins.ResponseExceptionMixin):
     """Base view for models with geometry fields."""
     model_serializer_class = serializers.FeatureSerializer
     pagination_class = pagination.FeaturePagination
@@ -30,7 +31,8 @@ class GeoListCreateAPIView(BaseGeoView, ListCreateAPIView):
     """Generic view for listing or creating geomodel instances."""
 
 
-class BaseRasterView(mixins.ModelSerializerMixin):
+class BaseRasterView(mixins.ModelSerializerMixin,
+                     mixins.ResponseExceptionMixin):
     """Base view for raster models."""
     model_serializer_class = serializers.RasterModelSerializer
     filter_backends = _default_filters
@@ -58,18 +60,6 @@ class BaseRasterView(mixins.ModelSerializerMixin):
         renderer = self.request.accepted_renderer
         context.update(format=renderer.format, **data)
         return context
-
-    def handle_exception(self, exc):
-        response = super(BaseRasterView, self).handle_exception(exc)
-        # Avoid using any GDAL based renderer to properly return error
-        # responses.
-        if response.exception:
-            renderers = api_settings.DEFAULT_RENDERER_CLASSES
-            conneg = self.get_content_negotiator()
-            neg = conneg.select_renderer(
-                self.request, renderers, self.format_kwarg)
-            self.request.accepted_renderer, self.request.accepted_media_type = neg
-        return response
 
     @property
     def paginator(self):
