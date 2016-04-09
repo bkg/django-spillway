@@ -38,7 +38,7 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
     from .models import Location
 
     urlpatterns = [
-        url(r'^locations/(?P<slug[\w-]+)/$',
+        url(r'^locations/(?P<slug>[\w-]+)/$',
             generics.GeoDetailView.as_view(queryset=Location.objects.all()),
             name='location'),
         url(r'^locations/$',
