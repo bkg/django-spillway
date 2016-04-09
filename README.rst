@@ -33,18 +33,18 @@ Add vector response formats such as GeoJSON, KML/KMZ, and SVG to your API.
         objects = GeoQuerySet.as_manager()
 
     # urls.py
-    from django.conf.urls import patterns, url
+    from django.conf.urls import url
     from spillway import generics
     from .models import Location
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         url(r'^locations/(?P<slug[\w-]+)/$',
             generics.GeoDetailView.as_view(queryset=Location.objects.all()),
             name='location'),
         url(r'^locations/$',
             generics.GeoListView.as_view(queryset=Location.objects.all()),
             name='location-list'),
-    )
+    ]
 
 Retrieve all locations as GeoJSON::
 
@@ -73,18 +73,18 @@ Raster data support is provided as well.
         objects = GeoQuerySet.as_manager()
 
     # urls.py
-    from django.conf.urls import patterns, url
+    from django.conf.urls import url
     from spillway import generics
     from .models import RasterStore
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         url(r'^rstores/(?P<slug>[\w-]+)/$',
             generics.RasterDetailView.as_view(queryset=RasterStore.objects.all()),
             name='rasterstore'),
         url(r'^rstores/$',
             generics.RasterListView.as_view(queryset=RasterStore.objects.all()),
             name='rasterstore-list'),
-    )
+    ]
 
 Return JSON containing a 2D array of pixel values for a given bounding box::
 
@@ -131,20 +131,21 @@ presented here use a scheme of "/{z}/{x}/{y}.{format}".
 
 .. code-block:: python
 
+    from django.conf.urls import url
     from spillway import views
     from .models import Location, RasterStore
 
     _format_suffix = r'(?:\.(?P<format>[\w.]+))?'
     _tile = r'(?P<z>\d+)/(?P<x>\d+)/(?P<y>\d+)%s/?$' % _format_suffix
 
-    urlpatterns = patterns('',
+    urlpatterns = [
         url(r'^locations/%s' % _tile,
             views.TileView.as_view(queryset=Location.objects.all()),
             name='location-tiles'),
         url(r'^tiles/(?P<slug>\d+)/%s' % _tile,
             views.MapView.as_view(queryset=RasterStore.objects.all()),
             name='map-tiles'),
-    )
+    ]
 
 Be sure to cache map tiles through configuration of your web server or Django's
 cache framework when serving outside of development environments.
