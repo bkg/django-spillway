@@ -112,14 +112,13 @@ be added and tested though the read-only variety is available.
 .. code-block:: python
 
     from spillway import viewsets
+    from .models import Location, RasterStore
 
     class LocationViewSet(viewsets.GeoModelViewSet):
         queryset = Location.objects.all()
-        serializer_class = LocationFeatureSerializer
 
     class RasterViewSet(viewsets.ReadOnlyRasterModelViewSet):
         queryset = RasterStore.objects.all()
-        serializer_class = RasterStoreSerializer
 
 
 Renderers
