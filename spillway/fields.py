@@ -1,11 +1,6 @@
 """Serializer fields"""
-import os
-
 from django.contrib.gis import forms
 from rest_framework.fields import Field, FileField
-from greenwich.io import MemFileIO
-from greenwich.raster import Raster, driver_for_path
-import numpy as np
 
 from spillway.compat import json
 
@@ -27,46 +22,6 @@ class GeometryField(Field):
             return value
 
 
-class NDArrayField(FileField):
-    def to_representation(self, value):
-        geom = self.context.get('g')
-        stat = self.context.get('stat')
-        with Raster(getattr(value, 'path', value)) as r:
-            if geom:
-                if geom.num_coords > 1:
-                    with r.clip(geom) as clipped:
-                        arr = clipped.masked_array()
-                else:
-                    coord_px = r.affine.transform((geom.coords,)).pop()
-                    arr = r.ReadAsArray(*(coord_px + (1, 1)))
-            else:
-                arr = r.masked_array()
-            if arr is not None:
-                if stat:
-                    arr = getattr(np.ma, stat)(arr)
-                if arr.size == 1:
-                    arr = arr.item()
-            return arr
-        raise ValueError('Failure reading array values')
-
-
 class GDALField(FileField):
     def to_representation(self, value):
-        imgpath = value.path
-        geom = self.context.get('g')
-        # Handle format as .tif, tif, or tif.zip
-        ext = self.context.get('format') or os.path.splitext(imgpath)[-1][1:]
-        ext = os.path.splitext(ext)[0]
-        # No conversion is needed if the original format without clipping
-        # is requested.
-        if not geom and imgpath.endswith(ext):
-            return imgpath
-        driver = driver_for_path('base.%s' % ext)
-        memio = MemFileIO()
-        if geom:
-            with Raster(imgpath) as r:
-                with r.clip(geom) as clipped:
-                    clipped.save(memio, driver)
-        else:
-            driver.copy(imgpath, memio.name)
-        return memio
+        return value

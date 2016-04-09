@@ -2,7 +2,7 @@ import json
 
 from django.contrib.gis import geos
 from django.contrib.gis.db import models
-from spillway.models import AbstractRasterStore
+from spillway.models import AbstractRasterStore, RasterQuerySet
 from spillway.query import GeoQuerySet
 
 _geom = {
@@ -54,4 +54,4 @@ class GeoLocation(AbstractLocation):
 
 
 class RasterStore(AbstractRasterStore):
-    objects = GeoQuerySet.as_manager()
+    objects = RasterQuerySet.as_manager()

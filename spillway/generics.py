@@ -41,6 +41,14 @@ class BaseRasterView(mixins.ModelSerializerMixin,
         renderers.HFAZipRenderer,
     )
 
+    def filter_queryset(self, queryset):
+        queryset = super(BaseRasterView, self).filter_queryset(queryset)
+        renderer = self.request.accepted_renderer
+        form = forms.RasterQueryForm(
+            self.request.query_params or self.request.data)
+        data = form.cleaned_data if form.is_valid() else {}
+        return queryset.warp(renderer, data.get('g'), data.get('stat'))
+
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(BaseRasterView, self).finalize_response(
             request, response, *args, **kwargs)
@@ -51,15 +59,6 @@ class BaseRasterView(mixins.ModelSerializerMixin,
             response = FileResponse(response.rendered_content)
             response._headers = headers
         return response
-
-    def get_serializer_context(self):
-        context = super(BaseRasterView, self).get_serializer_context()
-        form = forms.RasterQueryForm(
-            self.request.query_params or self.request.data)
-        data = form.cleaned_data if form.is_valid() else {}
-        renderer = self.request.accepted_renderer
-        context.update(format=renderer.format, **data)
-        return context
 
     @property
     def paginator(self):

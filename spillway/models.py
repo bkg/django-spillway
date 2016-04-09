@@ -5,9 +5,12 @@ from django.contrib.gis.db import models
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
 import greenwich
+from greenwich.io import MemFileIO
 import numpy as np
+from rest_framework import renderers
 
 from spillway.compat import mapnik
+from spillway.query import GeoQuerySet
 
 
 # Workaround for migrations and FileField upload_to, see:
@@ -21,6 +24,39 @@ class UploadDir(object):
         return os.path.join(self.path, filename)
 
 upload_to = UploadDir('data')
+
+
+class RasterQuerySet(GeoQuerySet):
+    def aggregate_periods(self, periods):
+        record = self[0]
+        arr = record.image
+        fill = getattr(arr, 'fill_value', None)
+        arrays = [row.image for row in self]
+        if getattr(arr, 'ndim', 0) > 2:
+            arrays = np.vstack(arrays)
+        marr = np.ma.array(arrays, fill_value=fill, copy=False)
+        # Try to reshape using equal sizes first and fall back to unequal
+        # splits.
+        try:
+            means = marr.reshape((periods, -1)).mean(axis=1)
+        except ValueError:
+            means = [a.mean() for a in np.array_split(marr, periods)]
+        record.image = means
+        return [record]
+
+    def warp(self, renderer, geom=None, stat=None):
+        clone = self._clone()
+        if isinstance(renderer, (renderers.BrowsableAPIRenderer,
+                                 renderers.TemplateHTMLRenderer)):
+            pass
+        elif isinstance(renderer, renderers.JSONRenderer):
+            if geom:
+                for obj in clone:
+                    obj.image = obj.array(geom, stat)
+        else:
+            for obj in clone:
+                obj.convert(renderer.format, geom)
+        return clone
 
 
 class AbstractRasterStore(models.Model):
@@ -37,6 +73,7 @@ class AbstractRasterStore(models.Model):
     # Spatial resolution
     xpixsize = models.FloatField(_('West to East pixel resolution'))
     ypixsize = models.FloatField(_('North to South pixel resolution'))
+    objects = RasterQuerySet()
 
     class Meta:
         unique_together = ('image', 'event')
@@ -85,3 +122,41 @@ class AbstractRasterStore(models.Model):
     def save(self, *args, **kwargs):
         self.full_clean()
         super(AbstractRasterStore, self).save(*args, **kwargs)
+
+    def array(self, geom=None, stat=None):
+        with greenwich.Raster(self.image.path) as r:
+            if geom:
+                if geom.num_coords > 1:
+                    with r.clip(geom) as clipped:
+                        arr = clipped.masked_array()
+                else:
+                    coord_px = r.affine.transform((geom.coords,)).pop()
+                    arr = r.ReadAsArray(*(coord_px + (1, 1)))
+            else:
+                arr = r.masked_array()
+            if arr is not None:
+                if stat:
+                    arr = getattr(np.ma, stat)(arr)
+                if arr.size == 1:
+                    arr = arr.item()
+            return arr
+        raise ValueError('Failure reading array values')
+
+    def convert(self, format=None, geom=None):
+        imgpath = self.image.path
+        # Handle format as .tif, tif, or tif.zip
+        ext = format or os.path.splitext(imgpath)[-1][1:]
+        ext = os.path.splitext(ext)[0]
+        driver = greenwich.driver_for_path('base.%s' % ext)
+        # No conversion is needed if the original format without clipping
+        # is requested.
+        if not geom and imgpath.endswith(ext):
+            return
+        memio = MemFileIO()
+        if geom:
+            with greenwich.Raster(imgpath) as r:
+                with r.clip(geom) as clipped:
+                    clipped.save(memio, driver)
+        else:
+            driver.copy(imgpath, memio.name)
+        self.image.file = memio

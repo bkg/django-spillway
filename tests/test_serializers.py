@@ -10,6 +10,7 @@ from greenwich.srs import SpatialReference
 
 from spillway import fields, generics, serializers
 from spillway.collections import Feature, FeatureCollection
+from spillway.renderers import GeoTIFFRenderer
 from .models import Location, RasterStore, _geom
 from .test_models import RasterStoreTestBase
 
@@ -34,10 +35,6 @@ class LocationFeatureSerializer(serializers.FeatureSerializer):
     class Meta:
         model = Location
         geom_field = 'geom'
-
-
-class ArraySerializer(Serializer):
-    path = fields.NDArrayField()
 
 
 class RasterStoreSerializer(serializers.RasterModelSerializer):
@@ -173,11 +170,6 @@ class FeatureSerializerTestCase(ModelTestCase):
 
 
 class RasterSerializerTestCase(RasterStoreTestBase):
-    def test_array_serializer(self):
-        serializer = ArraySerializer(self.data)
-        self.assertEqual(serializer.data['path'].tolist(),
-                         Raster(self.data['path']).array().tolist())
-
     def test_invalid_periods(self):
         ctx = {'periods': 3, 'request': RequestMock()}
         serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
@@ -200,11 +192,14 @@ class RasterSerializerTestCase(RasterStoreTestBase):
     def test_serialize_context(self):
         geom = self.object.geom.buffer(-1)
         ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
-        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        qs = (self.qs.warp(renderers.JSONRenderer(), geom)
+                     .aggregate_periods(1))
+        serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
         self.assertEqual(serializer.data[0]['image'], [9.0])
         ctx.pop('request')
-        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        qs = self.qs.warp(GeoTIFFRenderer(), geom)
+        serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         with open(self.data['path']) as f:
             content = f.read()
         self.assertNotEqual(serializer.data[0]['file'].read(), content)
