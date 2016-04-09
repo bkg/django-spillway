@@ -121,6 +121,35 @@ be added and tested though the read-only variety is available.
         queryset = RasterStore.objects.all()
 
 
+Map Tiles
+---------
+MapView and TileView are available respectively for generating image or vector
+map tiles. Image tiles require the optional dependency Mapnik, so be sure to
+have that installed. In this example, GeoJSON or PNG tiles can be requested for
+the Location geo model, or PNG tiles for RasterStore data sets. The urls
+presented here use a scheme of "/{z}/{x}/{y}.{format}".
+
+.. code-block:: python
+
+    from spillway import views
+    from .models import Location, RasterStore
+
+    _format_suffix = r'(?:\.(?P<format>[\w.]+))?'
+    _tile = r'(?P<z>\d+)/(?P<x>\d+)/(?P<y>\d+)%s/?$' % _format_suffix
+
+    urlpatterns = patterns('',
+        url(r'^locations/%s' % _tile,
+            views.TileView.as_view(queryset=Location.objects.all()),
+            name='location-tiles'),
+        url(r'^tiles/(?P<slug>\d+)/%s' % _tile,
+            views.MapView.as_view(queryset=RasterStore.objects.all()),
+            name='map-tiles'),
+    )
+
+Be sure to cache map tiles through configuration of your web server or Django's
+cache framework when serving outside of development environments.
+
+
 Renderers
 ---------
 So far there are renderers for common raster and vector data formats, namely
