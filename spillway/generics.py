@@ -1,6 +1,7 @@
 from django.http import FileResponse
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.settings import api_settings
+import rest_framework.renderers as rn
 
 from spillway import filters, forms, mixins, pagination, renderers, serializers
 
@@ -44,10 +45,17 @@ class BaseRasterView(mixins.ModelSerializerMixin,
     def filter_queryset(self, queryset):
         queryset = super(BaseRasterView, self).filter_queryset(queryset)
         renderer = self.request.accepted_renderer
+        if isinstance(renderer, (rn.BrowsableAPIRenderer,
+                                 rn.TemplateHTMLRenderer)):
+            return queryset
         form = forms.RasterQueryForm(
             self.request.query_params or self.request.data)
         data = form.cleaned_data if form.is_valid() else {}
-        return queryset.warp(renderer, data.get('g'), data.get('stat'))
+        geom, stat, periods = map(data.get, ('g', 'stat', 'periods'))
+        qs = queryset.warp(renderer, geom, stat)
+        if periods:
+            return qs.aggregate_periods(periods)
+        return qs
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(BaseRasterView, self).finalize_response(

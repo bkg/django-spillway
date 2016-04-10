@@ -87,6 +87,7 @@ class RasterRendererTestCase(RasterTestBase):
         memio = MemFileIO()
         with Raster(self.data['path']) as r:
             r.save(memio, drivername)
+        memio.path = self.data['path']
         return memio
 
     def assert_format(self, data, format):
@@ -95,7 +96,7 @@ class RasterRendererTestCase(RasterTestBase):
 
     def assert_member_formats(self, obj, format):
         memio = self._save(format)
-        imgs = [{'file': memio, 'path': 'test'}]
+        imgs = [{'image': memio, 'path': 'test'}]
         fp = obj.render(imgs)
         with zipfile.ZipFile(fp) as zf:
             for name in zf.namelist():
@@ -111,14 +112,14 @@ class RasterRendererTestCase(RasterTestBase):
     def test_render_hfa(self):
         memio = self._save('HFA')
         fp = renderers.HFARenderer().render(
-            {'file': memio, 'path': 'test.img'})
+            {'image': memio, 'path': 'test.img'})
         # Read the image header.
         self.assertEqual(fp.read()[:15], self.img_header)
 
     def test_render_hfazip(self):
         memio = self._save('HFA')
         fp = renderers.HFAZipRenderer().render(
-            {'file': memio, 'path': 'test.img'})
+            {'image': memio, 'path': 'test.img'})
         zf = zipfile.ZipFile(fp)
         for name in zf.namelist():
             self.assertRegexpMatches(name, '(?<!\.img)\.img$')
@@ -127,7 +128,7 @@ class RasterRendererTestCase(RasterTestBase):
     def test_render_jpeg(self):
         memio = self._save('JPEG')
         fp = renderers.JPEGRenderer().render(
-            {'file': memio, 'path': 'test.jpg'})
+            {'image': memio, 'path': 'test.jpg'})
         imgdata = fp.read()
         self.assertEqual(imgdata[:10], '\xff\xd8\xff\xe0\x00\x10JFIF')
 
@@ -140,7 +141,7 @@ class RasterRendererTestCase(RasterTestBase):
     def test_render_png(self):
         memio = self._save('PNG')
         fp = renderers.PNGRenderer().render(
-            {'file': memio, 'path': 'test.png'})
+            {'image': memio, 'path': 'test.png'})
         self.assert_format(fp.read(), 'PNG')
 
     def test_render_pngzip(self):

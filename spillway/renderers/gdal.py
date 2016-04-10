@@ -18,7 +18,7 @@ class BaseGDALRenderer(BaseRenderer):
         Arguments:
         item -- dict containing 'path'
         """
-        fname = os.path.basename(item['path'])
+        fname = os.path.basename(item['image'].path)
         return os.path.splitext(fname)[0] + self.file_ext
 
     @property
@@ -27,7 +27,7 @@ class BaseGDALRenderer(BaseRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         self.set_filename(self.basename(data), renderer_context)
-        fp = data['file']
+        fp = data['image']
         try:
             fp.seek(0, 2)
         except AttributeError:
@@ -74,7 +74,7 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
         with zipfile.ZipFile(fp, mode='w') as zf:
             for item in data:
                 arcname = os.path.join(self.arcdirname, self.basename(item))
-                io = item['file']
+                io = item['image']
                 try:
                     zf.writestr(arcname, io.read())
                 except AttributeError:
