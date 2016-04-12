@@ -192,8 +192,12 @@ class RasterQuerySet(GeoQuerySet):
     def aggregate_periods(self, periods):
         record = self[0]
         arr = record.image
+        if isinstance(arr, np.ndarray):
+            arrays = [obj.image for obj in self]
+        else:
+            arrays = [obj.array() for obj in self]
+            arr = arrays[0]
         fill = getattr(arr, 'fill_value', None)
-        arrays = [row.image for row in self]
         if getattr(arr, 'ndim', 0) > 2:
             arrays = np.vstack(arrays)
         marr = np.ma.array(arrays, fill_value=fill, copy=False)
