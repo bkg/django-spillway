@@ -10,9 +10,6 @@ class MapnikRenderer(BaseRenderer):
     render_style = 'binary'
 
     def render(self, map, accepted_media_type=None, renderer_context=None):
-        response = renderer_context and renderer_context.get('response')
-        if getattr(response, 'exception', False):
-            raise Http404
         return map.render(self.format)
 
 
