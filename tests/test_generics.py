@@ -195,6 +195,11 @@ class RasterListViewTestCase(RasterStoreTestBase):
             queryset=RasterStore.objects.all())
 
     def test_list_json(self):
+        request = factory.get('/')
+        d = json.loads(self.view(request).render().content)
+        self.assertRegexpMatches(d[0]['image'], '^http://.*\.tif$')
+
+    def test_list_json_array(self):
         with Raster(self.object.image.path) as r:
             imdata = r.array().tolist()
             g = r.envelope.polygon.__geo_interface__

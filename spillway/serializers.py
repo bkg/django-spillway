@@ -129,7 +129,8 @@ class RasterModelSerializer(GeoModelSerializer):
         fieldname = self.Meta.raster_field
         request = self.context.get('request')
         renderer = getattr(request, 'accepted_renderer', None)
-        if isinstance(renderer, (renderers.JSONRenderer,
-                                 BaseGDALRenderer)):
+        if (isinstance(renderer, BaseGDALRenderer)
+                or (isinstance(renderer, renderers.JSONRenderer)
+                and 'g' in request.GET)):
             fields[fieldname] = serializers.ReadOnlyField()
         return fields

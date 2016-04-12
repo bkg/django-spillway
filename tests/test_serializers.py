@@ -20,6 +20,7 @@ factory = APIRequestFactory()
 class RequestMock(object):
     def __init__(self):
         self.accepted_renderer = renderers.JSONRenderer()
+        self.GET = {}
 
     def build_absolute_uri(self, url):
         return url
@@ -212,6 +213,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
     def test_serialize_point_context(self):
         geom = self.object.geom.centroid
         ctx = {'g': geom, 'request': self.request}
+        self.request.GET.update(ctx)
         qs = self.qs.warp(self.request.accepted_renderer, ctx['g'])
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
