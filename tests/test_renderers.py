@@ -85,18 +85,18 @@ class RasterRendererTestCase(RasterTestBase):
 
     def _save(self, drivername):
         memio = MemFileIO()
-        with Raster(self.data['path']) as r:
+        with Raster(self.data['image'].name) as r:
             r.save(memio, drivername)
-        memio.path = self.data['path']
-        return memio
+        # Mimic a FieldFile.
+        memio.path = self.data['image'].name
+        return {'image': memio}
 
     def assert_format(self, data, format):
         im = self._image(data)
         self.assertEqual(im.format, format)
 
     def assert_member_formats(self, obj, format):
-        memio = self._save(format)
-        imgs = [{'image': memio, 'path': 'test'}]
+        imgs = [self._save(format)]
         fp = obj.render(imgs)
         with zipfile.ZipFile(fp) as zf:
             for name in zf.namelist():
@@ -110,25 +110,19 @@ class RasterRendererTestCase(RasterTestBase):
         self.assertEqual(fp.read(), self.f.read())
 
     def test_render_hfa(self):
-        memio = self._save('HFA')
-        fp = renderers.HFARenderer().render(
-            {'image': memio, 'path': 'test.img'})
+        fp = renderers.HFARenderer().render(self._save('HFA'))
         # Read the image header.
         self.assertEqual(fp.read()[:15], self.img_header)
 
     def test_render_hfazip(self):
-        memio = self._save('HFA')
-        fp = renderers.HFAZipRenderer().render(
-            {'image': memio, 'path': 'test.img'})
+        fp = renderers.HFAZipRenderer().render(self._save('HFA'))
         zf = zipfile.ZipFile(fp)
         for name in zf.namelist():
             self.assertRegexpMatches(name, '(?<!\.img)\.img$')
         self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
 
     def test_render_jpeg(self):
-        memio = self._save('JPEG')
-        fp = renderers.JPEGRenderer().render(
-            {'image': memio, 'path': 'test.jpg'})
+        fp = renderers.JPEGRenderer().render(self._save('JPEG'))
         imgdata = fp.read()
         self.assertEqual(imgdata[:10], '\xff\xd8\xff\xe0\x00\x10JFIF')
 
@@ -139,16 +133,14 @@ class RasterRendererTestCase(RasterTestBase):
         self.assert_member_formats(renderers.JPEGZipRenderer(), 'JPEG')
 
     def test_render_png(self):
-        memio = self._save('PNG')
-        fp = renderers.PNGRenderer().render(
-            {'image': memio, 'path': 'test.png'})
+        fp = renderers.PNGRenderer().render(self._save('PNG'))
         self.assert_format(fp.read(), 'PNG')
 
     def test_render_pngzip(self):
         self.assert_member_formats(renderers.PNGZipRenderer(), 'PNG')
 
     def test_render_tifzip(self):
-        tifs = [self.data, self.data]
+        tifs = [self.data]
         fp = renderers.GeoTIFFZipRenderer().render(tifs)
         zf = zipfile.ZipFile(fp)
         self.assertEqual(len(zf.filelist), len(tifs))

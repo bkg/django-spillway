@@ -5,6 +5,7 @@ import tempfile
 from django.core.files.storage import default_storage
 from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.models.fields.files import FieldFile
 from django.test import SimpleTestCase, TestCase
 from greenwich import raster
 from PIL import Image
@@ -26,7 +27,9 @@ def create_image():
 class RasterTestBase(SimpleTestCase):
     def setUp(self):
         self.f = create_image()
-        self.data = {'path': self.f.name, 'file': self.f.name}
+        ff = FieldFile(
+            None, RasterStore._meta.get_field('image'), self.f.name)
+        self.data = {'image': ff}
 
     def tearDown(self):
         self.f.close()
@@ -38,7 +41,7 @@ class RasterTestBase(SimpleTestCase):
 class RasterStoreTestBase(RasterTestBase, TestCase):
     def setUp(self):
         super(RasterStoreTestBase, self).setUp()
-        self.object = RasterStore.objects.create(image=File(self.f))
+        self.object = RasterStore.objects.create(image=self.f)
         self.qs = RasterStore.objects.all()
 
 

@@ -177,7 +177,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
 
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)
-        path = serializer.data[0]['path']
+        path = serializer.data[0]['image']
         self.assertEqual(path, self.qs[0].image.path)
         expected = {
           'geom': {'type': 'Polygon',
@@ -192,17 +192,16 @@ class RasterSerializerTestCase(RasterStoreTestBase):
     def test_serialize_context(self):
         geom = self.object.geom.buffer(-1)
         ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
-        qs = (self.qs.warp(renderers.JSONRenderer(), geom)
+        qs = (self.qs.warp(ctx['request'].accepted_renderer, geom)
                      .aggregate_periods(1))
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
         self.assertEqual(serializer.data[0]['image'], [9.0])
-        ctx.pop('request')
+        ctx['request'].accepted_renderer = GeoTIFFRenderer()
         qs = self.qs.warp(GeoTIFFRenderer(), geom)
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
-        with open(self.data['path']) as f:
-            content = f.read()
-        self.assertNotEqual(serializer.data[0]['file'].read(), content)
+        content = self.f.read()
+        self.assertNotEqual(serializer.data[0]['image'].read(), content)
 
     def test_serialize_point_context(self):
         geom = self.object.geom.centroid
