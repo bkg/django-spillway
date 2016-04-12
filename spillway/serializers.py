@@ -4,8 +4,7 @@ from greenwich.srs import SpatialReference
 import numpy as np
 
 from spillway import query, collections as sc
-from spillway.fields import GeometryField, GDALField
-from spillway.renderers.gdal import BaseGDALRenderer
+from spillway.fields import GeometryField
 
 serializers.ModelSerializer.serializer_field_mapping.update({
     models.GeometryField: GeometryField,
@@ -129,7 +128,10 @@ class RasterModelSerializer(GeoModelSerializer):
         fieldname = self.Meta.raster_field
         request = self.context.get('request')
         renderer = getattr(request, 'accepted_renderer', None)
-        if isinstance(renderer, (renderers.JSONRenderer,
-                                 BaseGDALRenderer)):
-            fields[fieldname] = GDALField()
+        if isinstance(renderer, renderers.JSONRenderer):
+            fields[fieldname] = serializers.ReadOnlyField()
         return fields
+
+
+class ImageSerializer(serializers.Serializer):
+    image = serializers.ReadOnlyField()

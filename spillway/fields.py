@@ -20,8 +20,3 @@ class GeometryField(Field):
         # Value is already serialized as geojson, kml, etc.
         except AttributeError:
             return value
-
-
-class GDALField(FileField):
-    def to_representation(self, value):
-        return value
