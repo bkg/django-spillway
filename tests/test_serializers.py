@@ -170,41 +170,49 @@ class FeatureSerializerTestCase(ModelTestCase):
 
 
 class RasterSerializerTestCase(RasterStoreTestBase):
+    def setUp(self):
+        super(RasterSerializerTestCase, self).setUp()
+        self.request = RequestMock()
+        self.ctx = {'request': self.request}
+
     def test_invalid_periods(self):
-        ctx = {'periods': 3, 'request': RequestMock()}
-        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        qs = self.qs.aggregate_periods(3)
+        ctx = {'request': self.request}
+        serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), len(self.qs))
 
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)
-        path = serializer.data[0]['image']
-        self.assertEqual(path, self.qs[0].image.path)
+        data = serializer.data[0]
+        self.assertEqual(data['image'], self.qs[0].image.path)
         expected = {
           'geom': {'type': 'Polygon',
                    'coordinates': (((-120.0, 28.0), (-110.0, 28.0),
                                     (-110.0, 38.0), (-120.0, 38.0), (-120.0, 28.0)),)},
           'minval': 0.0, 'maxval': 24.0, 'nodata': None
         }
-        data = serializer.data[0]
         self.assertEqual(SpatialReference(data['srs']), SpatialReference(4326))
         self.assertDictContainsSubset(expected, data)
 
     def test_serialize_context(self):
         geom = self.object.geom.buffer(-1)
-        ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
-        qs = (self.qs.warp(ctx['request'].accepted_renderer, geom)
+        ctx = {'g': geom, 'request': self.request}
+        self.request.GET.update(ctx)
+        qs = (self.qs.warp(self.request.accepted_renderer, geom)
                      .aggregate_periods(1))
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
         self.assertEqual(serializer.data[0]['image'], [9.0])
-        ctx['request'].accepted_renderer = GeoTIFFRenderer()
-        qs = self.qs.warp(GeoTIFFRenderer(), geom)
+        self.request.accepted_renderer = GeoTIFFRenderer()
+        qs = self.qs.warp(self.request.accepted_renderer, geom)
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         content = self.f.read()
         self.assertNotEqual(serializer.data[0]['image'].read(), content)
 
     def test_serialize_point_context(self):
         geom = self.object.geom.centroid
-        ctx = {'g': geom, 'periods': 1, 'request': RequestMock()}
-        serializer = RasterStoreSerializer(self.qs, many=True, context=ctx)
+        ctx = {'g': geom, 'request': self.request}
+        qs = self.qs.warp(self.request.accepted_renderer, ctx['g'])
+        serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
+        self.assertEqual(serializer.data[0]['image'], 12)
