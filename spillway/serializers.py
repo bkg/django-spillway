@@ -5,6 +5,7 @@ import numpy as np
 
 from spillway import query, collections as sc
 from spillway.fields import GeometryField
+from spillway.renderers.gdal import BaseGDALRenderer
 
 serializers.ModelSerializer.serializer_field_mapping.update({
     models.GeometryField: GeometryField,
@@ -128,10 +129,7 @@ class RasterModelSerializer(GeoModelSerializer):
         fieldname = self.Meta.raster_field
         request = self.context.get('request')
         renderer = getattr(request, 'accepted_renderer', None)
-        if isinstance(renderer, renderers.JSONRenderer):
+        if isinstance(renderer, (renderers.JSONRenderer,
+                                 BaseGDALRenderer)):
             fields[fieldname] = serializers.ReadOnlyField()
         return fields
-
-
-class ImageSerializer(serializers.Serializer):
-    image = serializers.ReadOnlyField()
