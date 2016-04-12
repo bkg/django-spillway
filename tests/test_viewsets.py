@@ -57,6 +57,8 @@ class RasterViewSetTestCase(SimpleQueryTestCase):
         response = self.view(request)
         self.assertEqual(response['Content-Type'],
                          GeoTIFFZipRenderer.media_type)
+        self.assertIn(GeoTIFFZipRenderer.format,
+                      response['Content-Disposition'])
 
     def test_register(self):
         self.assertGreater(len(self.router.urls), 0)
