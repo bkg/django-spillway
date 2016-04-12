@@ -1,6 +1,12 @@
+import os
+import tempfile
+import zipfile
+
 from django.contrib.gis import geos
 from django.contrib.gis.db.models import query
 from django.db import connection
+import numpy as np
+from rest_framework import renderers
 
 def filter_geometry(queryset, **filters):
     """Helper function for spatial lookups filters.
@@ -180,3 +186,33 @@ class GeoQuerySet(query.GeoQuerySet):
         if format == 'pbf':
             return clone.pbf(bbox, geo_col=latlng)
         return clone._as_format(latlng, format)
+
+
+class RasterQuerySet(GeoQuerySet):
+    def aggregate_periods(self, periods):
+        record = self[0]
+        arr = record.image
+        fill = getattr(arr, 'fill_value', None)
+        arrays = [row.image for row in self]
+        if getattr(arr, 'ndim', 0) > 2:
+            arrays = np.vstack(arrays)
+        marr = np.ma.array(arrays, fill_value=fill, copy=False)
+        # Try to reshape using equal sizes first and fall back to unequal
+        # splits.
+        try:
+            means = marr.reshape((periods, -1)).mean(axis=1)
+        except ValueError:
+            means = [a.mean() for a in np.array_split(marr, periods)]
+        record.image = means
+        return [record]
+
+    def warp(self, renderer, geom=None, stat=None):
+        clone = self._clone()
+        if isinstance(renderer, renderers.JSONRenderer):
+            if geom:
+                for obj in clone:
+                    obj.image = obj.array(geom, stat)
+        else:
+            for obj in clone:
+                obj.convert(renderer.format, geom)
+        return clone

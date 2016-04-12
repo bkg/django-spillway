@@ -2,8 +2,8 @@ import json
 
 from django.contrib.gis import geos
 from django.contrib.gis.db import models
-from spillway.models import AbstractRasterStore, RasterQuerySet
-from spillway.query import GeoQuerySet
+from spillway.models import AbstractRasterStore
+from spillway.query import GeoQuerySet, RasterQuerySet
 
 _geom = {
     'type': 'Polygon',

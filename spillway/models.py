@@ -7,10 +7,8 @@ from django.utils.translation import ugettext_lazy as _
 import greenwich
 from greenwich.io import MemFileIO
 import numpy as np
-from rest_framework import renderers
 
-from spillway.compat import mapnik
-from spillway.query import GeoQuerySet
+from spillway.query import RasterQuerySet
 
 
 # Workaround for migrations and FileField upload_to, see:
@@ -24,39 +22,6 @@ class UploadDir(object):
         return os.path.join(self.path, filename)
 
 upload_to = UploadDir('data')
-
-
-class RasterQuerySet(GeoQuerySet):
-    def aggregate_periods(self, periods):
-        record = self[0]
-        arr = record.image
-        fill = getattr(arr, 'fill_value', None)
-        arrays = [row.image for row in self]
-        if getattr(arr, 'ndim', 0) > 2:
-            arrays = np.vstack(arrays)
-        marr = np.ma.array(arrays, fill_value=fill, copy=False)
-        # Try to reshape using equal sizes first and fall back to unequal
-        # splits.
-        try:
-            means = marr.reshape((periods, -1)).mean(axis=1)
-        except ValueError:
-            means = [a.mean() for a in np.array_split(marr, periods)]
-        record.image = means
-        return [record]
-
-    def warp(self, renderer, geom=None, stat=None):
-        clone = self._clone()
-        if isinstance(renderer, (renderers.BrowsableAPIRenderer,
-                                 renderers.TemplateHTMLRenderer)):
-            pass
-        elif isinstance(renderer, renderers.JSONRenderer):
-            if geom:
-                for obj in clone:
-                    obj.image = obj.array(geom, stat)
-        else:
-            for obj in clone:
-                obj.convert(renderer.format, geom)
-        return clone
 
 
 class AbstractRasterStore(models.Model):
