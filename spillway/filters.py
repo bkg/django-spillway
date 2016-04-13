@@ -8,15 +8,11 @@ class FormFilterBackend(BaseFilterBackend):
     queryset_form = None
 
     def filter_queryset(self, request, queryset, view):
-        params = dict(request.query_params.dict(),
-                      **getattr(view, 'kwargs', {}))
-        params['format'] = request.accepted_renderer.format
-        form = self.queryset_form(params, queryset)
+        form = self.queryset_form.from_request(request, queryset, view)
         try:
-            form.query()
+            return form.query()
         except ValueError:
             raise exceptions.ParseError(form.errors)
-        return form.queryset
 
 
 class GeoQuerySetFilter(FormFilterBackend):
