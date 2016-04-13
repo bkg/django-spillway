@@ -1,3 +1,4 @@
+from django.core import exceptions
 from django.contrib.gis.db import models
 from rest_framework import renderers, serializers
 from greenwich.srs import SpatialReference
@@ -101,8 +102,9 @@ class FeatureSerializer(GeoModelSerializer):
             sref = SpatialReference(data['crs']['properties']['name'])
         except KeyError:
             sref = None
+        # Force evaluation of fields property.
         if not self.fields and self.Meta.geom_field is None:
-            raise Exception('No geometry field found')
+            raise exceptions.FieldDoesNotExist('Geometry field not found')
         record = {self.Meta.geom_field: data.get('geometry')}
         record.update(data.get('properties', {}))
         feature = super(FeatureSerializer, self).to_internal_value(record)

@@ -2,9 +2,11 @@ import os
 import tempfile
 import zipfile
 
+from django.core import exceptions
 from django.contrib.gis import geos
 from django.contrib.gis.db.models import query
-from django.db import connection
+from django.db import connection, models
+from django.utils.functional import cached_property
 import numpy as np
 from rest_framework import renderers
 
@@ -190,12 +192,16 @@ class GeoQuerySet(query.GeoQuerySet):
 
 class RasterQuerySet(GeoQuerySet):
     def aggregate_periods(self, periods):
-        record = self[0]
-        arr = record.image
+        obj = self[0]
+        try:
+            fieldname = self.raster_field.name
+        except TypeError:
+            raise exceptions.FieldDoesNotExist('Raster field not found')
+        arr = getattr(obj, fieldname)
         if isinstance(arr, np.ndarray):
-            arrays = [obj.image for obj in self]
+            arrays = [getattr(o, fieldname) for o in self]
         else:
-            arrays = [obj.array() for obj in self]
+            arrays = [o.array() for o in self]
             arr = arrays[0]
         fill = getattr(arr, 'fill_value', None)
         if getattr(arr, 'ndim', 0) > 2:
@@ -207,8 +213,15 @@ class RasterQuerySet(GeoQuerySet):
             means = marr.reshape((periods, -1)).mean(axis=1)
         except ValueError:
             means = [a.mean() for a in np.array_split(marr, periods)]
-        record.image = means
-        return [record]
+        setattr(obj, fieldname, means)
+        return [obj]
+
+    @cached_property
+    def raster_field(self):
+        for field in self.model._meta.fields:
+            if isinstance(field, models.FileField):
+                return field
+        return False
 
     def warp(self, renderer, geom=None, stat=None):
         clone = self._clone()

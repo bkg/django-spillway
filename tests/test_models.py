@@ -27,8 +27,7 @@ def create_image():
 class RasterTestBase(SimpleTestCase):
     def setUp(self):
         self.f = create_image()
-        ff = FieldFile(
-            None, RasterStore._meta.get_field('image'), self.f.name)
+        ff = FieldFile(None, RasterStore._meta.get_field('image'), self.f.name)
         self.data = {'image': ff}
 
     def tearDown(self):
