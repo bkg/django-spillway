@@ -99,13 +99,13 @@ class GeoQuerySet(query.GeoQuerySet):
             ext = {'extent': 'AsText(%s(%s))' % ('Extent', transform)}
         else:
             ext = {'extent': '%s(%s)' % (connection.ops.extent, transform)}
-        try:
-            # The bare order_by() is needed to remove the default sort field
-            # which is not present in this aggregation.
-            extent = (self.extra(select=ext)
-                          .values_list('extent', flat=True)
-                          .order_by()[0])
-        except IndexError:
+        # The bare order_by() is needed to remove the default sort field which
+        # is not present in this aggregation. Empty querysets will return
+        # [None] here.
+        extent = (self.extra(select=ext)
+                      .values_list('extent', flat=True)
+                      .order_by()[0])
+        if not extent:
             return ()
         try:
             try:
