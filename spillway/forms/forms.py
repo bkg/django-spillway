@@ -16,6 +16,13 @@ class GeoQuerySetForm(forms.Form):
         self.queryset = queryset
         self._is_selected = False
 
+    @classmethod
+    def from_request(cls, request, queryset, view=None):
+        params = dict(request.query_params.dict(),
+                      **getattr(view, 'kwargs', {}))
+        params['format'] = request.accepted_renderer.format
+        return cls(params, queryset)
+
     def query(self):
         """Returns the filtered/selected GeoQuerySet."""
         if not self.is_valid():
@@ -97,9 +104,10 @@ class GeometryQueryForm(GeoQuerySetForm):
             self.queryset = self.queryset.simplify(tolerance, srid, **kwargs)
 
 
-class RasterQueryForm(forms.Form):
+class RasterQueryForm(GeoQuerySetForm):
     """Validates format options for raster data."""
     bbox = fields.BoundingBoxField(required=False)
+    format = forms.CharField(required=False)
     g = fields.OGRGeometryField(required=False)
     upload = fields.GeometryFileField(required=False)
     periods = forms.IntegerField(required=False)
@@ -116,6 +124,14 @@ class RasterQueryForm(forms.Form):
         cleaned['g'] = (cleaned.pop('upload') or cleaned.pop('bbox') or
                         cleaned.get('g'))
         return cleaned
+
+    def select(self):
+        format, geom, stat, periods = map(self.cleaned_data.get,
+                                          ('format', 'g', 'stat', 'periods'))
+        qs = self.queryset.warp(format, geom, stat)
+        if periods:
+            qs = qs.aggregate_periods(periods)
+        self.queryset = qs
 
 
 class TileForm(GeoQuerySetForm):

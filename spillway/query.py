@@ -8,7 +8,6 @@ from django.contrib.gis.db.models import query
 from django.db import connection, models
 from django.utils.functional import cached_property
 import numpy as np
-from rest_framework import renderers
 
 def filter_geometry(queryset, **filters):
     """Helper function for spatial lookups filters.
@@ -223,13 +222,13 @@ class RasterQuerySet(GeoQuerySet):
                 return field
         return False
 
-    def warp(self, renderer, geom=None, stat=None):
+    def warp(self, format, geom=None, stat=None):
         clone = self._clone()
-        if isinstance(renderer, renderers.JSONRenderer):
+        if format == 'json':
             if geom:
                 for obj in clone:
                     obj.image = obj.array(geom, stat)
         else:
             for obj in clone:
-                obj.convert(renderer.format, geom)
+                obj.convert(format, geom)
         return clone

@@ -48,14 +48,8 @@ class BaseRasterView(mixins.ModelSerializerMixin,
         if isinstance(renderer, (rn.BrowsableAPIRenderer,
                                  rn.TemplateHTMLRenderer)):
             return queryset
-        form = forms.RasterQueryForm(
-            self.request.query_params or self.request.data)
-        data = form.cleaned_data if form.is_valid() else {}
-        geom, stat, periods = map(data.get, ('g', 'stat', 'periods'))
-        qs = queryset.warp(renderer, geom, stat)
-        if periods:
-            return qs.aggregate_periods(periods)
-        return qs
+        form = forms.RasterQueryForm.from_request(self.request, queryset)
+        return form.query()
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(BaseRasterView, self).finalize_response(
