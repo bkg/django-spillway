@@ -170,6 +170,15 @@ class GeoQuerySet(query.GeoQuerySet):
         return self.extra(select={self.geo_field.name: simplify})
 
     def tile(self, bbox, tolerance=0.0, format=None, clip=False):
+        """Returns a GeoQuerySet intersecting a tile boundary.
+
+        Arguments:
+        bbox -- tile extent as geometry
+        Keyword args:
+        tolerance -- geometry simplification tolerance
+        format -- vector tile format as str
+        clip -- clip geometries to tile boundary as boolean
+        """
         clone = filter_geometry(self, intersects=bbox.ewkt)
         # Tile grid uses 3857, but coordinates should be in 4326 commonly.
         tile_srid = 3857
@@ -190,18 +199,34 @@ class GeoQuerySet(query.GeoQuerySet):
 
 
 class RasterQuerySet(GeoQuerySet):
+    def arrays(self, field_name=None):
+        """Returns a list of ndarrays.
+
+        Keyword args:
+        field_name -- raster field name as str
+        """
+        fieldname = field_name or self.raster_field.name
+        arrays = []
+        for obj in self:
+            arr = getattr(obj, fieldname)
+            if isinstance(arr, np.ndarray):
+                arrays.append(arr)
+            else:
+                arrays.append(obj.array())
+        return arrays
+
     def aggregate_periods(self, periods):
-        obj = self[0]
+        """Returns list of ndarrays averaged to a given number of periods.
+
+        Arguments:
+        periods -- desired number of periods as int
+        """
         try:
             fieldname = self.raster_field.name
         except TypeError:
             raise exceptions.FieldDoesNotExist('Raster field not found')
-        arr = getattr(obj, fieldname)
-        if isinstance(arr, np.ndarray):
-            arrays = [getattr(o, fieldname) for o in self]
-        else:
-            arrays = [o.array() for o in self]
-            arr = arrays[0]
+        arrays = self.arrays(fieldname)
+        arr = arrays[0]
         fill = getattr(arr, 'fill_value', None)
         if getattr(arr, 'ndim', 0) > 2:
             arrays = np.vstack(arrays)
@@ -212,23 +237,45 @@ class RasterQuerySet(GeoQuerySet):
             means = marr.reshape((periods, -1)).mean(axis=1)
         except ValueError:
             means = [a.mean() for a in np.array_split(marr, periods)]
+        obj = self[0]
         setattr(obj, fieldname, means)
         return [obj]
 
     @cached_property
     def raster_field(self):
+        """Returns the raster FileField instance on the model."""
         for field in self.model._meta.fields:
             if isinstance(field, models.FileField):
                 return field
         return False
 
-    def warp(self, format, geom=None, stat=None):
+    def summarize(self, geom, stat=None):
+        """Returns a new RasterQuerySet with subsetted/summarized ndarrays.
+
+        Arguments:
+        geom -- geometry for masking or spatial subsetting
+        Keyword args:
+        stat -- numpy supported summary stat as str (min/max/mean/etc)
+        """
+        if not hasattr(geom, 'num_coords'):
+            raise TypeError('Need OGR or GEOS geometry, %s found' % type(geom))
         clone = self._clone()
-        if format == 'json':
-            if geom:
-                for obj in clone:
-                    obj.image = obj.array(geom, stat)
-        else:
-            for obj in clone:
-                obj.convert(format, geom)
+        for obj in clone:
+            obj.image = obj.array(geom, stat)
+        return clone
+
+    def warp(self, format=None, srid=None, geom=None):
+        """Returns a new RasterQuerySet with possibly warped/converted rasters.
+
+        Keyword args:
+        format -- raster file extension format as str
+        geom -- geometry for masking or spatial subsetting
+        srid -- spatial reference identifier as int for warping to
+        """
+        clone = self._clone()
+        for obj in clone:
+            obj.convert(format, geom)
+            if srid:
+                with obj.raster() as r:
+                    obj.image.file = r.warp(srid)
         return clone

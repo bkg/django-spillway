@@ -107,6 +107,9 @@ class AbstractRasterStore(models.Model):
             return arr
         raise ValueError('Failure reading array values')
 
+    def raster(self):
+        return greenwich.open(self.image)
+
     def convert(self, format=None, geom=None):
         imgpath = self.image.path
         # Handle format as .tif, tif, or tif.zip

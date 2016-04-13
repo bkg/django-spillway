@@ -199,13 +199,13 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         geom = self.object.geom.buffer(-1)
         ctx = {'g': geom, 'request': self.request}
         self.request.GET.update(ctx)
-        qs = (self.qs.warp(self.request.accepted_renderer.format, geom)
-                     .aggregate_periods(1))
+        qs = self.qs.summarize(geom=geom).aggregate_periods(1)
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
         self.assertEqual(serializer.data[0]['image'], [9.0])
         self.request.accepted_renderer = GeoTIFFRenderer()
-        qs = self.qs.warp(self.request.accepted_renderer.format, geom)
+        qs = self.qs.warp(format=self.request.accepted_renderer.format,
+                          geom=geom)
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         content = self.f.read()
         self.assertNotEqual(serializer.data[0]['image'].read(), content)
@@ -214,7 +214,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         geom = self.object.geom.centroid
         ctx = {'g': geom, 'request': self.request}
         self.request.GET.update(ctx)
-        qs = self.qs.warp(self.request.accepted_renderer.format, ctx['g'])
+        qs = self.qs.summarize(geom=ctx['g'])
         serializer = RasterStoreSerializer(qs, many=True, context=ctx)
         self.assertEqual(len(serializer.data), 1)
         self.assertEqual(serializer.data[0]['image'], 12)
