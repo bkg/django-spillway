@@ -85,10 +85,10 @@ class RasterRendererTestCase(RasterTestBase):
 
     def _save(self, drivername):
         memio = MemFileIO()
-        with Raster(self.data['image'].name) as r:
+        with Raster(self.data['image'].path) as r:
             r.save(memio, drivername)
         # Mimic a FieldFile.
-        memio.path = self.data['image'].name
+        memio.path = self.data['image'].path
         return {'image': memio}
 
     def assert_format(self, data, format):
