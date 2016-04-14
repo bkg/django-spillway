@@ -108,7 +108,7 @@ class AbstractRasterStore(models.Model):
         raise ValueError('Failure reading array values')
 
     def raster(self):
-        return greenwich.open(self.image)
+        return greenwich.Raster(self.image.path)
 
     def convert(self, format=None, geom=None):
         imgpath = self.image.path

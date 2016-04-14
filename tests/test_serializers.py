@@ -185,7 +185,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)
         data = serializer.data[0]
-        self.assertEqual(data['image'], self.qs[0].image.path)
+        self.assertEqual(data['image'], self.qs[0].image.name)
         expected = {
           'geom': {'type': 'Polygon',
                    'coordinates': (((-120.0, 28.0), (-110.0, 28.0),

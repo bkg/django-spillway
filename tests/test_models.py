@@ -3,7 +3,6 @@ import os
 import tempfile
 
 from django.core.files.storage import default_storage
-from django.core.files import File
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.fields.files import FieldFile
 from django.test import SimpleTestCase, TestCase
@@ -35,12 +34,14 @@ class RasterTestBase(SimpleTestCase):
 
     def _image(self, imgdata):
         return Image.open(io.BytesIO(imgdata))
+        #return Image.open(imgdata)
 
 
 class RasterStoreTestBase(RasterTestBase, TestCase):
     def setUp(self):
         super(RasterStoreTestBase, self).setUp()
-        self.object = RasterStore.objects.create(image=self.f)
+        self.object = RasterStore.objects.create(
+            image=os.path.basename(self.f.name))
         self.qs = RasterStore.objects.all()
 
 
