@@ -28,17 +28,16 @@ class GeoDetailViewTestCase(TestCase):
     precision = forms.GeometryQueryForm()['precision'].field.initial
 
     def setUp(self):
-        self.qs = self.model.objects.all()
-        self.view = generics.GeoDetailView.as_view(queryset=self.qs)
         self.pk = 1
-        self.url = '/%d/' % self.pk
         self.radius = 5
         self.model.add_buffer((10, -10), self.radius)
         self.model.create()
+        self.qs = self.model.objects.all()
+        self.view = generics.GeoDetailView.as_view(queryset=self.qs)
 
     def test_json_response(self):
         expected = json.loads(self.qs[0].geom.geojson)
-        response = self.view(factory.get(self.url), pk=self.pk).render()
+        response = self.view(factory.get('/'), pk=self.pk).render()
         self.assertEqual(response.status_code, 200)
         feature = json.loads(response.content)
         self.assertEqual(feature['geometry'], expected)
@@ -47,7 +46,7 @@ class GeoDetailViewTestCase(TestCase):
     def test_geojson_response(self):
         expected = json.loads(
             self.qs.geojson(precision=self.precision)[0].geojson)
-        request = factory.get(self.url, {'format': 'geojson'})
+        request = factory.get('/', {'format': 'geojson'})
         with self.assertNumQueries(1):
             response = self.view(request, pk=self.pk).render()
         self.assertEqual(response.status_code, 200)
@@ -56,7 +55,7 @@ class GeoDetailViewTestCase(TestCase):
         self.assertEqual(feature['type'], 'Feature')
 
     def test_kml_response(self):
-        request = factory.get(self.url, {'format': 'kml'})
+        request = factory.get('/', {'format': 'kml'})
         response = self.view(request, pk=self.pk).render()
         part = self.qs.kml(precision=self.precision)[0].kml
         self.assertInHTML(part, response.content, count=1)
@@ -66,8 +65,8 @@ class GeoManagerDetailViewTestCase(GeoDetailViewTestCase):
     model = Location
 
     def test_simplify(self):
-        request = factory.get(self.url, {'simplify': self.radius,
-                                         'format': 'geojson'})
+        request = factory.get(
+            '/', {'simplify': self.radius, 'format': 'geojson'})
         response = self.view(request, pk=self.pk).render()
         orig = self.qs.get(pk=self.pk).geom
         serializer = LocationFeatureSerializer(
