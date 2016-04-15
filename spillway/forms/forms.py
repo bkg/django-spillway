@@ -8,11 +8,11 @@ from spillway.compat import ALL_TERMS
 from spillway.forms import fields
 
 
-class GeoQuerySetForm(forms.Form):
+class QuerySetForm(forms.Form):
     """Base form for applying GeoQuerySet methods and filters."""
 
     def __init__(self, data=None, queryset=None, *args, **kwargs):
-        super(GeoQuerySetForm, self).__init__(data, *args, **kwargs)
+        super(QuerySetForm, self).__init__(data, *args, **kwargs)
         self.queryset = queryset
         self._is_selected = False
 
@@ -29,7 +29,7 @@ class GeoQuerySetForm(forms.Form):
             raise ValueError('Invalid field values')
         if not self._is_selected:
             if self.queryset is None:
-                raise TypeError('Must be GeoQuerySet not %s' %
+                raise TypeError('Must be QuerySet not %s' %
                                 type(self.queryset))
             self.select()
             self._is_selected = True
@@ -38,12 +38,12 @@ class GeoQuerySetForm(forms.Form):
     def select(self):
         """Set GeoQuerySet from field values and filters.
 
-        Subclasses implement this. Not called directly, use .select().
+        Subclasses implement this. Not called directly, use .query().
         """
         raise NotImplementedError
 
 
-class SpatialQueryForm(GeoQuerySetForm):
+class SpatialQueryForm(QuerySetForm):
     """A Form for spatial lookup queries such as intersects, overlaps, etc.
 
     Includes 'bbox' as an alias for 'bboverlaps'.
@@ -72,7 +72,7 @@ class SpatialQueryForm(GeoQuerySetForm):
             self.queryset, **self.cleaned_data)
 
 
-class GeometryQueryForm(GeoQuerySetForm):
+class GeometryQueryForm(QuerySetForm):
     """A form providing GeoQuerySet method arguments."""
     format = forms.CharField(required=False)
     precision = forms.IntegerField(required=False, initial=4)
@@ -138,7 +138,7 @@ class RasterQueryForm(GeoQuerySetForm):
         self.queryset = qs
 
 
-class TileForm(GeoQuerySetForm):
+class TileForm(QuerySetForm):
     """Validates requested map tiling parameters."""
     bbox = fields.OGRGeometryField(srid=4326, required=False)
     size = forms.IntegerField(required=False, initial=256)

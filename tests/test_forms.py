@@ -1,7 +1,12 @@
 from django.test import SimpleTestCase
+from django.forms import fields
 from django.contrib.gis import geos
 
 from spillway import forms
+
+
+class PKeyQuerySetForm(forms.QuerySetForm):
+    pk = fields.IntegerField()
 
 
 class GeometryQueryFormTestCase(SimpleTestCase):
@@ -27,3 +32,9 @@ class SpatialQueryFormTestCase(SimpleTestCase):
         form = forms.SpatialQueryForm(data)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data, self.expected)
+
+
+class QuerySetFormTestCase(SimpleTestCase):
+    def test_queryset(self):
+        form = PKeyQuerySetForm({'pk': '1'})
+        self.assertRaises(TypeError, form.query)
