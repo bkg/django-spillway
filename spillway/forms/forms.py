@@ -120,10 +120,9 @@ class RasterQueryForm(GeoQuerySetForm):
         """Return cleaned fields as a dict, determine which geom takes
         precedence.
         """
-        cleaned = super(RasterQueryForm, self).clean()
-        cleaned['g'] = (cleaned.pop('upload') or cleaned.pop('bbox') or
-                        cleaned.get('g'))
-        return cleaned
+        data = super(RasterQueryForm, self).clean()
+        data['g'] = data.pop('upload') or data.pop('bbox') or data.get('g')
+        return data
 
     def select(self):
         format, geom, stat, periods = map(self.cleaned_data.get,
@@ -148,8 +147,8 @@ class TileForm(GeoQuerySetForm):
     z = forms.IntegerField()
 
     def clean(self):
-        cleaned = super(TileForm, self).clean()
-        x, y, z = map(cleaned.get, ('x', 'y', 'z'))
+        data = super(TileForm, self).clean()
+        x, y, z = map(data.get, ('x', 'y', 'z'))
         # Create bbox from NW and SE tile corners.
         try:
             extent = (transform_tile(x, y, z) +
@@ -185,10 +184,9 @@ class VectorTileForm(TileForm):
 
     def select(self):
         data = self.cleaned_data
-        bbox = data['bbox']
         try:
             tolerance = self.tolerances[data['z']]
         except IndexError:
             tolerance = self.tolerances[-1]
         self.queryset = self.queryset.tile(
-            bbox, tolerance, data['format'], data['clip'])
+            data['bbox'], tolerance, data['format'], data['clip'])
