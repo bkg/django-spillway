@@ -17,7 +17,7 @@ class QuerySetForm(forms.Form):
         self._is_selected = False
 
     @classmethod
-    def from_request(cls, request, queryset, view=None):
+    def from_request(cls, request, queryset=None, view=None):
         params = dict(request.query_params.dict(),
                       **getattr(view, 'kwargs', {}))
         params['format'] = request.accepted_renderer.format
