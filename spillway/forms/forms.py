@@ -160,8 +160,8 @@ class TileForm(QuerySetForm):
         else:
             geom = gdal.OGRGeometry.from_bbox(extent)
             geom.srid = self.fields['bbox'].srid
-            cleaned['bbox'] = geom
-        return cleaned
+            data['bbox'] = geom
+        return data
 
 
 class RasterTileForm(TileForm):
