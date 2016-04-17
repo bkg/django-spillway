@@ -23,10 +23,12 @@ class QuerySetForm(forms.Form):
         params['format'] = request.accepted_renderer.format
         return cls(params, queryset)
 
-    def query(self):
+    def query(self, force=False):
         """Returns the filtered/selected GeoQuerySet."""
         if not self.is_valid():
             raise ValueError('Invalid field values')
+        if force:
+            self._is_selected = False
         if not self._is_selected:
             if self.queryset is None:
                 raise TypeError('Must be QuerySet not %s' %
@@ -104,7 +106,7 @@ class GeometryQueryForm(QuerySetForm):
             self.queryset = self.queryset.simplify(tolerance, srid, **kwargs)
 
 
-class RasterQueryForm(GeoQuerySetForm):
+class RasterQueryForm(QuerySetForm):
     """Validates format options for raster data."""
     bbox = fields.BoundingBoxField(required=False)
     format = forms.CharField(required=False)
