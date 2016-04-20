@@ -7,6 +7,8 @@ from django.contrib.gis import geos
 from django.contrib.gis.db.models import query
 from django.db import connection, models
 from django.utils.functional import cached_property
+import greenwich
+from greenwich.io import MemFileIO
 import numpy as np
 
 def filter_geometry(queryset, **filters):
@@ -276,6 +278,14 @@ class RasterQuerySet(GeoQuerySet):
         for obj in clone:
             obj.convert(format, geom)
             if srid:
-                with obj.raster() as r:
-                    obj.image.file = r.warp(srid)
+                f = obj.image.file
+                if isinstance(f, MemFileIO):
+                    r = greenwich.open(f.name)
+                else:
+                    r = obj.raster()
+                memio = MemFileIO(delete=False)
+                dswarp = r.warp(srid, memio)
+                obj.image.file = memio
+                dswarp.close()
+                r.close()
         return clone

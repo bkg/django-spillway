@@ -1,9 +1,11 @@
 from django.test import TestCase
 from django.contrib.gis import geos
+import greenwich
 
 from spillway import forms
 from spillway.query import GeoQuerySet
 from .models import Location
+from .test_models import RasterStoreTestBase
 
 
 class GeoQuerySetTestCase(TestCase):
@@ -77,3 +79,12 @@ class GeoQuerySetTestCase(TestCase):
         self.assertEqual(sql, expected)
         self.assertEqual(self.qs.query.get_context('transformed_srid'),
                          self.srid)
+
+
+class RasterQuerySetTestCase(RasterStoreTestBase):
+    def test_warp(self):
+        qs = self.qs.warp(format='img', srid=3857)
+        memio = qs[0].image.file
+        r = greenwich.open(memio.name)
+        self.assertEqual(r.driver.ext, 'img')
+        self.assertIn('proj=merc', r.sref.proj4)
