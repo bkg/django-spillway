@@ -280,7 +280,7 @@ class RasterQuerySet(GeoQuerySet):
             if srid:
                 f = obj.image.file
                 if isinstance(f, MemFileIO):
-                    r = greenwich.open(f.name)
+                    r = greenwich.Raster(f.name)
                 else:
                     r = obj.raster()
                 memio = MemFileIO(delete=False)
