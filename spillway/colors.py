@@ -1,7 +1,5 @@
 colormap = {
     # ColorBrewer http://colorbrewer2.org/
-    'YlGnBu': ('#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4',
-                     '#1d91c0', '#225ea8', '#253494', '#081d58'),
     'YlGn': ('#ffffe5', '#f7fcb9', '#d9f0a3', '#addd8e', '#78c679',
            '#41ab5d', '#238443', '#006837', '#004529'),
     'YlGnBu': ('#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4',
