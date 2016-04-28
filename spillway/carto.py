@@ -5,13 +5,6 @@ from greenwich import srs
 from spillway.compat import mapnik
 from spillway import colors, query
 
-def add_colorizer_stops(style, bins, mcolors):
-    rule = style.rules[0]
-    symbolizer = rule.symbols[0]
-    for value, color in zip(bins, mcolors):
-        symbolizer.colorizer.add_stop(value, mapnik.Color(color))
-    return style
-
 def make_dbsource(**kwargs):
     """Returns a mapnik PostGIS or SQLite Datasource."""
     if 'spatialite' in connection.settings_dict.get('ENGINE'):
@@ -35,8 +28,7 @@ def build_map(querysets, tileform):
         if layer.datasource.type() == mapnik.DataType.Raster:
             rcolors = colors.colormap.get(layer.stylename)
             bins = queryset.linear(data.get('limits'), k=len(rcolors))
-            style = dict(m.map.styles).get(layer.stylename)
-            add_colorizer_stops(style, bins, rcolors)
+            layer.add_colorizer_stops(bins, rcolors)
     return m
 
 
@@ -88,6 +80,7 @@ class Layer(object):
             table=table, geometry_field=field.name)
         self._layer = layer
         self.stylename = self._layer.name
+        self._symbolizer = None
 
     def __getattr__(self, attr):
         return getattr(self._layer, attr)
@@ -96,8 +89,8 @@ class Layer(object):
         """Returns a default Style."""
         style = mapnik.Style()
         rule = mapnik.Rule()
-        symbolizer = self.symbolizer()
-        rule.symbols.append(symbolizer)
+        self._symbolizer = self.symbolizer()
+        rule.symbols.append(self._symbolizer)
         style.rules.append(rule)
         return style
 
@@ -114,6 +107,11 @@ class RasterLayer(Layer):
         layer.datasource = mapnik.Gdal(file=obj.image.path, band=band)
         self._layer = layer
         self.stylename = style
+
+    def add_colorizer_stops(self, bins, rcolors):
+        symbolizer = self._symbolizer
+        for value, color in zip(bins, rcolors):
+            symbolizer.colorizer.add_stop(value, mapnik.Color(color))
 
     def symbolizer(self):
         symbolizer = mapnik.RasterSymbolizer()
