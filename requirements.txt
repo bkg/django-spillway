@@ -1,4 +1,4 @@
-django==1.9.5
+django==1.9.6
 djangorestframework==3.3.3
 mapnik2==2.2.0
 greenwich==0.5.1
