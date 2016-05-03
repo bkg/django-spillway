@@ -9,7 +9,7 @@ before_install:
   - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
   - sudo add-apt-repository -y ppa:bkgaley/ppa
   - sudo apt-get -qq update
-  - sudo apt-get -y install libgdal-dev libgdal1h libboost1.58-dev gdal-bin
+  - sudo apt-get -y install libgdal-dev libgdal1h libboost1.58-all-dev gdal-bin
 
 install:
   - pip install --global-option=build_ext --global-option='-USQLITE_OMIT_LOAD_EXTENSION' pysqlite
