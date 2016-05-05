@@ -60,3 +60,22 @@ class SVGRenderer(TemplateRenderer):
     media_type = 'image/svg+xml'
     format = 'svg'
     template_name = 'spillway/features.svg'
+
+
+class MapnikRenderer(BaseRenderer):
+    """Renders Mapnik stylesheets to tiled PNG."""
+    media_type = 'image/png'
+    format = 'png'
+    charset = None
+    render_style = 'binary'
+
+    def render(self, imgdata, accepted_media_type=None, renderer_context=None):
+        # Just a no-op renderer as the mapnik map object should be serialized
+        # prior to take full advantage of the caching framework.
+        return imgdata
+
+
+class MapnikJPEGRenderer(MapnikRenderer):
+    """Renders Mapnik stylesheets to tiled JPEG."""
+    media_type = 'image/jpeg'
+    format = 'jpeg'

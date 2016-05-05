@@ -151,9 +151,9 @@ class MapnikRendererTestCase(RasterStoreTestBase):
     def test_render(self):
         ctx = {'y': 51, 'x': 23, 'z': 7}
         form = forms.RasterTileForm(ctx)
-        imgdata = renderers.MapnikRenderer().render(
-            carto.build_map([self.object], form))
-        im = self._image(imgdata)
+        r = renderers.MapnikRenderer()
+        imgdata = carto.build_map([self.object], form).render(r.format)
+        im = self._image(r.render(imgdata))
         self.assertEqual(im.size, (256, 256))
         self.assertNotEqual(im.getpixel((100, 100)), (0, 0, 0, 0))
 

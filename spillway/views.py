@@ -12,7 +12,11 @@ class MapView(mixins.ResponseExceptionMixin, GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         form = forms.RasterTileForm.from_request(request, view=self)
-        return Response(carto.build_map([self.get_object()], form))
+        m = carto.build_map([self.get_object()], form)
+        # Mapnik Map object is not pickleable, so it breaks the caching
+        # middleware. We must serialize the image before passing it off to the
+        # Response and Renderer.
+        return Response(m.render(request.accepted_renderer.format))
 
 
 class TileView(BaseGeoView, ListAPIView):
@@ -26,5 +30,5 @@ class TileView(BaseGeoView, ListAPIView):
                       renderers.GeoJSONRenderer):
             return super(TileView, self).get(request, *args, **kwargs)
         form = forms.RasterTileForm.from_request(request, view=self)
-        querysets = [self.get_queryset()]
-        return Response(carto.build_map(querysets, form))
+        m = carto.build_map([self.get_queryset()], form)
+        return Response(m.render(request.accepted_renderer.format))
