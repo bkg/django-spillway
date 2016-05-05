@@ -53,6 +53,14 @@ class BaseGDALRenderer(BaseRenderer):
             pass
 
 
+class CSVRenderer(BaseGDALRenderer):
+    """Renders a raster to CSV."""
+    media_type = 'text/csv'
+    format = 'csv'
+    charset = 'utf-8'
+    render_style = 'text'
+
+
 class GeoTIFFRenderer(BaseGDALRenderer):
     """Renders a raster to GeoTIFF (.tif) format."""
     media_type = 'image/tiff'
