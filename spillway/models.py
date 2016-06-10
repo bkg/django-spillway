@@ -47,7 +47,7 @@ class AbstractRasterStore(models.Model):
         abstract = True
 
     def __unicode__(self):
-        return self.image.name
+        return unicode(self.image)
 
     def clean_fields(self, *args, **kwargs):
         # Override this instead of save() so that fields are populated on
