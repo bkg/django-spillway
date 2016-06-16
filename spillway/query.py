@@ -243,6 +243,19 @@ class RasterQuerySet(GeoQuerySet):
         setattr(obj, fieldname, means)
         return [obj]
 
+    def get(self, *args, **kwargs):
+        # Need special handling of model instances with modified attributes,
+        # otherwise they will be lost.
+        if self._result_cache is not None:
+            for obj in self._result_cache:
+                for attr, val in kwargs.items():
+                    if getattr(obj, attr) == val:
+                        return obj
+            raise self.model.DoesNotExist(
+                '%s matching query does not exist.' %
+                self.model._meta.object_name)
+        return super(RasterQuerySet, self).get(*args, **kwargs)
+
     @cached_property
     def raster_field(self):
         """Returns the raster FileField instance on the model."""
