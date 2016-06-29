@@ -62,6 +62,15 @@ class BaseRasterView(mixins.ModelSerializerMixin,
             response._headers = headers
         return response
 
+    def get_queryset(self):
+        # Filter first so later RasterQuerySet methods always see a subset
+        # instead of all available records.
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg in self.kwargs:
+            filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
+            return self.queryset.filter(**filter_kwargs)
+        return self.queryset.all()
+
     @property
     def paginator(self):
         # Disable pagination for GDAL Renderers.
