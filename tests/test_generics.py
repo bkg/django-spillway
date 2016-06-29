@@ -227,6 +227,5 @@ class RasterListViewTestCase(RasterStoreTestBase):
         self.assertEqual(len(zf.filelist), len(self.qs))
 
     def test_404(self):
-        response = self.client.get('/rasters/nowhere/',
-                                   {'format': 'img.zip'})
+        response = self.client.get('/rasters/-9999/', {'format': 'img.zip'})
         self.assertEqual(response.status_code, 404)
