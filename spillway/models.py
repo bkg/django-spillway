@@ -89,7 +89,7 @@ class AbstractRasterStore(models.Model):
         super(AbstractRasterStore, self).save(*args, **kwargs)
 
     def array(self, geom=None, stat=None):
-        with greenwich.Raster(self.image.path) as r:
+        with self.raster() as r:
             if geom:
                 if geom.num_coords > 1:
                     with r.clip(geom) as clipped:
@@ -101,7 +101,8 @@ class AbstractRasterStore(models.Model):
                 arr = r.masked_array()
             if arr is not None:
                 if stat:
-                    arr = getattr(np.ma, stat)(arr)
+                    axis = arr.ndim - 1 if arr.ndim > 2 else None
+                    arr = getattr(np.ma, stat)(arr, axis)
                 if arr.size == 1:
                     arr = arr.item()
             return arr

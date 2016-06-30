@@ -232,7 +232,10 @@ class RasterQuerySet(GeoQuerySet):
         fill = getattr(arr, 'fill_value', None)
         if getattr(arr, 'ndim', 0) > 2:
             arrays = np.vstack(arrays)
-        marr = np.ma.array(arrays, fill_value=fill, copy=False)
+        if len(arrays) > 1:
+            marr = np.ma.array(arrays, fill_value=fill, copy=False)
+        else:
+            marr = arrays[0]
         # Try to reshape using equal sizes first and fall back to unequal
         # splits.
         try:
