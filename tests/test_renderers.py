@@ -107,7 +107,7 @@ class RasterRendererTestCase(RasterTestBase):
 
     def test_render_csv(self):
         fp = renderers.CSVRenderer().render(self._save('XYZ'))
-        self.assertEqual(fp.readline(), '-119 37 0\n')
+        self.assertEqual(fp.readline(), 'X,Y,Z\n')
 
     def test_render_geotiff(self):
         fp = renderers.GeoTIFFRenderer().render(self.data)
