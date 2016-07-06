@@ -105,10 +105,6 @@ class RasterRendererTestCase(RasterTestBase):
         self.assertEqual(filecount, len(imgs))
         fp.close()
 
-    def test_render_csv(self):
-        fp = renderers.CSVRenderer().render(self._save('XYZ'))
-        self.assertEqual(fp.readline(), 'X,Y,Z\n')
-
     def test_render_geotiff(self):
         fp = renderers.GeoTIFFRenderer().render(self.data)
         self.assertEqual(fp.read(), self.f.read())
