@@ -210,6 +210,14 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         content = self.f.read()
         self.assertNotEqual(serializer.data[0]['image'].read(), content)
 
+    def test_serialize_bbox(self):
+        geom = self.object.geom.buffer(-3)
+        self.request.GET.update({'bbox': geom.envelope})
+        qs = self.qs.summarize(geom=geom.envelope)
+        serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
+        self.assertEqual(serializer.data[0]['image'].tolist(),
+                         [[6, 7], [11, 12]])
+
     def test_serialize_point_context(self):
         geom = self.object.geom.centroid
         ctx = {'request': self.request}

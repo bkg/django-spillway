@@ -1,5 +1,6 @@
 from django.core import exceptions
 from django.contrib.gis.db import models
+from django.db.models.fields.files import FieldFile
 from rest_framework import renderers, serializers
 from greenwich.srs import SpatialReference
 import numpy as np
@@ -131,8 +132,12 @@ class RasterModelSerializer(GeoModelSerializer):
         fieldname = self.Meta.raster_field
         request = self.context.get('request')
         renderer = getattr(request, 'accepted_renderer', None)
+        try:
+            obj = self.instance[0]
+        except (IndexError, TypeError):
+            obj = self.instance
+        modelfield = getattr(obj, fieldname, None)
         if (isinstance(renderer, BaseGDALRenderer)
-                or (isinstance(renderer, renderers.JSONRenderer)
-                and 'g' in request.GET)):
+                or not isinstance(modelfield, FieldFile)):
             fields[fieldname] = serializers.ReadOnlyField()
         return fields
