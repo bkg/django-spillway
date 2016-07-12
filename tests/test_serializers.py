@@ -199,7 +199,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         geom = self.object.geom.buffer(-1)
         qs = self.qs.summarize(geom=geom).aggregate_periods(1)
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
-        self.assertEqual(len(serializer.data), 1)
+        self.assertEqual(len(serializer.data), len(self.qs))
         self.assertEqual(serializer.data[0]['image'], [9.0])
         self.request.accepted_renderer = GeoTIFFRenderer()
         qs = self.qs.warp(format=self.request.accepted_renderer.format,
@@ -216,8 +216,10 @@ class RasterSerializerTestCase(RasterStoreTestBase):
                          [[6, 7], [11, 12]])
 
     def test_serialize_point_context(self):
-        geom = self.object.geom.centroid
-        qs = self.qs.summarize(geom=geom)
+        qs = self.qs.summarize(geom=self.object.geom.centroid)
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
-        self.assertEqual(len(serializer.data), 1)
-        self.assertEqual(serializer.data[0]['image'], 12)
+        self.assertEqual(len(serializer.data), len(self.qs))
+        expected = 12
+        self.assertEqual(serializer.data[0]['image'], expected)
+        serializer = RasterStoreSerializer(qs[0], context=self.ctx)
+        self.assertEqual(serializer.data['image'], expected)
