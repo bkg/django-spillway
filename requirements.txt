@@ -1,4 +1,4 @@
 Django==1.9.7
-djangorestframework==3.3.3
+djangorestframework==3.4.0
 mapnik==0.1
 greenwich==0.6.1
