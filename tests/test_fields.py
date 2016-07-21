@@ -15,6 +15,10 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
     def setUp(self):
         self.field = OGRGeometryField()
 
+    def test_dict(self):
+        geom = self.field.to_python(_geom)
+        self.assertEqual(json.loads(geom.geojson), _geom)
+
     def test_feature(self):
         feature = Feature(geometry=_geom)
         geojson = str(feature)

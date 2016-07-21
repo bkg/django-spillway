@@ -99,6 +99,8 @@ class OGRGeometryField(forms.GeometryField):
         # Handle a comma delimited extent.
         elif list(value).count(',') == 3:
             value = Envelope(value.split(',')).polygon.ExportToWkt()
+        elif isinstance(value, dict):
+            value = json.dumps(value)
         try:
             geom = gdal.OGRGeometry(value)
         except (gdal.OGRException, TypeError, ValueError):
