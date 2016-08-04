@@ -25,10 +25,8 @@ def build_map(querysets, tileform):
     m.zoom_bbox(data.get('bbox'))
     for queryset in querysets:
         layer = m.layer(queryset, stylename)
-        if layer.datasource.type() == mapnik.DataType.Raster:
-            rcolors = colors.colormap.get(layer.stylename)
-            bins = queryset.linear(data.get('limits'), k=len(rcolors))
-            layer.add_colorizer_stops(bins, rcolors)
+        if isinstance(layer, RasterLayer):
+            layer.add_colorizer_stops(data.get('limits'))
     return m
 
 
@@ -47,13 +45,12 @@ class Map(object):
 
     def layer(self, queryset, stylename=None):
         cls = VectorLayer if hasattr(queryset, 'geojson') else RasterLayer
-        layer = cls(queryset)
-        stylename = stylename or layer.stylename
+        layer = cls(queryset, style=stylename)
         try:
-            style = self.map.find_style(stylename)
+            style = self.map.find_style(layer.stylename)
         except KeyError:
-            self.map.append_style(stylename, layer.style())
-        layer.styles.append(stylename)
+            self.map.append_style(layer.stylename, layer.style())
+        layer.styles.append(layer.stylename)
         self.map.layers.append(layer._layer)
         return layer
 
@@ -71,7 +68,7 @@ class Map(object):
 class Layer(object):
     """Base class for a Mapnik layer."""
 
-    def __init__(self, queryset):
+    def __init__(self, queryset, style=None):
         table = str(queryset.model._meta.db_table)
         field = query.geo_field(queryset)
         sref = srs.SpatialReference(query.get_srid(queryset))
@@ -79,7 +76,7 @@ class Layer(object):
         layer.datasource = make_dbsource(
             table=table, geometry_field=field.name)
         self._layer = layer
-        self.stylename = self._layer.name
+        self.stylename = style or self._layer.name
         self._symbolizer = None
 
     def __getattr__(self, attr):
@@ -101,17 +98,22 @@ class Layer(object):
 class RasterLayer(Layer):
     """A Mapnik layer for raster data types."""
 
-    def __init__(self, obj, band=1, style='Spectral_r'):
+    def __init__(self, obj, band=1, style=None):
+        self._rstore = obj
         layer = mapnik.Layer(
             str(obj), srs.SpatialReference(obj.srs).proj4)
         layer.datasource = mapnik.Gdal(file=obj.image.path, band=band)
         self._layer = layer
-        self.stylename = style
+        self.stylename = style or 'Spectral_r'
+        self._symbolizer = None
 
-    def add_colorizer_stops(self, bins, rcolors):
-        symbolizer = self._symbolizer
-        for value, color in zip(bins, rcolors):
-            symbolizer.colorizer.add_stop(value, mapnik.Color(color))
+    def add_colorizer_stops(self, limits):
+        rcolors = colors.colormap.get(self.stylename)
+        if rcolors:
+            bins = self._rstore.linear(limits, k=len(rcolors))
+            symbolizer = self._symbolizer
+            for value, color in zip(bins, rcolors):
+                symbolizer.colorizer.add_stop(value, mapnik.Color(color))
 
     def symbolizer(self):
         symbolizer = mapnik.RasterSymbolizer()
