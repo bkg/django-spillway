@@ -168,12 +168,14 @@ class RasterTileForm(TileForm):
     band = forms.IntegerField(required=False, initial=1)
     size = forms.IntegerField(required=False, initial=256)
     limits = fields.CommaSepFloatField(required=False)
-    style = forms.ChoiceField(
-        choices=[(k, k.lower()) for k in list(colors.colormap)],
-        required=False)
+    style = forms.CharField(required=False)
 
     def clean_band(self):
         return self.cleaned_data['band'] or self.fields['band'].initial
+
+    def clean_style(self):
+        # Mapnik requires string, not unicode, for style names.
+        return str(self.cleaned_data['style'])
 
 
 class VectorTileForm(TileForm):
