@@ -129,9 +129,9 @@ class RasterQueryForm(QuerySetForm):
     def select(self):
         format, geom, stat, periods = map(self.cleaned_data.get,
                                           ('format', 'g', 'stat', 'periods'))
-        if not geom and format == 'json':
-            return
-        if format == 'json':
+        if format in ('csv', 'json'):
+            if not geom:
+                return
             qs = self.queryset.summarize(geom, stat)
         else:
             qs = self.queryset.warp(format, geom=geom)
