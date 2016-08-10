@@ -13,6 +13,7 @@ from greenwich.io import MemFileIO
 
 from spillway import carto, forms, renderers
 from spillway.collections import Feature, FeatureCollection
+from spillway.compat import mapnik
 from .models import Location, _geom
 from .test_models import RasterTestBase, RasterStoreTestBase
 
@@ -148,19 +149,34 @@ class RasterRendererTestCase(RasterTestBase):
 
 
 class MapnikRendererTestCase(RasterStoreTestBase):
+    ctx = {'y': 51, 'x': 23, 'z': 7}
+
+    def test_compat(self):
+        from spillway import compat
+        paths = sys.path
+        sys.modules.pop('mapnik')
+        sys.path = []
+        reload(compat)
+        with self.assertRaises(ImproperlyConfigured):
+            m = compat.mapnik.Map(128, 128)
+        sys.path = paths
+        reload(compat)
+
     def test_render(self):
-        ctx = {'y': 51, 'x': 23, 'z': 7}
-        form = forms.RasterTileForm(ctx)
+        form = forms.RasterTileForm(self.ctx)
         r = renderers.MapnikRenderer()
         imgdata = carto.build_map([self.object], form).render(r.format)
         im = self._image(r.render(imgdata))
         self.assertEqual(im.size, (256, 256))
         self.assertNotEqual(im.getpixel((100, 100)), (0, 0, 0, 0))
 
-    def test_compat(self):
-        from spillway import compat
-        sys.modules.pop('mapnik')
-        sys.path = []
-        reload(compat)
-        with self.assertRaises(ImproperlyConfigured):
-            m = compat.mapnik.Map(128, 128)
+    def test_stylesheet(self):
+        m = carto.Map()
+        layer = m.layer(self.object, 'green')
+        layer._symbolizer.colorizer.default_color = mapnik.Color(0, 255, 0)
+        mapnik.save_map(m.map, str(m.mapfile))
+        form = forms.RasterTileForm(dict(self.ctx, style='green'))
+        r = renderers.MapnikRenderer()
+        imgdata = carto.build_map([self.object], form).render(r.format)
+        im = self._image(r.render(imgdata))
+        self.assertEqual(im.getpixel((100, 100)), (0, 255, 0, 255))

@@ -118,7 +118,7 @@ class RasterLayer(Layer):
     def symbolizer(self):
         symbolizer = mapnik.RasterSymbolizer()
         symbolizer.colorizer = mapnik.RasterColorizer(
-            mapnik.COLORIZER_LINEAR, mapnik.Color(0, 0, 0, 255))
+            mapnik.COLORIZER_LINEAR, mapnik.Color(0, 0, 0, 0))
         return symbolizer
 
 
