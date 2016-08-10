@@ -1,4 +1,4 @@
-Django==1.9.8
-djangorestframework==3.4.0
+Django==1.9.9
+djangorestframework==3.4.3
 mapnik==0.1
 greenwich==0.6.1
