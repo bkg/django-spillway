@@ -1,7 +1,8 @@
 import os
+import collections
 import shutil
-import zipfile
 import tempfile
+import zipfile
 
 from django.contrib.gis import forms
 from django.contrib.gis import gdal
@@ -99,7 +100,7 @@ class OGRGeometryField(forms.GeometryField):
         # Handle a comma delimited extent.
         elif list(value).count(',') == 3:
             value = Envelope(value.split(',')).polygon.ExportToWkt()
-        elif isinstance(value, dict):
+        elif isinstance(value, collections.Mapping):
             value = json.dumps(value)
         try:
             geom = gdal.OGRGeometry(value)

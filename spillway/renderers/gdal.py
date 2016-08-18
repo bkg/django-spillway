@@ -1,4 +1,5 @@
 import os
+import collections
 import tempfile
 import zipfile
 
@@ -66,7 +67,7 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
     arcdirname = 'data'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        if isinstance(data, dict):
+        if isinstance(data, collections.Mapping):
             data = [data]
         zipname = '%s.%s' % (self.arcdirname, self.format)
         self.set_filename(zipname, renderer_context)

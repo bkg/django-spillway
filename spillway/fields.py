@@ -1,4 +1,7 @@
 """Serializer fields"""
+from __future__ import absolute_import
+import collections
+
 from django.contrib.gis import forms
 from rest_framework.fields import Field, FileField
 
@@ -8,7 +11,7 @@ from spillway.compat import json
 class GeometryField(Field):
     def to_internal_value(self, data):
         # forms.GeometryField cannot handle geojson dicts.
-        if isinstance(data, dict):
+        if isinstance(data, collections.Mapping):
             data = json.dumps(data)
         return forms.GeometryField().to_python(data)
 
