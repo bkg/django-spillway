@@ -39,16 +39,6 @@ class GeoModelSerializer(serializers.ModelSerializer):
                 if isinstance(field, GeometryField):
                     self.Meta.geom_field = name
                     break
-        # Alter geometry field source based on the requested format.
-        try:
-            renderer = self.context['request'].accepted_renderer
-        except (AttributeError, KeyError):
-            pass
-        else:
-            geom_field = fields.get(self.Meta.geom_field)
-            obj = getattr(self.context.get('view'), 'queryset', self.instance)
-            if geom_field and hasattr(obj, renderer.format):
-                geom_field.source = renderer.format
         return fields
 
 

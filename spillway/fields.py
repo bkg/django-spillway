@@ -3,12 +3,28 @@ from __future__ import absolute_import
 import collections
 
 from django.contrib.gis import forms
+from rest_framework import renderers
 from rest_framework.fields import Field, FileField
 
 from spillway.compat import json
 
 
 class GeometryField(Field):
+    def bind(self, field_name, parent):
+        # Alter field source based on the requested format.
+        try:
+            renderer = parent.context['request'].accepted_renderer
+        except (AttributeError, KeyError):
+            pass
+        else:
+            obj = getattr(parent.context.get('view'), 'queryset',
+                          parent.instance)
+            if hasattr(obj, renderer.format):
+                self.source = renderer.format
+            elif isinstance(renderer, renderers.BrowsableAPIRenderer):
+                self.source = '%s.wkt' % field_name
+        super(GeometryField, self).bind(field_name, parent)
+
     def to_internal_value(self, data):
         # forms.GeometryField cannot handle geojson dicts.
         if isinstance(data, collections.Mapping):
