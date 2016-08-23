@@ -3,9 +3,9 @@ import math
 from django.contrib.gis import gdal, forms
 from greenwich.srs import transform_tile
 
-from spillway import colors, query
+from spillway import query
 from spillway.compat import ALL_TERMS
-from spillway.forms import fields
+from . import fields
 
 
 class QuerySetForm(forms.Form):

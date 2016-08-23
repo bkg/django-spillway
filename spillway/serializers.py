@@ -1,9 +1,8 @@
 from django.core import exceptions
 from django.contrib.gis.db import models
 from django.db.models.fields.files import FieldFile
-from rest_framework import renderers, serializers
+from rest_framework import serializers
 from greenwich.srs import SpatialReference
-import numpy as np
 
 from spillway import query, collections as sc
 from spillway.fields import GeometryField
