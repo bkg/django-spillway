@@ -35,6 +35,11 @@ class GeoDetailViewTestCase(TestCase):
         self.qs = self.model.objects.all()
         self.view = generics.GeoDetailView.as_view(queryset=self.qs)
 
+    def test_api_response(self):
+        request = factory.get('/', HTTP_ACCEPT='text/html')
+        response = self.view(request, pk=self.pk).render()
+        self.assertContains(response, self.qs[0].geom.wkt)
+
     def test_json_response(self):
         expected = json.loads(self.qs[0].geom.geojson)
         response = self.view(factory.get('/'), pk=self.pk).render()
