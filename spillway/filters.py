@@ -1,4 +1,5 @@
-from rest_framework import exceptions
+from django.forms import ValidationError
+from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
 
 from spillway import forms
@@ -11,8 +12,8 @@ class FormFilterBackend(BaseFilterBackend):
         form = self.queryset_form.from_request(request, queryset, view)
         try:
             return form.query()
-        except ValueError:
-            raise exceptions.ParseError(form.errors)
+        except ValidationError:
+            raise serializers.ValidationError(form.errors)
 
 
 class GeoQuerySetFilter(FormFilterBackend):

@@ -1,5 +1,7 @@
 from django.http import FileResponse
+from django.forms import ValidationError as FormValidationError
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
+from rest_framework.serializers import ValidationError
 from rest_framework.settings import api_settings
 import rest_framework.renderers as rn
 
@@ -49,7 +51,10 @@ class BaseRasterView(mixins.ModelSerializerMixin,
                                  rn.TemplateHTMLRenderer)):
             return queryset
         form = forms.RasterQueryForm.from_request(self.request, queryset)
-        return form.query()
+        try:
+            return form.query()
+        except FormValidationError:
+            raise ValidationError(form.errors)
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(BaseRasterView, self).finalize_response(

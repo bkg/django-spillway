@@ -26,7 +26,7 @@ class QuerySetForm(forms.Form):
     def query(self, force=False):
         """Returns the filtered/selected GeoQuerySet."""
         if not self.is_valid():
-            raise ValueError('Invalid field values')
+            raise forms.ValidationError(self.errors)
         if force:
             self._is_selected = False
         if not self._is_selected:

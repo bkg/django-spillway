@@ -1,5 +1,5 @@
 from django.test import TestCase
-from rest_framework import exceptions
+from rest_framework import serializers
 from rest_framework.test import APIRequestFactory
 
 from spillway import generics, filters
@@ -27,5 +27,5 @@ class FilterTestCase(TestCase):
     def test_invalid_value(self):
         request = factory.get('/', {'contains': 2})
         ctx = self.view(request).renderer_context
-        self.assertRaises(exceptions.ParseError, self.filter.filter_queryset,
+        self.assertRaises(serializers.ValidationError, self.filter.filter_queryset,
                           ctx['request'], self.queryset, self.view)
