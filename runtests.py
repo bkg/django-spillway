@@ -11,7 +11,9 @@ TMPDIR = tempfile.mkdtemp(prefix='spillway_')
 
 DEFAULT_SETTINGS = {
     'INSTALLED_APPS': (
+        'django.contrib.staticfiles',
         'django.contrib.gis',
+        'rest_framework',
         'spillway',
         'tests',
     ),
@@ -28,6 +30,7 @@ DEFAULT_SETTINGS = {
         'django.middleware.csrf.CsrfViewMiddleware',
     ),
     'ROOT_URLCONF': 'tests.urls',
+    'STATIC_URL': '/static/',
     'REST_FRAMEWORK': {
         # Fix for Django 1.9:
         # https://github.com/tomchristie/django-rest-framework/issues/3494
