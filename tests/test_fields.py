@@ -24,6 +24,8 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
         geojson = str(feature)
         geom = self.field.to_python(geojson)
         self.assertEqual(json.loads(geom.geojson), feature['geometry'])
+        geom = self.field.to_python(feature)
+        self.assertEqual(json.loads(geom.geojson), feature['geometry'])
 
     def test_extent(self):
         ex = (0, 0, 10, 10)
