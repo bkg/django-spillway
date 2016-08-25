@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 import collections
 
+from greenwich.srs import SpatialReference
+
 from spillway.compat import json, JSONEncoder
 
 def as_feature(data):
@@ -18,9 +20,18 @@ def as_feature(data):
             data = FeatureCollection(features=data)
         elif has_layer(data):
             data = LayerCollection(data)
-        elif isinstance(data, dict) and not data:
+        elif has_coordinates(data):
+            data = Feature(geometry=data)
+        elif isinstance(data, collections.Mapping) and not data:
             data = Feature()
     return data
+
+def has_coordinates(geometry):
+    """Returns true for a Geometry-like structure."""
+    try:
+        return 'coordinates' in geometry
+    except (AttributeError, TypeError):
+        return False
 
 def has_features(fcollection):
     """Returns true for a FeatureCollection-like structure."""
@@ -49,10 +60,10 @@ class LinkedCRS(dict):
     def __init__(self, srid=4326, iterable=(), **kwargs):
         self['type'] = 'link'
         if isinstance(srid, int):
-            properties = {}
-            properties['href'] = 'http://spatialreference.org/ref/epsg/%s/proj4/' % srid
-            properties['type'] = 'proj4'
-            self['properties'] = properties
+            self['properties'] = {
+                'href': 'http://spatialreference.org/ref/epsg/%s/proj4/' % srid,
+                'type': 'proj4'
+            }
         else:
             iterable = iterable or srid
         self.update(iterable, **kwargs)
@@ -90,6 +101,13 @@ class AbstractFeature(dict):
 
     def copy(self):
         return self.__class__(**super(AbstractFeature, self).copy())
+
+    @property
+    def srs(self):
+        try:
+            return SpatialReference(self['crs']['properties']['name'])
+        except KeyError:
+            return None
 
 
 class Feature(AbstractFeature):

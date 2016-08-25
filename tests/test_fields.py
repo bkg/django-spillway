@@ -7,7 +7,7 @@ from django.contrib.gis.gdal import OGRGeometry
 from django.test import SimpleTestCase, TestCase
 
 from spillway.forms.fields import OGRGeometryField, GeometryFileField
-from spillway.collections import Feature
+from spillway.collections import Feature, NamedCRS
 from .models import _geom
 
 
@@ -26,6 +26,12 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
         self.assertEqual(json.loads(geom.geojson), feature['geometry'])
         geom = self.field.to_python(feature)
         self.assertEqual(json.loads(geom.geojson), feature['geometry'])
+
+    def test_feature_srid(self):
+        srid = 3857
+        feature = Feature(geometry=_geom, crs=NamedCRS(srid))
+        geom = self.field.to_python(str(feature))
+        self.assertEqual(geom.srid, srid)
 
     def test_extent(self):
         ex = (0, 0, 10, 10)

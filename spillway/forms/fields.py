@@ -4,12 +4,12 @@ import shutil
 import tempfile
 import zipfile
 
-from django.contrib.gis import forms
-from django.contrib.gis import gdal
+from django.contrib.gis import forms, gdal
 from django.contrib.gis.gdal.srs import SpatialReference, SRSException
 from django.utils.translation import ugettext_lazy as _
 from greenwich.geometry import Envelope
 
+import spillway.collections as sc
 from spillway.compat import json
 
 
@@ -92,18 +92,18 @@ class OGRGeometryField(forms.GeometryField):
     def to_python(self, value):
         if value in self.empty_values:
             return None
-        # Work with a single GeoJSON geometry or a Feature. Avoid parsing
-        # overhead unless we have a true "Feature".
-        if '"Feature",' in value:
-            d = json.loads(value)
-            value = json.dumps(d.get('geometry'))
-        elif isinstance(value, collections.Mapping):
-            value = json.dumps(value.get('geometry') or value)
+        sref = None
+        # Work with a single GeoJSON geometry or a Feature.
+        value = json.loads(value) if '"Feature",' in value else value
+        if isinstance(value, collections.Mapping):
+            feat = sc.as_feature(value)
+            value = json.dumps(feat.get('geometry') or value)
+            sref = feat.srs
         # Handle a comma delimited extent.
         elif list(value).count(',') == 3:
             value = Envelope(value.split(',')).polygon.ExportToWkt()
         try:
-            geom = gdal.OGRGeometry(value)
+            geom = gdal.OGRGeometry(value, srs=getattr(sref, 'wkt', None))
         except (gdal.OGRException, TypeError, ValueError):
             raise forms.ValidationError(self.error_messages['invalid_geom'])
         if not geom.srs:
