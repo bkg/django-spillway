@@ -1,5 +1,6 @@
 import io
 import os
+import operator
 import tempfile
 
 from django.core.files.storage import default_storage
@@ -11,10 +12,14 @@ from PIL import Image
 
 from .models import RasterStore
 
-def create_image():
+def create_image(multiband=False):
     tmpname = os.path.basename(tempfile.mktemp(suffix='.tif'))
     fp = default_storage.open(tmpname, 'w+b')
-    ras = raster.frombytes(bytes(bytearray(range(25))), (5, 5))
+    shape = (5, 5)
+    if multiband:
+        shape += (3,)
+    b = bytearray(range(reduce(operator.mul, shape)))
+    ras = raster.frombytes(bytes(b), shape)
     ras.affine = (-120, 2, 0, 38, 0, -2)
     ras.sref = 4326
     ras.save(fp)
@@ -24,6 +29,8 @@ def create_image():
 
 
 class RasterTestBase(SimpleTestCase):
+    use_multiband = False
+
     def setUp(self):
         ff = FieldFile(None, RasterStore._meta.get_field('image'),
                        os.path.basename(self.f.name))
@@ -31,7 +38,7 @@ class RasterTestBase(SimpleTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.f = create_image()
+        cls.f = create_image(cls.use_multiband)
         super(RasterTestBase, cls).setUpClass()
 
     @classmethod

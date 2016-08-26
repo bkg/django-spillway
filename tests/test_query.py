@@ -82,6 +82,17 @@ class GeoQuerySetTestCase(TestCase):
 
 
 class RasterQuerySetTestCase(RasterStoreTestBase):
+    use_multiband = True
+
+    def test_summarize(self):
+        qs = self.qs.summarize(self.object.geom.centroid)
+        arraycenters = [12, 37, 62]
+        self.assertEqual(list(qs[0].image), arraycenters)
+        geom = self.object.geom.buffer(-3)
+        qs = self.qs.summarize(geom, 'mean')
+        means = [9, 34, 59]
+        self.assertEqual(qs[0].image.tolist(), means)
+
     def test_warp(self):
         qs = self.qs.warp(format='img', srid=3857)
         memio = qs[0].image.file

@@ -286,7 +286,7 @@ class RasterQuerySet(GeoQuerySet):
                     if arr.ndim > 2:
                         axis = 1
                         arr = arr.reshape(arr.shape[0], -1)
-                    arr = getattr(module, stat)(arr, axis)
+                    arr = getattr(np.ma, stat)(arr, axis)
                 if arr.size == 1:
                     arr = arr.item()
             obj.image = arr
