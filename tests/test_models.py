@@ -25,13 +25,19 @@ def create_image():
 
 class RasterTestBase(SimpleTestCase):
     def setUp(self):
-        self.f = create_image()
         ff = FieldFile(None, RasterStore._meta.get_field('image'),
                        os.path.basename(self.f.name))
         self.data = {'image': ff}
 
-    def tearDown(self):
-        self.f.close()
+    @classmethod
+    def setUpClass(cls):
+        cls.f = create_image()
+        super(RasterTestBase, cls).setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.f.close()
+        super(RasterTestBase, cls).tearDownClass()
 
     def _image(self, imgdata):
         return Image.open(io.BytesIO(imgdata))
