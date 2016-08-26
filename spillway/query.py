@@ -279,7 +279,17 @@ class RasterQuerySet(GeoQuerySet):
             raise TypeError('Need OGR or GEOS geometry, %s found' % type(geom))
         clone = self._clone()
         for obj in clone:
-            obj.image = obj.array(geom, stat)
+            arr = obj.array(geom)
+            if arr is not None:
+                if stat:
+                    axis = None
+                    if arr.ndim > 2:
+                        axis = 1
+                        arr = arr.reshape(arr.shape[0], -1)
+                    arr = getattr(module, stat)(arr, axis)
+                if arr.size == 1:
+                    arr = arr.item()
+            obj.image = arr
         return clone
 
     def warp(self, format=None, srid=None, geom=None):

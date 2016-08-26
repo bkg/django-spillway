@@ -79,8 +79,7 @@ class AbstractRasterStore(models.Model):
 
     def quantiles(self, k=5):
         """Returns an ndarray of quantile breaks."""
-        with greenwich.Raster(self.image.path) as rast:
-            arr = rast.masked_array()
+        arr = self.array()
         q = list(np.linspace(0, 100, k))
         return np.percentile(arr.compressed(), q)
 
@@ -88,23 +87,16 @@ class AbstractRasterStore(models.Model):
         self.full_clean()
         super(AbstractRasterStore, self).save(*args, **kwargs)
 
-    def array(self, geom=None, stat=None):
+    def array(self, geom=None):
         with self.raster() as r:
-            if geom:
-                if geom.num_coords > 1:
-                    with r.clip(geom) as clipped:
-                        arr = clipped.masked_array()
-                else:
-                    coord_px = r.affine.transform((geom.coords,)).pop()
-                    arr = r.ReadAsArray(*(coord_px + (1, 1)))
+            if not geom:
+                return r.masked_array()
+            if geom.num_coords > 1:
+                with r.clip(geom) as clipped:
+                    arr = clipped.masked_array()
             else:
-                arr = r.masked_array()
-            if arr is not None:
-                if stat:
-                    axis = arr.ndim - 1 if arr.ndim > 2 else None
-                    arr = getattr(np.ma, stat)(arr, axis)
-                if arr.size == 1:
-                    arr = arr.item()
+                coord_px = r.affine.transform((geom.coords,)).pop()
+                arr = r.ReadAsArray(*(coord_px + (1, 1)))
             return arr
         raise ValueError('Failure reading array values')
 
