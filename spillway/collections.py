@@ -37,7 +37,6 @@ def has_features(fcollection):
     """Returns true for a FeatureCollection-like structure."""
     try:
         return 'features' in fcollection
-        # and is_featurelike(fcollection['features'][0])
     except (AttributeError, TypeError):
         return False
 

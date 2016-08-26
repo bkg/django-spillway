@@ -2,7 +2,7 @@ import datetime
 
 from django.test import SimpleTestCase
 from spillway.collections import (Feature, FeatureCollection, LayerCollection,
-    LinkedCRS, NamedCRS)
+    LinkedCRS, NamedCRS, as_feature)
 
 
 class FeatureTestCase(SimpleTestCase):
@@ -56,6 +56,11 @@ class LayerCollectionTestCase(SimpleTestCase):
 
     def test_geojson(self):
         self.assertIn('{"layer":', self.lc.geojson)
+
+    def test_as_feature(self):
+        self.assertIsInstance(as_feature(dict(self.lc['layer'])),
+                              FeatureCollection)
+        self.assertIsInstance(as_feature(dict(self.lc)), LayerCollection)
 
 
 class LinkedCRSTestCase(SimpleTestCase):
