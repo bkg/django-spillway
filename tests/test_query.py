@@ -92,6 +92,8 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
     def test_summarize_polygon(self):
         geom = self.object.geom.buffer(-3)
         qs = self.qs.summarize(geom, 'mean')
+        arr = self.qs[0].array()
+        self.assertEqual(arr.shape, (3, 5, 5))
         means = [9, 34, 59]
         self.assertEqual(qs[0].image.tolist(), means)
 
