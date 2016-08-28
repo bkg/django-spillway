@@ -91,7 +91,7 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
         geom = self.object.geom.buffer(-3)
         qs = self.qs.summarize(geom, 'mean')
         means = [9, 34, 59]
-        self.assertEqual(qs[0].image.tolist(), means)
+        self.assertEqual(list(qs[0].image), means)
 
     def test_warp(self):
         qs = self.qs.warp(format='img', srid=3857)
