@@ -95,6 +95,7 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
         arr = self.qs[0].array()
         self.assertEqual(arr.shape, (3, 5, 5))
         means = [9, 34, 59]
+        self.assertEqual(qs[0].image, means)
         self.assertEqual(qs[0].image.tolist(), means)
 
     def test_warp(self):
