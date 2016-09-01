@@ -60,6 +60,10 @@ class RasterStoreTestBase(RasterTestBase, TestCase):
 
 
 class RasterStoreTestCase(RasterStoreTestBase):
+    def test_array(self):
+        point = self.object.geom.centroid.transform(3310, clone=True)
+        self.assertEqual(self.object.array(point).squeeze(), 12)
+
     def test_save_uploadfile(self):
         upload = SimpleUploadedFile('up.tif', self.object.image.read())
         rstore = RasterStore(image=upload)

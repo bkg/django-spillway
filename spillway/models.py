@@ -95,6 +95,8 @@ class AbstractRasterStore(models.Model):
                 with r.clip(geom) as clipped:
                     arr = clipped.masked_array()
             else:
+                if geom.srid != r.sref.srid:
+                    geom = geom.transform(r.sref.srid, clone=True)
                 coord_px = r.affine.transform((geom.coords,)).pop()
                 arr = r.ReadAsArray(*(coord_px + (1, 1)))
             return arr
