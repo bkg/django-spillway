@@ -14,7 +14,7 @@ from spillway.compat import json
 
 
 class CommaSepFloatField(forms.FloatField):
-    """A Field for parsing a comma separated list of numeric values."""
+    """A form Field for parsing a comma separated list of numeric values."""
     default_error_messages = {
         'invalid': _(u'Enter a comma separated list of numbers.'),
         'max_value': _(u'Ensure each value is less than or equal to %(limit_value)s.'),
@@ -34,7 +34,7 @@ class CommaSepFloatField(forms.FloatField):
 
 
 class BoundingBoxField(CommaSepFloatField):
-    """A Field for comma separated bounding box coordinates."""
+    """A form Field for comma separated bounding box coordinates."""
 
     def __init__(self, srid=4326, *args, **kwargs):
         super(BoundingBoxField, self).__init__(*args, **kwargs)
@@ -51,8 +51,21 @@ class BoundingBoxField(CommaSepFloatField):
         return bbox
 
 
+class GeometryField(forms.GeometryField):
+    """A form Field for creating GEOS geometries."""
+
+    def to_python(self, value):
+        # Need to catch GDALException with some invalid geometries, the
+        # parent class doesn't handle all cases.
+        try:
+            return super(GeometryField, self).to_python(value)
+        except gdal.GDALException:
+            raise forms.ValidationError(
+                self.error_messages['invalid_geom'], code='invalid_geom')
+
+
 class GeometryFileField(forms.FileField):
-    """A Field for creating OGR geometries from file based sources."""
+    """A form Field for creating OGR geometries from file based sources."""
 
     def to_python(self, value):
         value = super(GeometryFileField, self).to_python(value)
@@ -87,7 +100,7 @@ class GeometryFileField(forms.FileField):
 
 
 class OGRGeometryField(forms.GeometryField):
-    """A Field for creating OGR geometries."""
+    """A form Field for creating OGR geometries."""
 
     def to_python(self, value):
         if value in self.empty_values:
@@ -112,7 +125,7 @@ class OGRGeometryField(forms.GeometryField):
 
 
 class SpatialReferenceField(forms.IntegerField):
-    """A Field for creating spatial reference objects."""
+    """A form Field for creating spatial reference objects."""
 
     def to_python(self, value):
         value = super(SpatialReferenceField, self).to_python(value)

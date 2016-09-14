@@ -56,7 +56,7 @@ class SpatialQueryForm(QuerySetForm):
         super(SpatialQueryForm, self).__init__(*args, **kwargs)
         for lookup in self.data:
             if lookup in ALL_TERMS:
-                self.fields[lookup] = forms.GeometryField(required=False)
+                self.fields[lookup] = fields.GeometryField(required=False)
                 break
 
     def clean(self):

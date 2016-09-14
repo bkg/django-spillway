@@ -33,6 +33,11 @@ class SpatialQueryFormTestCase(SimpleTestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data, self.expected)
 
+    def test_intersects_invalid(self):
+        data = {'intersects': '{"type":"Point","coordinates":[0]}'}
+        form = forms.SpatialQueryForm(data)
+        self.assertFalse(form.is_valid())
+
 
 class QuerySetFormTestCase(SimpleTestCase):
     def test_queryset(self):
