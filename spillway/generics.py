@@ -11,8 +11,7 @@ _default_filters = tuple(api_settings.DEFAULT_FILTER_BACKENDS)
 _default_renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
 
 
-class BaseGeoView(mixins.ModelSerializerMixin,
-                  mixins.ResponseExceptionMixin):
+class BaseGeoView(mixins.ModelSerializerMixin):
     """Base view for models with geometry fields."""
     model_serializer_class = serializers.FeatureSerializer
     pagination_class = pagination.FeaturePagination

@@ -134,6 +134,13 @@ class GeoListViewTestCase(TestCase):
         for geom, obj in zip(self._parse_collection(response), self.qs):
             self.assertTrue(geom.equals_exact(obj.geom, 0.0001))
 
+    def test_geojson_exception(self):
+        request = factory.get('/', {'intersects': 'POINT(null+null)'},
+                              HTTP_ACCEPT=GeoJSONRenderer.media_type)
+        response = self.view(request)
+        self.assertTrue(response.status_code, 400)
+        self.assertTrue(response.accepted_renderer, GeoJSONRenderer)
+
     def test_simplify(self):
         srid = 3857
         for format in 'json', 'geojson':
