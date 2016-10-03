@@ -176,11 +176,12 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         self.request = RequestMock()
         self.ctx = {'request': self.request}
 
-    def test_invalid_periods(self):
-        qs = self.qs.aggregate_periods(3)
-        ctx = {'request': self.request}
-        serializer = RasterStoreSerializer(qs, many=True, context=ctx)
-        self.assertEqual(len(serializer.data), len(self.qs))
+    def test_odd_periods(self):
+        periods = 3
+        qs = self.qs.aggregate_periods(periods)
+        serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
+        self.assertEqual(len(serializer.data[0]['image']), periods)
+        self.assertEqual(serializer.data[0]['image'], qs[0].image)
 
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)
