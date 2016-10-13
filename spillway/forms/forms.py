@@ -155,12 +155,11 @@ class TileForm(QuerySetForm):
         try:
             extent = (transform_tile(x, y, z) +
                       transform_tile(x + 1, y + 1, z))
-        except TypeError:
-            pass
-        else:
-            geom = gdal.OGRGeometry.from_bbox(extent)
-            geom.srid = self.fields['bbox'].srid
-            data['bbox'] = geom
+        except ValueError:
+            extent = (0, 0, 0, 0)
+        geom = gdal.OGRGeometry.from_bbox(extent)
+        geom.srid = self.fields['bbox'].srid
+        data['bbox'] = geom
         return data
 
 

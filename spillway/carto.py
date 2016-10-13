@@ -44,6 +44,13 @@ class Map(object):
         self.map = m
 
     def layer(self, queryset, stylename=None):
+        """Returns a map Layer.
+
+        Arguments:
+        queryset -- QuerySet for Layer
+        Keyword args:
+        stylename -- str name of style to apply
+        """
         cls = VectorLayer if hasattr(queryset, 'geojson') else RasterLayer
         layer = cls(queryset, style=stylename)
         try:
@@ -54,14 +61,22 @@ class Map(object):
         self.map.layers.append(layer._layer)
         return layer
 
-    def render(self, format, bbox=None):
+    def render(self, format):
         img = mapnik.Image(self.map.width, self.map.height)
         mapnik.render(self.map, img)
         return img.tostring(format)
 
     def zoom_bbox(self, bbox):
-        if bbox and bbox.area:
+        """Zoom map to geometry extent.
+
+        Arguments:
+        bbox -- OGRGeometry polygon to zoom map extent
+        """
+        try:
             bbox.transform(self.map.srs)
+        except gdal.GDALException:
+            pass
+        else:
             self.map.zoom_to_box(mapnik.Box2d(*bbox.extent))
 
 
