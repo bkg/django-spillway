@@ -1,7 +1,7 @@
 import math
 
 from django.contrib.gis import gdal, forms
-from greenwich.srs import transform_tile
+from greenwich import tile
 
 from spillway import query
 from spillway.compat import ALL_TERMS
@@ -153,8 +153,8 @@ class TileForm(QuerySetForm):
         x, y, z = map(data.get, ('x', 'y', 'z'))
         # Create bbox from NW and SE tile corners.
         try:
-            extent = (transform_tile(x, y, z) +
-                      transform_tile(x + 1, y + 1, z))
+            extent = (tile.to_lonlat(x, y, z) +
+                      tile.to_lonlat(x + 1, y + 1, z))
         except ValueError:
             extent = (0, 0, 0, 0)
         geom = gdal.OGRGeometry.from_bbox(extent)
