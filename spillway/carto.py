@@ -1,5 +1,6 @@
 from django.core.files.storage import default_storage
 from django.db import connection
+from django.contrib.gis import gdal
 from greenwich import srs
 
 from spillway.compat import mapnik
