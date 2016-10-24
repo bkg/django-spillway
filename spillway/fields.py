@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import collections
 
-from django.contrib.gis import forms
+from django.contrib.gis import geos, forms
 from rest_framework import renderers
 from rest_framework.fields import Field, FileField
 
@@ -24,6 +24,14 @@ class GeometryField(Field):
             elif isinstance(renderer, renderers.BrowsableAPIRenderer):
                 self.source = '%s.wkt' % field_name
         super(GeometryField, self).bind(field_name, parent)
+
+    def get_attribute(self, instance):
+        # SpatiaLite returns empty/invalid geometries in WKT or GeoJSON with
+        # exceedingly high simplification tolerances.
+        try:
+            return super(GeometryField, self).get_attribute(instance)
+        except geos.GEOSException:
+            return None
 
     def to_internal_value(self, data):
         # forms.GeometryField cannot handle geojson dicts.

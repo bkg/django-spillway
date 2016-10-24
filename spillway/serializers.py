@@ -1,4 +1,5 @@
 from django.core import exceptions
+from django.contrib.gis import geos
 from django.contrib.gis.db import models
 from django.db.models.fields.files import FieldFile
 from rest_framework import serializers
@@ -73,9 +74,12 @@ class FeatureSerializer(GeoModelSerializer):
         if not hasattr(self, '_data'):
             self._data = super(FeatureSerializer, self).data
             if 'crs' not in self._data:
-                geom = getattr(self.instance, self.Meta.geom_field, None)
-                if geom and geom.srid:
-                    self._data['crs'] = sc.NamedCRS(geom.srid)
+                try:
+                    srid = getattr(self.instance, self.Meta.geom_field).srid
+                except (AttributeError, geos.GEOSException):
+                    pass
+                else:
+                    self._data['crs'] = sc.NamedCRS(srid)
         return self._data
 
     def to_representation(self, instance):

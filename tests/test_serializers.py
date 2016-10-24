@@ -149,6 +149,12 @@ class FeatureSerializerTestCase(ModelTestCase):
         self.assertEqual(serializer.data['features'][0], feat)
         self.assertEqual(serializer.data['crs'], crs)
 
+    def test_serialize_queryset_simplify(self):
+        # Too high of simplification tolerance should return empty geometry.
+        serializer = LocationFeatureSerializer(
+            Location.objects.simplify(10, srid=4269)[0])
+        self.assertEqual(serializer.data['geometry'], {})
+
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)
         self.assertTrue(serializer.is_valid())
