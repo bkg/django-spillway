@@ -77,19 +77,16 @@ class SpatialQueryForm(QuerySetForm):
 class GeometryQueryForm(QuerySetForm):
     """A form providing GeoQuerySet method arguments."""
     format = forms.CharField(required=False)
-    precision = forms.IntegerField(required=False, initial=4)
+    precision = forms.IntegerField(required=False)
     # Tolerance value for geometry simplification
     simplify = forms.FloatField(required=False)
     srs = fields.SpatialReferenceField(required=False)
 
-    def clean_precision(self):
-        # Unfortunately initial values are not used as default values.
-        return (self.cleaned_data['precision'] or
-                self.fields['precision'].initial)
-
     def select(self):
+        kwargs = {}
         data = self.cleaned_data
-        kwargs = {'precision': data['precision']}
+        if data['precision'] is not None:
+            kwargs.update(precision=data['precision'])
         tolerance, srs, format = map(data.get, ('simplify', 'srs', 'format'))
         srid = getattr(srs, 'srid', None)
         try:

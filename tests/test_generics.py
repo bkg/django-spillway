@@ -25,7 +25,7 @@ PaginatedGeoListView.pagination_class.page_size = 10
 
 class GeoDetailViewTestCase(TestCase):
     model = GeoLocation
-    precision = forms.GeometryQueryForm()['precision'].field.initial
+    precision = 4
 
     def setUp(self):
         self.pk = 1
@@ -51,16 +51,20 @@ class GeoDetailViewTestCase(TestCase):
     def test_geojson_response(self):
         expected = json.loads(
             self.qs.geojson(precision=self.precision)[0].geojson)
-        request = factory.get('/', {'format': 'geojson'})
+        request = factory.get('/', {'format': 'geojson',
+                                    'precision': self.precision})
         with self.assertNumQueries(1):
             response = self.view(request, pk=self.pk).render()
         self.assertEqual(response.status_code, 200)
         feature = json.loads(response.content)
         self.assertEqual(feature['geometry'], expected)
         self.assertEqual(feature['type'], 'Feature')
+        # Be sure we get geojson returned from SQL function call, not GEOS.
+        sqlformat = '{"type":"Polygon","coordinates":[[['
+        self.assertContains(response, 'geometry": %s' % sqlformat)
 
     def test_kml_response(self):
-        request = factory.get('/', {'format': 'kml'})
+        request = factory.get('/', {'format': 'kml', 'precision': self.precision})
         response = self.view(request, pk=self.pk).render()
         part = self.qs.kml(precision=self.precision)[0].kml
         self.assertInHTML(part, response.content, count=1)
