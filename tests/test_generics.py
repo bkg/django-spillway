@@ -10,8 +10,9 @@ from rest_framework.test import APIRequestFactory
 
 from spillway import generics, forms
 from spillway.renderers import GeoJSONRenderer
-from .models import GeoLocation, Location, RasterStore
-from .test_serializers import RasterStoreTestBase, LocationFeatureSerializer
+from .models import GeoLocation, Location
+from .test_models import RasterStoreTestBase
+from .test_serializers import LocationFeatureSerializer
 
 factory = APIRequestFactory()
 
@@ -206,8 +207,7 @@ class PaginatedGeoListViewTestCase(TestCase):
 class RasterListViewTestCase(RasterStoreTestBase):
     def setUp(self):
         super(RasterListViewTestCase, self).setUp()
-        self.view = generics.RasterListView.as_view(
-            queryset=RasterStore.objects.all())
+        self.view = generics.RasterListView.as_view(queryset=self.qs)
 
     def test_list_json(self):
         request = factory.get('/')

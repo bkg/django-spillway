@@ -7,8 +7,8 @@ from rest_framework.test import APIRequestFactory, APITestCase
 from PIL import Image
 
 from spillway import views
-from .models import Location, RasterStore
-from .test_serializers import RasterStoreTestBase
+from .models import Location
+from .test_models import RasterStoreTestBase
 
 
 class TileViewTestCase(APITestCase):
