@@ -119,7 +119,7 @@ class GeoListViewTestCase(TestCase):
         self.assertEqual(len(response.data['features']), 1)
 
     def test_spatial_lookup(self):
-        centroid = Location.objects.centroid()[0].centroid.geojson
+        centroid = self.qs[0].geom.centroid.geojson
         request = factory.get('/', {'intersects': centroid})
         response = self.view(request)
         self.assertEqual(len(response.data['features']), 1)
@@ -209,6 +209,15 @@ class RasterListViewTestCase(RasterStoreTestBase):
         super(RasterListViewTestCase, self).setUp()
         self.view = generics.RasterListView.as_view(queryset=self.qs)
 
+    def test_list_apidoc(self):
+        request = factory.get('/', {'format': 'api'})
+        response = self.view(request).render()
+        self.assertRegexpMatches(response.content, 'image.+?http://.*\.tif')
+        point = self.object.geom.centroid
+        request = factory.get('/', {'format': 'api', 'g': point.wkt})
+        response = self.view(request)
+        self.assertEqual(response.data[0]['image'], 12)
+
     def test_list_json(self):
         request = factory.get('/')
         d = json.loads(self.view(request).render().content)
@@ -241,6 +250,14 @@ class RasterListViewTestCase(RasterStoreTestBase):
         bio = io.BytesIO(''.join(response.streaming_content))
         zf = zipfile.ZipFile(bio)
         self.assertEqual(len(zf.filelist), len(self.qs))
+
+    def test_spatial_lookup(self):
+        corner = self.object.geom.extent[:2]
+        point = self.object.geom.centroid
+        point.x = corner[0] - 10
+        request = factory.get('/', {'intersects': point.wkt})
+        response = self.view(request)
+        self.assertEqual(len(response.data), 0)
 
     def test_404(self):
         response = self.client.get('/rasters/-9999/', {'format': 'img.zip'})

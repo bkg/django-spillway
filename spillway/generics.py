@@ -37,23 +37,11 @@ class BaseRasterView(mixins.ModelSerializerMixin,
                      mixins.ResponseExceptionMixin):
     """Base view for raster models."""
     model_serializer_class = serializers.RasterModelSerializer
-    filter_backends = _default_filters
+    filter_backends = _default_filters + (filters.RasterQuerySetFilter,)
     renderer_classes = _default_renderers + (
         renderers.GeoTIFFZipRenderer,
         renderers.HFAZipRenderer,
     )
-
-    def filter_queryset(self, queryset):
-        queryset = super(BaseRasterView, self).filter_queryset(queryset)
-        renderer = self.request.accepted_renderer
-        if isinstance(renderer, (rn.BrowsableAPIRenderer,
-                                 rn.TemplateHTMLRenderer)):
-            return queryset
-        form = forms.RasterQueryForm.from_request(self.request, queryset)
-        try:
-            return form.query()
-        except FormValidationError:
-            raise ValidationError(form.errors)
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(BaseRasterView, self).finalize_response(
@@ -94,4 +82,7 @@ class RasterDetailView(BaseRasterView, RetrieveAPIView):
 
 class RasterListView(BaseRasterView, ListAPIView):
     """View providing access to a Raster model QuerySet."""
-    filter_backends = _default_filters + (filters.SpatialLookupFilter,)
+    filter_backends = _default_filters + (
+        filters.SpatialLookupFilter,
+        filters.RasterQuerySetFilter,
+    )
