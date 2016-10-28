@@ -2,9 +2,11 @@ import math
 
 from django.contrib.gis import gdal, forms
 from greenwich import tile
+from rest_framework import renderers
 
 from spillway import query
 from spillway.compat import ALL_TERMS
+from spillway.renderers import CSVRenderer
 from . import fields
 
 
@@ -124,15 +126,16 @@ class RasterQueryForm(QuerySetForm):
         return data
 
     def select(self):
-        formats = ('csv', 'json')
-        htmlformats = ('api', 'html')
+        txtformats = (renderers.JSONRenderer.format, CSVRenderer.format)
+        htmlformats = (renderers.BrowsableAPIRenderer.format,
+                       renderers.TemplateHTMLRenderer.format)
         fields = ('format', 'g', 'stat', 'periods')
         format, geom, stat, periods = map(self.cleaned_data.get, fields)
-        if not geom and format in htmlformats + formats:
+        if not geom and format in htmlformats + txtformats:
             return
         elif geom and format in htmlformats:
-            format = 'json'
-        if format in formats:
+            format = txtformats[0]
+        if format in txtformats:
             qs = self.queryset.summarize(geom, stat)
         else:
             qs = self.queryset.warp(format, geom=geom)
