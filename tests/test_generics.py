@@ -6,10 +6,11 @@ from django.contrib.gis import geos
 from django.test import TestCase
 from greenwich.raster import Raster
 from rest_framework import status
+from rest_framework.exceptions import NotAcceptable
 from rest_framework.test import APIRequestFactory
 
 from spillway import generics, forms
-from spillway.renderers import GeoJSONRenderer
+from spillway.renderers import GeoJSONRenderer, GeoTIFFZipRenderer
 from .models import GeoLocation, Location
 from .test_models import RasterStoreTestBase
 from .test_serializers import LocationFeatureSerializer
@@ -251,6 +252,14 @@ class RasterListViewTestCase(RasterStoreTestBase):
         zf = zipfile.ZipFile(bio)
         self.assertEqual(len(zf.filelist), len(self.qs))
 
+    def test_options(self):
+        # Client could inadvertently make options request with wrong accept header.
+        response = self.client.options(
+            '/rasters/', HTTP_ACCEPT=GeoTIFFZipRenderer.media_type)
+        self.assertEqual(response.status_code, NotAcceptable.status_code)
+        response = self.client.options('/rasters/')
+        self.assertEqual(response.status_code, 200)
+
     def test_spatial_lookup(self):
         corner = self.object.geom.extent[:2]
         point = self.object.geom.centroid
@@ -262,3 +271,6 @@ class RasterListViewTestCase(RasterStoreTestBase):
     def test_404(self):
         response = self.client.get('/rasters/-9999/', {'format': 'img.zip'})
         self.assertEqual(response.status_code, 404)
+        self.assertEqual(response['content-type'], 'text/html')
+        response = self.client.get('/rasters/-9999/')
+        self.assertEqual(response['content-type'], 'application/json')

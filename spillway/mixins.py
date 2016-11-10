@@ -1,3 +1,5 @@
+from rest_framework import exceptions
+from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.settings import api_settings
 
 
@@ -24,11 +26,16 @@ class ResponseExceptionMixin(object):
 
     def handle_exception(self, exc):
         response = super(ResponseExceptionMixin, self).handle_exception(exc)
-        if response.exception:
-            renderers = api_settings.DEFAULT_RENDERER_CLASSES
+        renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
+        # Never use GDAL or Mapnik renderers for exceptions.
+        if response.exception and not isinstance(self.request.accepted_renderer, renderers):
             conneg = self.get_content_negotiator()
-            render_cls, mtype = conneg.select_renderer(
-                self.request, renderers, self.format_kwarg)
+            try:
+                render_cls, mtype = conneg.select_renderer(
+                    self.request, renderers, self.format_kwarg)
+            except exceptions.NotAcceptable:
+                render_cls = TemplateHTMLRenderer
+                mtype = render_cls.media_type
             self.request.accepted_renderer = render_cls()
             self.request.accepted_media_type = mtype
         return response

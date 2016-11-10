@@ -1,5 +1,6 @@
 from django.http import FileResponse
 from django.forms import ValidationError as FormValidationError
+from rest_framework import exceptions
 from rest_framework.generics import ListAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.serializers import ValidationError
 from rest_framework.settings import api_settings
@@ -63,11 +64,17 @@ class BaseRasterView(mixins.ModelSerializerMixin,
             return self.queryset.filter(**filter_kwargs)
         return self.queryset.all()
 
+    def options(self, request, *args, **kwargs):
+        if isinstance(self.request.accepted_renderer,
+                      renderers.gdal.BaseGDALRenderer):
+            raise exceptions.NotAcceptable
+        return super(BaseRasterView, self).options(request, *args, **kwargs)
+
     @property
     def paginator(self):
         # Disable pagination for GDAL Renderers.
-        if not isinstance(self.request.accepted_renderer,
-                          _default_renderers):
+        if isinstance(self.request.accepted_renderer,
+                      renderers.gdal.BaseGDALRenderer):
             self.pagination_class = None
         return super(BaseRasterView, self).paginator
 
