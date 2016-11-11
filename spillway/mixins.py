@@ -27,8 +27,9 @@ class ResponseExceptionMixin(object):
     def handle_exception(self, exc):
         response = super(ResponseExceptionMixin, self).handle_exception(exc)
         renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
-        # Never use GDAL or Mapnik renderers for exceptions.
-        if response.exception and not isinstance(self.request.accepted_renderer, renderers):
+        accepted = getattr(self.request, 'accepted_renderer', None)
+        if (response.exception and accepted
+                and not isinstance(accepted, renderers)):
             conneg = self.get_content_negotiator()
             try:
                 render_cls, mtype = conneg.select_renderer(

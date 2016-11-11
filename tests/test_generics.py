@@ -260,6 +260,11 @@ class RasterListViewTestCase(RasterStoreTestBase):
         response = self.client.options('/rasters/')
         self.assertEqual(response.status_code, 200)
 
+    def test_not_acceptable(self):
+        response = self.client.get('/rasters/', HTTP_ACCEPT='image/tiff')
+        self.assertEqual(response.status_code, NotAcceptable.status_code)
+        self.assertEqual(response['content-type'], 'application/json')
+
     def test_spatial_lookup(self):
         corner = self.object.geom.extent[:2]
         point = self.object.geom.centroid
