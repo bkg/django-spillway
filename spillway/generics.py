@@ -73,8 +73,8 @@ class BaseRasterView(mixins.ModelSerializerMixin,
     @property
     def paginator(self):
         # Disable pagination for GDAL Renderers.
-        if isinstance(self.request.accepted_renderer,
-                      renderers.gdal.BaseGDALRenderer):
+        if not isinstance(self.request.accepted_renderer,
+                          _default_renderers):
             self.pagination_class = None
         return super(BaseRasterView, self).paginator
 
