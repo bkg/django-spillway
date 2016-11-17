@@ -48,7 +48,7 @@ class BaseRasterView(mixins.ModelSerializerMixin,
         response = super(BaseRasterView, self).finalize_response(
             request, response, *args, **kwargs)
         # Use streaming file responses for GDAL formats.
-        if isinstance(response.accepted_renderer,
+        if isinstance(getattr(response, 'accepted_renderer', None),
                       renderers.gdal.BaseGDALRenderer):
             headers = response._headers
             response = FileResponse(response.rendered_content)
