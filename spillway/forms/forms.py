@@ -42,9 +42,9 @@ class QuerySetForm(forms.Form):
     def select(self):
         """Set GeoQuerySet from field values and filters.
 
-        Subclasses implement this. Not called directly, use .query().
+        Subclasses may override this. Not called directly, use .query().
         """
-        raise NotImplementedError
+        self.queryset = self.queryset.filter(**self.cleaned_data)
 
 
 class SpatialQueryForm(QuerySetForm):

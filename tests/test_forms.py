@@ -1,8 +1,9 @@
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, TestCase
 from django.forms import fields
 from django.contrib.gis import geos
 
 from spillway import forms
+from .models import Location
 
 
 class PKeyQuerySetForm(forms.QuerySetForm):
@@ -39,7 +40,13 @@ class SpatialQueryFormTestCase(SimpleTestCase):
         self.assertFalse(form.is_valid())
 
 
-class QuerySetFormTestCase(SimpleTestCase):
+class QuerySetFormTestCase(TestCase):
     def test_queryset(self):
+        Location.add_buffer((5, 7), 2)
+        qs = Location.objects.all()
+        form = PKeyQuerySetForm({'pk': '1'}, queryset=qs)
+        self.assertEqual(form.query()[0].pk, 1)
+
+    def test_missing_queryset(self):
         form = PKeyQuerySetForm({'pk': '1'})
         self.assertRaises(TypeError, form.query)
