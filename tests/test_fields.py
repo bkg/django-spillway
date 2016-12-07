@@ -19,6 +19,11 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
         geom = self.field.to_python(_geom)
         self.assertEqual(json.loads(geom.geojson), _geom)
 
+    def test_extent(self):
+        ex = (0, 0, 10, 10)
+        geom = self.field.to_python(','.join(map(str, ex)))
+        self.assertEqual(geom.extent, ex)
+
     def test_feature(self):
         feature = Feature(geometry=_geom)
         geojson = str(feature)
@@ -33,13 +38,13 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
         geom = self.field.to_python(str(feature))
         self.assertEqual(geom.srid, srid)
 
-    def test_extent(self):
-        ex = (0, 0, 10, 10)
-        geom = self.field.to_python(','.join(map(str, ex)))
-        self.assertEqual(geom.extent, ex)
-
     def test_invalid(self):
         self.assertRaises(forms.ValidationError, self.field.to_python, '3')
+
+    def test_srid(self):
+        srid = 4269
+        geom = OGRGeometryField(srid=srid).to_python('POINT(0 0)')
+        self.assertEqual(geom.srid, srid)
 
 
 class GeometryFileFieldTestCase(SimpleTestCase):
