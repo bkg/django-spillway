@@ -8,6 +8,7 @@ from django.test import SimpleTestCase, TestCase
 
 from spillway.forms.fields import OGRGeometryField, GeometryFileField
 from spillway.collections import Feature, NamedCRS
+from spillway.validators import GeometrySizeValidator
 from .models import _geom
 
 
@@ -40,6 +41,11 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
 
     def test_invalid(self):
         self.assertRaises(forms.ValidationError, self.field.to_python, '3')
+
+    def test_size_validator(self):
+        validator = GeometrySizeValidator(3 ** 2, 4326)
+        field = OGRGeometryField(validators=[validator])
+        self.assertRaises(forms.ValidationError, field.clean, '0,0,5,5')
 
     def test_srid(self):
         srid = 4269
