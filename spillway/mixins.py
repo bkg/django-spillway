@@ -13,6 +13,7 @@ class ModelSerializerMixin(object):
         class DefaultSerializer(self.model_serializer_class):
             class Meta:
                 model = self.queryset.model
+                fields = '__all__'
         return DefaultSerializer
 
 

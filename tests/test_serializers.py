@@ -29,18 +29,21 @@ class RequestMock(object):
 class LocationSerializer(serializers.GeoModelSerializer):
     class Meta:
         model = Location
+        fields = '__all__'
         geom_field = 'geom'
 
 
 class LocationFeatureSerializer(serializers.FeatureSerializer):
     class Meta:
         model = Location
+        fields = '__all__'
         geom_field = 'geom'
 
 
 class RasterStoreSerializer(serializers.RasterModelSerializer):
     class Meta:
         model = RasterStore
+        fields = '__all__'
 
 
 class PaginatedGeoListView(generics.GeoListView):
