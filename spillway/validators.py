@@ -14,6 +14,8 @@ class GeometrySizeValidator(object):
         self.srid = srid
 
     def __call__(self, geom):
+        if not geom:
+            return
         if self.srid and geom.srid != self.srid:
             geom.transform(self.srid)
         if (getattr(geom, 'ogr', geom).dimension > 1 and
