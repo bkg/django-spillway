@@ -34,8 +34,8 @@ def build_map(querysets, tileform):
 class Map(object):
     mapfile = default_storage.path('map.xml')
 
-    def __init__(self):
-        m = mapnik.Map(256, 256)
+    def __init__(self, width=256, height=256):
+        m = mapnik.Map(width, height)
         try:
             mapnik.load_map(m, str(self.mapfile))
         except RuntimeError:
