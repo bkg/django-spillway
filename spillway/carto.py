@@ -23,7 +23,9 @@ def build_map(querysets, tileform):
     data = tileform.cleaned_data if tileform.is_valid() else {}
     stylename = data.get('style')
     m = Map()
-    m.zoom_bbox(data.get('bbox'))
+    bbox = data.get('bbox')
+    if bbox:
+        m.zoom_bbox(bbox)
     for queryset in querysets:
         layer = m.layer(queryset, stylename)
         if isinstance(layer, RasterLayer):
