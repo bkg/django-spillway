@@ -31,6 +31,10 @@ DEFAULT_SETTINGS = {
     ),
     'ROOT_URLCONF': 'tests.urls',
     'STATIC_URL': '/static/',
+    'TEMPLATES': [{
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+    }],
     'REST_FRAMEWORK': {
         # Fix for Django 1.9:
         # https://github.com/tomchristie/django-rest-framework/issues/3494
@@ -47,9 +51,7 @@ def teardown():
 def runtests():
     if not settings.configured:
         settings.configure(**DEFAULT_SETTINGS)
-    # Compatibility with Django 1.7's stricter initialization
-    if hasattr(django, 'setup'):
-        django.setup()
+    django.setup()
     parent = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, parent)
     try:
