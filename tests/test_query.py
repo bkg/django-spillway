@@ -15,7 +15,7 @@ class GeoQuerySetTestCase(TestCase):
         self.tol = 10000
         # Buffer radius in degrees for EPSG 4326.
         self.radius = 2
-        Location.add_buffer((0, 0), self.radius)
+        Location.add_buffer((0.1, 0.1), self.radius)
         self.qs = Location.objects.all()
 
     def test_extent(self):
@@ -69,7 +69,7 @@ class GeoQuerySetTestCase(TestCase):
         self.assertTrue(tf.is_valid())
         qs = self.qs.tile(
             tf.cleaned_data['bbox'], format='pbf', clip=True)
-        self.assertTrue(qs[0].pbf.startswith('POLYGON((1456.355556 4096'))
+        self.assertTrue(qs[0].pbf.startswith('POLYGON((1522.001408 4096'))
 
     def test_transform(self):
         sql = self.qs._transform(self.srid)
