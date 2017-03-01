@@ -181,7 +181,7 @@ class GeoQuerySet(query.GeoQuerySet):
         format -- vector tile format as str
         clip -- clip geometries to tile boundary as boolean
         """
-        clone = filter_geometry(self, intersects=bbox.ewkt)
+        clone = filter_geometry(self, intersects=getattr(bbox, 'geos', bbox))
         # Tile grid uses 3857, but coordinates should be in 4326 commonly.
         tile_srid = 3857
         coord_srid = bbox.srid
