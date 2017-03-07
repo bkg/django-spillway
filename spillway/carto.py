@@ -2,6 +2,7 @@ from django.core.files.storage import default_storage
 from django.db import connection
 from django.contrib.gis import gdal
 from greenwich import srs
+from rest_framework.exceptions import NotFound
 
 from spillway.compat import mapnik
 from spillway import colors, query
@@ -28,6 +29,9 @@ def build_map(querysets, tileform):
         m.zoom_bbox(bbox)
     for queryset in querysets:
         layer = m.layer(queryset, stylename)
+        env = layer.envelope().forward(m.proj)
+        if not env.intersects(m.map.envelope()):
+            raise NotFound('Tile not found: outside layer extent')
         if isinstance(layer, RasterLayer):
             layer.add_colorizer_stops(data.get('limits'))
     return m
@@ -44,6 +48,7 @@ class Map(object):
             pass
         m.buffer_size = 128
         m.srs = '+init=epsg:3857'
+        self.proj = mapnik.Projection(m.srs)
         self.map = m
 
     def layer(self, queryset, stylename=None):
@@ -91,8 +96,14 @@ class Layer(object):
         field = query.geo_field(queryset)
         sref = srs.SpatialReference(query.get_srid(queryset))
         layer = mapnik.Layer(table, sref.proj4)
-        layer.datasource = make_dbsource(
-            table=table, geometry_field=field.name)
+        ds = make_dbsource(table=table, geometry_field=field.name)
+        # During tests, the spatialite layer statistics are not updated and
+        # return an invalid layer extent. Set it from the queryset.
+        if not ds.envelope().valid():
+            ex = ','.join(map(str, queryset.extent()))
+            ds = make_dbsource(table=table, geometry_field=field.name,
+                               extent=ex)
+        layer.datasource = ds
         self._layer = layer
         self.stylename = style or self._layer.name
         self._symbolizer = None
@@ -110,6 +121,7 @@ class Layer(object):
         return style
 
     def symbolizer(self):
+        """Returns a default Symbolizer."""
         raise NotImplementedError
 
 

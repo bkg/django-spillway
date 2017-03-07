@@ -21,6 +21,7 @@ class TileViewTestCase(APITestCase):
         Location.create(name='Prague', geom=self.geometry)
         self.g = Location.objects.first().geom
         self.tolerance = .0000001
+        self.url = '/vectiles/10/553/347'
 
     def is_polygon_equal(self, d):
         g = geos.Polygon(d['features'][0]['geometry']['coordinates'][0])
@@ -28,7 +29,7 @@ class TileViewTestCase(APITestCase):
         return g.equals_exact(self.g, self.tolerance)
 
     def test_clipped_response(self):
-        response = self.client.get('/vectiles/10/553/347/?clip=true')
+        response = self.client.get('%s/?clip=true' % self.url)
         d = json.loads(response.content)
         self.assertFalse(self.is_polygon_equal(d))
         # This particular geometry clipped to a tile should have +1 coords.
@@ -36,12 +37,14 @@ class TileViewTestCase(APITestCase):
                          len(self.geometry['coordinates'][0]) + 1)
 
     def test_unclipped_response(self):
-        response = self.client.get('/vectiles/10/553/347.geojson')
+        response = self.client.get('%s.geojson' % self.url)
         d = json.loads(response.content)
         self.assertTrue(self.is_polygon_equal(d))
+        # self.assertNotIn('crs', d)
 
     def test_png_response(self):
-        response = self.client.get('/vectiles/10/553/347.png')
+        response = self.client.get('%s.png' % self.url)
+        self.assertEqual(response.status_code, 200)
         self.assertEqual(response['content-type'], 'image/png')
         im = Image.open(BytesIO(response.content))
         self.assertEqual(im.size, (256, 256))
@@ -53,9 +56,6 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
         self.assertEqual(response['content-type'], 'image/png')
         im = Image.open(BytesIO(response.content))
         self.assertEqual(im.size, (256, 256))
-
-    def _assert_is_empty_tile(self, response):
-        im = Image.open(BytesIO(response.content))
         stats = im.getextrema()
         zero_rgba = ((0, 0), (0, 0), (0, 0), (0, 0))
         self.assertEqual(stats, zero_rgba)
@@ -70,13 +70,12 @@ class MapViewTestCase(RasterStoreTestBase, APITestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response['content-type'], 'text/html')
 
-    def test_empty_tile(self):
-        response = self.client.get('/maptiles/1/10/553/347/')
-        self.assertEqual(response.status_code, 200)
-        self._assert_is_empty_tile(response)
-
     def test_invalid_tile_coords(self):
         response = self.client.get('/maptiles/1/2/0/100/')
-        self.assertEqual(response.status_code, 200)
-        self._assert_is_empty_tile(response)
-        self._assert_is_empty_tile(self.client.get('/maptiles/1/2/100/100/'))
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response['content-type'], 'application/json')
+
+    def test_tile_outside_extent(self):
+        response = self.client.get('/maptiles/1/5/16/10.png')
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response['content-type'], 'text/html')
