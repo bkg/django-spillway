@@ -49,6 +49,11 @@ class TileViewTestCase(APITestCase):
         im = Image.open(BytesIO(response.content))
         self.assertEqual(im.size, (256, 256))
 
+    def test_tile_outside_extent(self):
+        response = self.client.get('/vectiles/4/7/8.png')
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response['content-type'], 'text/html')
+
 
 class MapViewTestCase(RasterStoreTestBase, APITestCase):
     def test_response(self):

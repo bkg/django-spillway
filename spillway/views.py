@@ -19,7 +19,7 @@ class MapView(mixins.ResponseExceptionMixin, GenericAPIView):
         return Response(m.render(request.accepted_renderer.format))
 
 
-class TileView(BaseGeoView, ListAPIView):
+class TileView(mixins.ResponseExceptionMixin, BaseGeoView, ListAPIView):
     """View for serving tiled GeoJSON or PNG from a GeoModel."""
     pagination_class = None
     filter_backends = (filters.TileFilter,)
