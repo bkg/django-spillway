@@ -5,7 +5,7 @@ from spillway import carto, filters, forms, mixins, renderers
 from spillway.generics import BaseGeoView
 
 
-class MapView(mixins.ResponseExceptionMixin, GenericAPIView):
+class RasterTileView(mixins.ResponseExceptionMixin, GenericAPIView):
     """View for rendering map tiles from /{z}/{x}/{y}/ tile coordinates."""
     renderer_classes = (renderers.MapnikRenderer,
                         renderers.MapnikJPEGRenderer)

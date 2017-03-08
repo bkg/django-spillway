@@ -55,7 +55,7 @@ class TileViewTestCase(APITestCase):
         self.assertEqual(response['content-type'], 'text/html')
 
 
-class MapViewTestCase(RasterStoreTestBase, APITestCase):
+class RasterTileViewTestCase(RasterStoreTestBase, APITestCase):
     def test_response(self):
         response = self.client.get('/maptiles/1/11/342/790/')
         self.assertEqual(response['content-type'], 'image/png')

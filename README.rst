@@ -123,11 +123,11 @@ be added and tested though the read-only variety is available.
 
 Map Tiles
 ---------
-`MapView` and `TileView` are available respectively for generating image or vector
-map tiles. Image tiles require the optional dependency Mapnik, so be sure to
-have that installed. In this example, GeoJSON or PNG tiles can be requested for
-the Location geo model, or PNG tiles for RasterStore data sets. The urls
-presented here use a scheme of "/{z}/{x}/{y}.{format}".
+`TileView` and `RasterTileView` are available respectively for generating
+vector or image map tiles. Image tiles require the optional dependency Mapnik,
+so be sure to have that installed. In this example, GeoJSON or PNG tiles can be
+requested for the Location geo model, or PNG tiles for RasterStore data sets.
+The urls presented here use a scheme of "/{z}/{x}/{y}.{format}".
 
 .. code-block:: python
 
@@ -140,7 +140,7 @@ presented here use a scheme of "/{z}/{x}/{y}.{format}".
             views.TileView.as_view(queryset=Location.objects.all()),
             name='location-tiles'),
         url(urls.tilepath('^tiles/(?P<slug>\d+)/'),
-            views.MapView.as_view(queryset=RasterStore.objects.all()),
+            views.RasterTileView.as_view(queryset=RasterStore.objects.all()),
             name='map-tiles'),
     ]
 
