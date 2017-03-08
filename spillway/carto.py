@@ -91,23 +91,6 @@ class Map(object):
 class Layer(object):
     """Base class for a Mapnik layer."""
 
-    def __init__(self, queryset, style=None):
-        table = str(queryset.model._meta.db_table)
-        field = query.geo_field(queryset)
-        sref = srs.SpatialReference(query.get_srid(queryset))
-        layer = mapnik.Layer(table, sref.proj4)
-        ds = make_dbsource(table=table, geometry_field=field.name)
-        # During tests, the spatialite layer statistics are not updated and
-        # return an invalid layer extent. Set it from the queryset.
-        if not ds.envelope().valid():
-            ex = ','.join(map(str, queryset.extent()))
-            ds = make_dbsource(table=table, geometry_field=field.name,
-                               extent=ex)
-        layer.datasource = ds
-        self._layer = layer
-        self.stylename = style or self._layer.name
-        self._symbolizer = None
-
     def __getattr__(self, attr):
         return getattr(self._layer, attr)
 
@@ -154,6 +137,23 @@ class RasterLayer(Layer):
 
 class VectorLayer(Layer):
     """A Mapnik layer for vector data types."""
+
+    def __init__(self, queryset, style=None):
+        table = str(queryset.model._meta.db_table)
+        field = query.geo_field(queryset)
+        sref = srs.SpatialReference(query.get_srid(queryset))
+        layer = mapnik.Layer(table, sref.proj4)
+        ds = make_dbsource(table=table, geometry_field=field.name)
+        # During tests, the spatialite layer statistics are not updated and
+        # return an invalid layer extent. Set it from the queryset.
+        if not ds.envelope().valid():
+            ex = ','.join(map(str, queryset.extent()))
+            ds = make_dbsource(table=table, geometry_field=field.name,
+                               extent=ex)
+        layer.datasource = ds
+        self._layer = layer
+        self.stylename = style or self._layer.name
+        self._symbolizer = None
 
     def symbolizer(self):
         symbolizers = {
