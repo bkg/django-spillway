@@ -29,7 +29,9 @@ def build_map(querysets, tileform):
         m.zoom_bbox(bbox)
     for queryset in querysets:
         layer = m.layer(queryset, stylename)
-        env = layer.envelope().forward(m.proj)
+        proj = mapnik.Projection(layer.srs)
+        trans = mapnik.ProjTransform(proj, m.proj)
+        env = trans.forward(layer.envelope())
         if not env.intersects(m.map.envelope()):
             raise NotFound('Tile not found: outside layer extent')
         if isinstance(layer, RasterLayer):
