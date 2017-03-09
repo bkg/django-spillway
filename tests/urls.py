@@ -15,6 +15,6 @@ urlpatterns = [
         views.TileView.as_view(queryset=Location.objects.all()),
         name='location-tiles'),
     url(tilepath('^maptiles/(?P<pk>\d+)/'),
-        views.MapView.as_view(queryset=RasterStore.objects.all()),
+        views.RasterTileView.as_view(queryset=RasterStore.objects.all()),
         name='map-tiles'),
 ]
