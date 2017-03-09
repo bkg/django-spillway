@@ -6,7 +6,7 @@ from django.contrib.gis import geos
 from rest_framework.test import APIRequestFactory, APITestCase
 from PIL import Image
 
-from spillway import views
+from spillway import urls, views
 from .models import Location
 from .test_models import RasterStoreTestBase
 
@@ -53,6 +53,11 @@ class TileViewTestCase(APITestCase):
         response = self.client.get('/vectiles/4/7/8.png')
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response['content-type'], 'text/html')
+
+    def test_is_tilepath(self):
+        self.assertTrue(urls.is_tilepath(self.url))
+        self.assertTrue(urls.is_tilepath('%s.png' % self.url))
+        self.assertFalse(urls.is_tilepath('/blog/2010/03/'))
 
 
 class RasterTileViewTestCase(RasterStoreTestBase, APITestCase):

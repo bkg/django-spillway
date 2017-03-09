@@ -1,3 +1,5 @@
+import re
+
 # URL path separator, cannot rely on os.sep as it varies by platform.
 sep = r'/'
 # Regex for an optional file extension.
@@ -11,3 +13,7 @@ tileregex = sep.join(tile)
 def tilepath(regex):
     """Appends a tile path regex to a url path."""
     return r''.join((regex, tileregex))
+
+def is_tilepath(path):
+    """Returns true for map tile url formatted paths."""
+    return bool(re.search(tileregex, path))
