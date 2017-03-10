@@ -96,7 +96,8 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
         self.assertEqual(qs[0].image.tolist(), means)
 
     def test_warp(self):
-        qs = self.qs.warp(format='img', srid=3857)
+        srid = 3857
+        qs = self.qs.warp(srid, format='img')
         memio = qs[0].image.file
         r = greenwich.open(memio.name)
         self.assertEqual(r.driver.ext, 'img')

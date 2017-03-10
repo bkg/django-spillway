@@ -138,7 +138,7 @@ class RasterQueryForm(QuerySetForm):
         if format in txtformats:
             qs = self.queryset.summarize(geom, stat)
         else:
-            qs = self.queryset.warp(format, geom=geom)
+            qs = self.queryset.warp(format=format, geom=geom)
         if periods:
             qs = qs.aggregate_periods(periods)
         self.queryset = qs

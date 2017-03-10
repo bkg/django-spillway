@@ -292,7 +292,7 @@ class RasterQuerySet(GeoQuerySet):
             obj.image = arr
         return clone
 
-    def warp(self, format=None, srid=None, geom=None):
+    def warp(self, srid=None, format=None, geom=None):
         """Returns a new RasterQuerySet with possibly warped/converted rasters.
 
         Keyword args:
