@@ -90,7 +90,7 @@ class AbstractRasterStore(models.Model):
     def array(self, geom=None):
         with self.raster() as r:
             return r.masked_array(geom)
-        raise ValueError('Failure reading array values for %s' % geom)
+        return np.array(())
 
     def raster(self):
         return greenwich.Raster(self.image.path)
