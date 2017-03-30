@@ -129,6 +129,8 @@ class SpatialReferenceField(forms.IntegerField):
 
     def to_python(self, value):
         value = super(SpatialReferenceField, self).to_python(value)
+        if value in self.empty_values:
+            return None
         try:
             return SpatialReference(value)
         except (SRSException, TypeError):
