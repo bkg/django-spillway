@@ -5,6 +5,7 @@ from django import forms
 from django.core.files.storage import default_storage
 from django.contrib.gis.gdal import OGRGeometry
 from django.test import SimpleTestCase, TestCase
+from osgeo import ogr, osr
 
 from spillway.forms.fields import OGRGeometryField, GeometryFileField
 from spillway.collections import Feature, NamedCRS
@@ -62,6 +63,30 @@ class GeometryFileFieldTestCase(SimpleTestCase):
 
     def test_to_python(self):
         self.assertIsInstance(self.field.to_python(self.fp), OGRGeometry)
+
+    def test_shapefile(self):
+        proj = osr.SpatialReference(osr.SRS_WKT_WGS84)
+        g = ogr.CreateGeometryFromJson(json.dumps(_geom))
+        vdriver = ogr.GetDriverByName('ESRI Shapefile')
+        base = 'geofield.shp'
+        path = default_storage.path(base)
+        ds = vdriver.CreateDataSource(path)
+        layer = ds.CreateLayer('', proj, g.GetGeometryType())
+        featdef = layer.GetLayerDefn()
+        feature = ogr.Feature(featdef)
+        feature.SetGeometry(g)
+        layer.CreateFeature(feature)
+        feature.Destroy()
+        ds.Destroy()
+        zfile = default_storage.open('geofield.shp.zip', 'w+b')
+        with zipfile.ZipFile(zfile, 'w') as zf:
+            for ext in ('dbf', 'prj', 'shp', 'shx'):
+                zf.write(default_storage.path(base.replace('shp', ext)))
+        zfile.seek(0)
+        result = self.field.to_python(zfile)
+        zfile.close()
+        self.assertIsInstance(result, OGRGeometry)
+        self.assertIsNotNone(result.srs)
 
     def test_zipfile(self):
         zfile = default_storage.open('geofield.zip', 'w+b')

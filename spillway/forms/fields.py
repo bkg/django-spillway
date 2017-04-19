@@ -79,12 +79,10 @@ class GeometryFileField(forms.FileField):
             # Extract all files from the temporary directory using only the
             # base file name, avoids security issues with relative paths in the
             # zip.
-            for item in zf.namelist():
+            for item in sorted(zf.namelist()):
                 filename = os.path.join(tmpdir, os.path.basename(item))
                 with open(filename, 'wb') as f:
                     f.write(zf.read(item))
-                if filename.endswith('.shp'):
-                    break
         # Attempt to union all geometries from GDAL data source.
         try:
             geoms = gdal.DataSource(filename)[0].get_geoms()
