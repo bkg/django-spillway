@@ -20,10 +20,11 @@ class QuerySetForm(forms.Form):
 
     @classmethod
     def from_request(cls, request, queryset=None, view=None):
-        params = dict(request.query_params.dict(),
-                      **getattr(view, 'kwargs', {}))
+        data = (request.query_params.dict() or
+                request.data and request.data.dict())
+        params = dict(data, **getattr(view, 'kwargs', {}))
         params['format'] = request.accepted_renderer.format
-        return cls(params, queryset)
+        return cls(params, queryset, files=request.FILES)
 
     def query(self, force=False):
         """Returns the filtered/selected GeoQuerySet."""
