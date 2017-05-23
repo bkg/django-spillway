@@ -60,7 +60,7 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
 
     def test_size_validator(self):
         validator = GeometrySizeValidator(3 ** 2, 4326)
-        field = OGRGeometryField(validators=[validator])
+        field = OGRGeometryField(srid=validator.srid, validators=[validator])
         self.assertRaises(forms.ValidationError, field.clean, '0,0,5,5')
 
     def test_srid(self):
