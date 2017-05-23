@@ -71,29 +71,31 @@ class GeometryFileField(forms.FileField):
         value = super(GeometryFileField, self).to_python(value)
         if value is None:
             return value
-        filename = value.name
-        tmpdir = None
+        tmpdir = tempfile.mkdtemp()
         if zipfile.is_zipfile(value):
-            tmpdir = tempfile.mkdtemp()
             zf = zipfile.ZipFile(value)
             # Extract all files from the temporary directory using only the
             # base file name, avoids security issues with relative paths in the
             # zip.
             for item in sorted(zf.namelist()):
                 filename = os.path.join(tmpdir, os.path.basename(item))
-                with open(filename, 'wb') as f:
-                    f.write(zf.read(item))
+                with open(filename, 'wb') as fp:
+                    fp.write(zf.read(item))
+        else:
+            # NOTE: is_zipfile() seeks to end of file or at least 110 bytes.
+            value.seek(0)
+            with tempfile.NamedTemporaryFile(dir=tmpdir, delete=False) as fp:
+                shutil.copyfileobj(value, fp)
         # Attempt to union all geometries from GDAL data source.
         try:
-            geoms = gdal.DataSource(filename)[0].get_geoms()
+            geoms = gdal.DataSource(fp.name)[0].get_geoms()
             geom = reduce(lambda g1, g2: g1.union(g2), geoms)
             if not geom.srs:
                 raise gdal.OGRException('Cannot determine SRS')
         except (gdal.OGRException, gdal.OGRIndexError):
             geom = None
         finally:
-            if tmpdir and os.path.isdir(tmpdir):
-                shutil.rmtree(tmpdir)
+            shutil.rmtree(tmpdir)
         return geom
 
 
