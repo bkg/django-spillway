@@ -67,36 +67,38 @@ class GeometryField(forms.GeometryField):
 class GeometryFileField(forms.FileField):
     """A form Field for creating OGR geometries from file based sources."""
 
-    def to_python(self, value):
-        value = super(GeometryFileField, self).to_python(value)
-        if value is None:
-            return value
-        tmpdir = tempfile.mkdtemp()
-        if zipfile.is_zipfile(value):
-            zf = zipfile.ZipFile(value)
-            # Extract all files from the temporary directory using only the
-            # base file name, avoids security issues with relative paths in the
-            # zip.
-            for item in sorted(zf.namelist()):
-                filename = os.path.join(tmpdir, os.path.basename(item))
-                with open(filename, 'wb') as fp:
-                    fp.write(zf.read(item))
+    def _from_file(self, fileobj, tmpdir):
+        if zipfile.is_zipfile(fileobj):
+            with zipfile.ZipFile(fileobj) as zf:
+                for item in zf.infolist():
+                    fname = os.path.abspath(os.path.join(tmpdir, item.filename))
+                    if fname.startswith(tmpdir):
+                        zf.extract(item, tmpdir)
         else:
             # NOTE: is_zipfile() seeks to end of file or at least 110 bytes.
-            value.seek(0)
+            fileobj.seek(0)
             with tempfile.NamedTemporaryFile(dir=tmpdir, delete=False) as fp:
-                shutil.copyfileobj(value, fp)
+                shutil.copyfileobj(fileobj, fp)
+            fname = fp.name
         # Attempt to union all geometries from GDAL data source.
         try:
-            geoms = gdal.DataSource(fp.name)[0].get_geoms()
+            geoms = gdal.DataSource(fname)[0].get_geoms()
             geom = reduce(lambda g1, g2: g1.union(g2), geoms)
             if not geom.srs:
                 raise gdal.OGRException('Cannot determine SRS')
         except (gdal.OGRException, gdal.OGRIndexError):
             geom = None
+        return geom
+
+    def to_python(self, value):
+        value = super(GeometryFileField, self).to_python(value)
+        if value is None:
+            return value
+        try:
+            tmpdir = tempfile.mkdtemp()
+            return self._from_file(value, tmpdir)
         finally:
             shutil.rmtree(tmpdir)
-        return geom
 
 
 class OGRGeometryField(forms.GeometryField):
