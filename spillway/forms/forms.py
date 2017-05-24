@@ -59,7 +59,8 @@ class SpatialQueryForm(QuerySetForm):
         super(SpatialQueryForm, self).__init__(*args, **kwargs)
         for lookup in self.data:
             if lookup in ALL_TERMS:
-                self.fields[lookup] = fields.GeometryField(required=False)
+                self.fields[lookup] = fields.GeometryField(
+                    required=False, widget=forms.BaseGeometryWidget())
                 break
 
     def clean(self):
@@ -110,7 +111,7 @@ class RasterQueryForm(QuerySetForm):
     """Validates format options for raster data."""
     bbox = fields.BoundingBoxField(required=False)
     format = forms.CharField(required=False)
-    g = fields.OGRGeometryField(required=False)
+    g = fields.OGRGeometryField(srid=4326, required=False)
     upload = fields.GeometryFileField(required=False)
     periods = forms.IntegerField(required=False)
     stat = forms.ChoiceField(

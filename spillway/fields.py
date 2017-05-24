@@ -7,6 +7,7 @@ from rest_framework import renderers
 from rest_framework.fields import Field, FileField
 
 from spillway.compat import json
+from spillway.forms import fields
 
 
 class GeometryField(Field):
@@ -37,7 +38,8 @@ class GeometryField(Field):
         # forms.GeometryField cannot handle geojson dicts.
         if isinstance(data, collections.Mapping):
             data = json.dumps(data)
-        return forms.GeometryField().to_python(data)
+        field = fields.GeometryField(widget=forms.BaseGeometryWidget())
+        return field.to_python(data)
 
     def to_representation(self, value):
         # Create a dict from the GEOSGeometry when the value is not previously

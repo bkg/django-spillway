@@ -18,21 +18,27 @@ class GeometryQueryFormTestCase(SimpleTestCase):
 
 
 class SpatialQueryFormTestCase(SimpleTestCase):
+    def _assert_form_data(self, form, key, expected):
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data.keys(), expected.keys())
+        self.assertTrue(form.cleaned_data[key].equals_exact(expected[key]))
+        self.assertEqual(form.cleaned_data[key].srid, 4326)
+
     def test_data(self):
         data = {'bbox': '-120,38,-118,42'}
         poly = geos.Polygon.from_bbox(data['bbox'].split(','))
-        self.expected = {'bboverlaps': poly}
+        key = 'bboverlaps'
+        expected = {key: poly}
         form = forms.SpatialQueryForm(data)
-        self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data, self.expected)
+        self._assert_form_data(form, key, expected)
 
     def test_intersects(self):
+        key = 'intersects'
         poly = geos.Polygon.from_bbox((0, 0, 10, 10))
-        self.expected = {'intersects': poly}
-        data = {'intersects': poly.geojson}
+        expected = {key: poly}
+        data = {key: poly.geojson}
         form = forms.SpatialQueryForm(data)
-        self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data, self.expected)
+        self._assert_form_data(form, key, expected)
 
     def test_intersects_invalid(self):
         data = {'intersects': '{"type":"Point","coordinates":[0]}'}
