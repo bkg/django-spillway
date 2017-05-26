@@ -22,6 +22,7 @@ class AbstractLocation(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ['id']
 
     def __repr__(self):
         return '<%s: %s %s>' % (self.__class__.__name__, self.name, self.geom)
