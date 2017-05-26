@@ -1,5 +1,5 @@
 from django.contrib.gis.shortcuts import compress_kml
-from django.template import loader, Context
+from django.template import loader
 from rest_framework.renderers import BaseRenderer, JSONRenderer
 
 from spillway import collections
@@ -35,7 +35,7 @@ class TemplateRenderer(BaseRenderer):
         except KeyError:
             features = [collection]
         template = loader.get_template(self.template_name)
-        return template.render(Context({'features': features}))
+        return template.render({'features': features})
 
 
 class KMLRenderer(TemplateRenderer):
