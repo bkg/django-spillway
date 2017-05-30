@@ -1,4 +1,6 @@
 import io
+import os
+import shutil
 import json
 import zipfile
 
@@ -86,8 +88,9 @@ class GeometryFileFieldTestCase(SimpleTestCase):
         self.assertIsInstance(v, OGRGeometry)
 
     def test_shapefile(self):
-        base = 'geofield.shp'
+        base = 'dir/geofield.shp'
         path = default_storage.path(base)
+        os.mkdir(os.path.dirname(path))
         write_shp(path, _geom)
         b = io.BytesIO()
         with zipfile.ZipFile(b, 'w') as zf:
@@ -95,6 +98,7 @@ class GeometryFileFieldTestCase(SimpleTestCase):
                 fname = base.replace('shp', ext)
                 with default_storage.open(fname) as fp:
                     zf.writestr(fname, fp.read())
+        shutil.rmtree(os.path.dirname(path))
         upfile = SimpleUploadedFile('geofield.zip', b.getvalue())
         b.close()
         result = self.field.to_python(upfile)
