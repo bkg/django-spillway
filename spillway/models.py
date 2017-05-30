@@ -39,6 +39,7 @@ class AbstractRasterStore(models.Model):
     xpixsize = models.FloatField(_('West to East pixel resolution'))
     ypixsize = models.FloatField(_('North to South pixel resolution'))
     objects = RasterQuerySet()
+    driver_settings = greenwich.ImageDriver.defaults
 
     class Meta:
         unique_together = ('image', 'event')
@@ -100,16 +101,18 @@ class AbstractRasterStore(models.Model):
         # Handle format as .tif, tif, or tif.zip
         ext = format or os.path.splitext(imgpath)[-1][1:]
         ext = os.path.splitext(ext)[0]
-        driver = greenwich.driver_for_path('base.%s' % ext)
         # No conversion is needed if the original format without clipping
         # is requested.
         if not geom and imgpath.endswith(ext):
             return
+        driver = greenwich.driver_for_path('base.%s' % ext)
+        settings = self.driver_settings.get(ext)
+        if settings:
+            driver.settings = settings
         memio = MemFileIO()
         if geom:
-            with greenwich.Raster(imgpath) as r:
-                with r.clip(geom) as clipped:
-                    clipped.save(memio, driver)
+            with greenwich.Raster(imgpath) as r, r.clip(geom) as clipped:
+                clipped.save(memio, driver)
         else:
             driver.copy(imgpath, memio.name)
         self.image.file = memio
