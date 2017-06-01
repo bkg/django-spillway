@@ -94,7 +94,13 @@ class AbstractRasterStore(models.Model):
         return np.array(())
 
     def raster(self):
-        return greenwich.Raster(self.image.path)
+        imfield = self.image
+        # Check _file attr to avoid opening a file handle.
+        if isinstance(getattr(imfield, '_file', None), MemFileIO):
+            path = imfield.file.name
+        else:
+            path = self.image.path
+        return greenwich.Raster(path)
 
     def convert(self, format=None, geom=None):
         imgpath = self.image.path
@@ -115,4 +121,6 @@ class AbstractRasterStore(models.Model):
                 clipped.save(memio, driver)
         else:
             driver.copy(imgpath, memio.name)
+        self.image.name = os.extsep.join(
+            (os.path.splitext(os.path.basename(self.image.name))[0], ext))
         self.image.file = memio

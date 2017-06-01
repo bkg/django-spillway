@@ -304,14 +304,7 @@ class RasterQuerySet(GeoQuerySet):
         for obj in clone:
             obj.convert(format, geom)
             if srid:
-                f = obj.image.file
-                if isinstance(f, MemFileIO):
-                    r = greenwich.Raster(f.name)
-                else:
-                    r = obj.raster()
-                memio = MemFileIO(delete=False)
-                dswarp = r.warp(srid, memio)
-                obj.image.file = memio
-                dswarp.close()
-                r.close()
+                fp = tempfile.NamedTemporaryFile(suffix='.%s' % format or '')
+                with obj.raster() as r, r.warp(srid, fp.name) as w:
+                    obj.image.file = fp
         return clone
