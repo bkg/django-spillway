@@ -5,6 +5,9 @@ import zipfile
 
 from rest_framework.renderers import BaseRenderer
 
+def add_extsep(base, ext):
+    return os.path.extsep.join((base, ext))
+
 
 class BaseGDALRenderer(BaseRenderer):
     """Abstract renderer which encodes to a GDAL supported raster format."""
@@ -13,21 +16,7 @@ class BaseGDALRenderer(BaseRenderer):
     charset = None
     render_style = 'binary'
 
-    def basename(self, item):
-        """Returns the output filename.
-
-        Arguments:
-        item -- dict containing 'path'
-        """
-        fname = os.path.basename(item['image'].path)
-        return os.path.splitext(fname)[0] + self.file_ext
-
-    @property
-    def file_ext(self):
-        return '.%s' % os.path.splitext(self.format)[0]
-
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        self.set_filename(self.basename(data), renderer_context)
         fp = data['image']
         try:
             fp.seek(0, 2)
@@ -37,11 +26,12 @@ class BaseGDALRenderer(BaseRenderer):
         else:
             size = fp.tell()
             fp.seek(0)
+        self.set_filename(fp.name, renderer_context)
         self.set_response_length(size, renderer_context)
         return fp
 
     def set_filename(self, name, renderer_context):
-        type_name = 'attachment; filename=%s' % name
+        type_name = 'attachment; filename=%s' % os.path.basename(name)
         try:
             renderer_context['response']['Content-Disposition'] = type_name
         except (KeyError, TypeError):
@@ -77,18 +67,22 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
     def render(self, data, accepted_media_type=None, renderer_context=None):
         if isinstance(data, collections.Mapping):
             data = [data]
-        zipname = '%s.%s' % (self.arcdirname, self.format)
+        zipname = add_extsep(self.arcdirname, self.format)
+        ext = self.format.split(os.path.extsep)[0]
         self.set_filename(zipname, renderer_context)
         fp = tempfile.TemporaryFile(suffix='.%s' % self.format)
         with zipfile.ZipFile(fp, mode='w') as zf:
             for item in data:
-                arcname = os.path.join(self.arcdirname, self.basename(item))
                 io = item['image']
+                fname = os.path.basename(getattr(io, 'name', io))
+                arcname = os.path.join(self.arcdirname, fname)
+                if not arcname.endswith(ext):
+                    arcname = add_extsep(arcname, ext)
                 try:
-                    zf.writestr(arcname, io.read())
-                except AttributeError:
                     zf.write(io, arcname=arcname)
-                else:
+                except TypeError:
+                    io.seek(0)
+                    zf.writestr(arcname, io.read())
                     io.close()
         self.set_response_length(fp.tell(), renderer_context)
         fp.seek(0)
