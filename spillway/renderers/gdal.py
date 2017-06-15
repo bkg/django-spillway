@@ -1,7 +1,4 @@
 import os
-import collections
-import tempfile
-import zipfile
 
 from rest_framework.renderers import BaseRenderer
 
@@ -31,6 +28,8 @@ class BaseGDALRenderer(BaseRenderer):
         return fp
 
     def set_filename(self, name, renderer_context):
+        if not name.endswith(self.format):
+            name = add_extsep(os.path.splitext(name)[0], self.format)
         type_name = 'attachment; filename=%s' % os.path.basename(name)
         try:
             renderer_context['response']['Content-Disposition'] = type_name
@@ -65,28 +64,10 @@ class GeoTIFFZipRenderer(BaseGDALRenderer):
     arcdirname = 'data'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
-        if isinstance(data, collections.Mapping):
-            data = [data]
-        zipname = add_extsep(self.arcdirname, self.format)
-        ext = self.format.split(os.path.extsep)[0]
-        self.set_filename(zipname, renderer_context)
-        fp = tempfile.TemporaryFile(suffix='.%s' % self.format)
-        with zipfile.ZipFile(fp, mode='w') as zf:
-            for item in data:
-                io = item['image']
-                fname = os.path.basename(getattr(io, 'name', io))
-                arcname = os.path.join(self.arcdirname, fname)
-                if not arcname.endswith(ext):
-                    arcname = add_extsep(arcname, ext)
-                try:
-                    zf.write(io, arcname=arcname)
-                except TypeError:
-                    io.seek(0)
-                    zf.writestr(arcname, io.read())
-                    io.close()
-        self.set_response_length(fp.tell(), renderer_context)
-        fp.seek(0)
-        return fp
+        if len(data) > 1:
+            raise ValueError('Expected one-length sequence')
+        return super(GeoTIFFZipRenderer, self).render(
+            data[0], accepted_media_type, renderer_context)
 
 
 class HFARenderer(BaseGDALRenderer):

@@ -308,3 +308,23 @@ class RasterQuerySet(GeoQuerySet):
                 with obj.raster() as r, r.warp(srid, fp.name) as w:
                     obj.image.file = fp
         return clone
+
+    def zipfiles(self, path=None, arcdirname='data'):
+        """Returns a .zip archive of selected rasters."""
+        if path:
+            fp = open(path, 'w+b')
+        else:
+            fp = tempfile.NamedTemporaryFile(prefix='ras-', suffix='.zip')
+        with zipfile.ZipFile(fp, mode='w') as zf:
+            for obj in self:
+                img = obj.image
+                arcname = os.path.join(arcdirname, os.path.basename(img.name))
+                try:
+                    zf.write(img, arcname=arcname)
+                except TypeError:
+                    img.seek(0)
+                    zf.writestr(arcname, img.read())
+                    img.close()
+        fp.seek(0)
+        zobj = self.model(image=fp)
+        return [zobj]

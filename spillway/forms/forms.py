@@ -6,7 +6,7 @@ from rest_framework import renderers
 
 from spillway import query
 from spillway.compat import ALL_TERMS
-from spillway.renderers import CSVRenderer
+from spillway.renderers import CSVRenderer, GeoTIFFZipRenderer
 from . import fields
 
 
@@ -141,6 +141,8 @@ class RasterQueryForm(QuerySetForm):
             qs = self.queryset.summarize(geom, stat)
         else:
             qs = self.queryset.warp(format=format, geom=geom)
+            if GeoTIFFZipRenderer.format[-3:] in format:
+                qs = qs.zipfiles()
         if periods:
             qs = qs.aggregate_periods(periods)
         self.queryset = qs

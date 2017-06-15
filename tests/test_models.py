@@ -13,7 +13,7 @@ from PIL import Image
 from .models import RasterStore
 
 def create_image(multiband=False):
-    tmpname = os.path.basename(tempfile.mktemp(suffix='.tif'))
+    tmpname = os.path.basename(tempfile.mktemp(prefix='tmin_', suffix='.tif'))
     fp = default_storage.open(tmpname, 'w+b')
     shape = (5, 5)
     if multiband:

@@ -8,7 +8,7 @@ import zipfile
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, TestCase
-from greenwich import Raster
+from greenwich import driver_for_path, Raster
 from greenwich.io import MemFileIO
 
 from spillway import carto, forms, renderers
@@ -16,6 +16,7 @@ from spillway.collections import Feature, FeatureCollection
 from spillway.compat import mapnik
 from .models import Location, _geom
 from .test_models import RasterTestBase, RasterStoreTestBase
+from .test_serializers import RasterStoreSerializer
 
 
 class GeoJSONRendererTestCase(SimpleTestCase):
@@ -81,29 +82,37 @@ class SVGRendererTestCase(TestCase):
         #self.assertIn(self.data['geometry'], svgdoc)
 
 
-class RasterRendererTestCase(RasterTestBase):
-    img_header = 'EHFA_HEADER_TAG'
-
+class RasterRendererTestCase(RasterStoreTestBase):
     def _save(self, drivername):
         memio = MemFileIO()
-        with Raster(self.data['image'].path) as r:
+        with self.object.raster() as r:
             r.save(memio, drivername)
         # Mimic a FieldFile.
         memio.path = self.data['image'].path
         return {'image': memio}
 
     def assert_format(self, data, format):
-        im = self._image(data)
-        self.assertEqual(im.format, format)
+        memio = MemFileIO()
+        memio.write(data)
+        r = Raster(memio)
+        self.assertEqual(r.driver.format, format)
+        r.close()
 
-    def assert_member_formats(self, obj, format):
-        imgs = [self._save(format)]
-        fp = obj.render(imgs)
+    def assert_member_formats(self, rend):
+        ext = rend.format
+        if rend.format.endswith('.zip'):
+            ext = os.path.splitext(rend.format)[0]
+        pat = 'tmin_.+(?<!\.{0})\.{0}$'.format(ext)
+        driver = driver_for_path(ext)
+        qs = self.qs.warp(format=driver.ext)
+        rs = RasterStoreSerializer(qs.zipfiles(), many=True)
+        fp = rend.render(rs.data)
         with zipfile.ZipFile(fp) as zf:
             for name in zf.namelist():
-                self.assert_format(zf.read(name), format)
+                self.assertRegexpMatches(name, pat)
+                self.assert_format(zf.read(name), driver.format)
             filecount = len(zf.filelist)
-        self.assertEqual(filecount, len(imgs))
+        self.assertEqual(filecount, len(qs))
         fp.close()
 
     def test_render_geotiff(self):
@@ -112,40 +121,29 @@ class RasterRendererTestCase(RasterTestBase):
 
     def test_render_hfa(self):
         fp = renderers.HFARenderer().render(self._save('HFA'))
-        # Read the image header.
-        self.assertEqual(fp.read()[:15], self.img_header)
+        self.assert_format(fp.read(), 'HFA')
 
     def test_render_hfazip(self):
-        fp = renderers.HFAZipRenderer().render(self._save('HFA'))
-        zf = zipfile.ZipFile(fp)
-        for name in zf.namelist():
-            self.assertRegexpMatches(name, '(?<!\.img)\.img$')
-        self.assertEqual(zf.read(zf.namelist()[0])[:15], self.img_header)
+        self.assert_member_formats(renderers.HFAZipRenderer())
 
     def test_render_jpeg(self):
         fp = renderers.JPEGRenderer().render(self._save('JPEG'))
         imgdata = fp.read()
         self.assertEqual(imgdata[:10], '\xff\xd8\xff\xe0\x00\x10JFIF')
+        self.assert_format(imgdata, 'JPEG')
 
-    @unittest.skipIf('TRAVIS' in os.environ,
-                     'known issue when reading jpegs with Pillow on '
-                     'Travis build enviroment')
     def test_render_jpegzip(self):
-        self.assert_member_formats(renderers.JPEGZipRenderer(), 'JPEG')
+        self.assert_member_formats(renderers.JPEGZipRenderer())
 
     def test_render_png(self):
         fp = renderers.PNGRenderer().render(self._save('PNG'))
         self.assert_format(fp.read(), 'PNG')
 
     def test_render_pngzip(self):
-        self.assert_member_formats(renderers.PNGZipRenderer(), 'PNG')
+        self.assert_member_formats(renderers.PNGZipRenderer())
 
     def test_render_tifzip(self):
-        tifs = [self.data]
-        fp = renderers.GeoTIFFZipRenderer().render(tifs)
-        zf = zipfile.ZipFile(fp)
-        self.assertEqual(len(zf.filelist), len(tifs))
-        self.assertTrue(all(name.endswith('.tif') for name in zf.namelist()))
+        self.assert_member_formats(renderers.GeoTIFFZipRenderer())
 
 
 class MapnikRendererTestCase(RasterStoreTestBase):
