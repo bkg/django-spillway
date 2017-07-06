@@ -1,9 +1,12 @@
-from django.test import SimpleTestCase, TestCase
+import json
+
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import fields
+from django.test import SimpleTestCase, TestCase
 from django.contrib.gis import geos
 
 from spillway import forms
-from .models import Location
+from .models import _geom, Location
 
 
 class PKeyQuerySetForm(forms.QuerySetForm):
@@ -15,6 +18,22 @@ class GeometryQueryFormTestCase(SimpleTestCase):
         form = forms.GeometryQueryForm({'srs': 3857})
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['srs'].srid, 3857)
+
+
+class RasterQueryFormTestCase(SimpleTestCase):
+    def test_data(self):
+        geom = geos.GEOSGeometry('POINT(-120 38)')
+        form = forms.RasterQueryForm({'g': geom.wkt})
+        self.assertTrue(form.is_valid())
+        self.assertTrue(form.cleaned_data['g'], geom.ogr)
+
+    def test_upload_field(self):
+        geom = geos.GEOSGeometry(json.dumps(_geom))
+        fp = SimpleUploadedFile('up.json', geom.geojson)
+        form = forms.RasterQueryForm({}, files={'upload': fp})
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data['g'], geom.ogr)
+        self.assertEqual(form.cleaned_data['g'].srs.srid, 4326)
 
 
 class SpatialQueryFormTestCase(SimpleTestCase):

@@ -124,7 +124,9 @@ class RasterQueryForm(QuerySetForm):
         precedence.
         """
         data = super(RasterQueryForm, self).clean()
-        data['g'] = data.pop('upload') or data.pop('bbox') or data.get('g')
+        geom = data.pop('upload', None) or data.pop('bbox', None)
+        if geom:
+            data['g'] = geom
         return data
 
     def select(self):

@@ -60,8 +60,9 @@ class GeometryField(forms.GeometryField):
         try:
             return super(GeometryField, self).to_python(value)
         except gdal.GDALException:
-            raise forms.ValidationError(
-                self.error_messages['invalid_geom'], code='invalid_geom')
+            raise forms.ValidationError(self.error_messages['invalid_geom'],
+                                        code='invalid_geom')
+
 
 
 class GeometryFileField(forms.FileField):
@@ -87,7 +88,9 @@ class GeometryFileField(forms.FileField):
             if not geom.srs:
                 raise gdal.OGRException('Cannot determine SRS')
         except (gdal.OGRException, gdal.OGRIndexError):
-            geom = None
+            raise forms.ValidationError(
+                GeometryField.default_error_messages['invalid_geom'],
+                code='invalid_geom')
         return geom
 
     def to_python(self, value):
@@ -120,7 +123,8 @@ class OGRGeometryField(forms.GeometryField):
         try:
             geom = gdal.OGRGeometry(value, srs=getattr(sref, 'wkt', None))
         except (gdal.OGRException, TypeError, ValueError):
-            raise forms.ValidationError(self.error_messages['invalid_geom'])
+            raise forms.ValidationError(self.error_messages['invalid_geom'],
+                                        code='invalid_geom')
         if not geom.srs:
             geom.srid = self.srid or self.widget.map_srid
         return geom
