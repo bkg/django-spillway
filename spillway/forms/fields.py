@@ -71,10 +71,15 @@ class GeometryFileField(forms.FileField):
     def _from_file(self, fileobj, tmpdir):
         if zipfile.is_zipfile(fileobj):
             with zipfile.ZipFile(fileobj) as zf:
+                extracted = []
                 for item in zf.infolist():
                     fname = os.path.abspath(os.path.join(tmpdir, item.filename))
                     if fname.startswith(tmpdir):
                         zf.extract(item, tmpdir)
+                        extracted.append(fname)
+                for path in extracted:
+                    if path.endswith('.shp'):
+                        fname = path
         else:
             # NOTE: is_zipfile() seeks to end of file or at least 110 bytes.
             fileobj.seek(0)
