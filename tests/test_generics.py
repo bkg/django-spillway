@@ -248,6 +248,8 @@ class RasterListViewTestCase(RasterStoreTestBase):
         request = factory.get('/', {'format': 'img.zip'})
         response = self.view(request)
         self.assertTrue(response.streaming)
+        self.assertEqual(response['content-disposition'].split('=')[1],
+                         'data.img.zip')
         bio = io.BytesIO(''.join(response.streaming_content))
         zf = zipfile.ZipFile(bio)
         self.assertEqual(len(zf.filelist), len(self.qs))

@@ -23,11 +23,16 @@ class BaseGDALRenderer(BaseRenderer):
         else:
             size = fp.tell()
             fp.seek(0)
-        self.set_filename(fp.name, renderer_context)
+        self.set_filename(fp, renderer_context)
         self.set_response_length(size, renderer_context)
         return fp
 
-    def set_filename(self, name, renderer_context):
+    def set_filename(self, fp, renderer_context):
+        # Chop off random part of filename for named tempfiles.
+        if getattr(fp, 'delete', False):
+            name = fp.name.split('-')[0]
+        else:
+            name = fp.name
         if not name.endswith(self.format):
             name = add_extsep(os.path.splitext(name)[0], self.format)
         type_name = 'attachment; filename=%s' % os.path.basename(name)

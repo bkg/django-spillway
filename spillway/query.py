@@ -314,7 +314,8 @@ class RasterQuerySet(GeoQuerySet):
         if path:
             fp = open(path, 'w+b')
         else:
-            fp = tempfile.NamedTemporaryFile(prefix='ras-', suffix='.zip')
+            prefix = '%s-' % arcdirname
+            fp = tempfile.NamedTemporaryFile(prefix=prefix, suffix='.zip')
         with zipfile.ZipFile(fp, mode='w') as zf:
             for obj in self:
                 img = obj.image
