@@ -1,4 +1,5 @@
 import os
+import math
 import tempfile
 import zipfile
 
@@ -53,6 +54,10 @@ class GeoQuerySet(query.GeoQuerySet):
     _formats = {'geojson': '%s(%%s, %%s)' % connection.ops.geojson,
                 'kml': '%s(%%s, %%s)' % connection.ops.kml,
                 'svg': '%s(%%s, 0, %%s)' % connection.ops.svg}
+    # Geometry simplification tolerances based on tile width (m) per zoom
+    # level, see http://wiki.openstreetmap.org/wiki/Zoom_levels
+    tilewidths = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
+                  for zoom in range(20)]
 
     def _as_format(self, sql, format=None, precision=8):
         val = self._formats.get(format, self._formats['geojson'])
@@ -77,9 +82,10 @@ class GeoQuerySet(query.GeoQuerySet):
             sql = 'ST_TransScale(%s, %.12f, %.12f, %.12f, %.12f)'
         return sql % (colname, deltax, deltay, xfactor, yfactor)
 
-    def _simplify(self, colname, tolerance=0.0):
+    def _simplify(self, colname, tolerance=0.0, preserve=False):
         # connection.ops does not have simplify available for PostGIS.
-        return ('ST_Simplify(%s, %s)' % (colname, tolerance)
+        fn = 'ST_Simplify' if not preserve else 'ST_SimplifyPreserveTopology'
+        return ('%s(%s, %s)' % (fn, colname, tolerance)
                 if tolerance else colname)
 
     def extent(self, srid=None):
@@ -171,33 +177,45 @@ class GeoQuerySet(query.GeoQuerySet):
             simplify = 'AsEWKT(%s)' % simplify
         return self.extra(select={self.geo_field.name: simplify})
 
-    def tile(self, bbox, tolerance=0.0, format=None, clip=False):
+    def tile(self, bbox, z=0, format=None, clip=True):
         """Returns a GeoQuerySet intersecting a tile boundary.
 
         Arguments:
         bbox -- tile extent as geometry
         Keyword args:
-        tolerance -- geometry simplification tolerance
-        format -- vector tile format as str
+        z -- tile zoom level used as basis for geometry simplification
+        format -- vector tile format as str (pbf, geojson)
         clip -- clip geometries to tile boundary as boolean
         """
-        clone = filter_geometry(self, intersects=getattr(bbox, 'geos', bbox))
-        # Tile grid uses 3857, but coordinates should be in 4326 commonly.
+        # Tile grid uses 3857, but GeoJSON coordinates should be in 4326.
         tile_srid = 3857
-        coord_srid = bbox.srid
-        transform = clone._transform()
+        bbox = getattr(bbox, 'geos', bbox)
+        clone = filter_geometry(self, intersects=bbox)
+        srid = clone.geo_field.srid
+        sql = clone._transform()
+        try:
+            tilew = self.tilewidths[z]
+        except IndexError:
+            tilew = self.tilewidths[-1]
+        if bbox.srid != srid:
+            bbox = bbox.transform(srid, clone=True)
+        # Estimate tile width in degrees instead of meters.
+        if bbox.srs.geographic:
+            p = geos.Point(tilew, tilew, srid=tile_srid)
+            p.transform(srid)
+            tilew = p.x
         if clip:
-            ewkt = ('GeomFromEWKT' if connection.ops.spatialite else
-                    'ST_GeomFromEWKT')
-            transform = "ST_Intersection(%s, %s('%s'))" % (
-                transform, ewkt, bbox.ewkt)
-        if clone.geo_field.srid != tile_srid:
-            transform = 'ST_Transform(%s, %s)' % (transform, tile_srid)
-        simplify = clone._simplify(transform, tolerance)
-        latlng = 'ST_Transform(%s, %s)' % (simplify, coord_srid)
+            bufbox = bbox.buffer(tilew)
+            envfn = ('BuildMbr' if connection.ops.spatialite
+                     else 'ST_MakeEnvelope')
+            envelope = '%s(%s, %s, %s, %s, %s)' % (
+                (envfn,) + bufbox.extent + (bufbox.srid,))
+            sql = 'ST_Intersection(%s, %s)' % (sql, envelope)
+        sql = clone._simplify(sql, tilew, preserve=True)
         if format == 'pbf':
-            return clone.pbf(bbox, geo_col=latlng)
-        return clone._as_format(latlng, format)
+            return clone.pbf(bbox, geo_col=sql)
+        sql = 'ST_Transform(%s, %s)' % (sql, 4326)
+        return clone._as_format(sql, format)
 
 
 class RasterQuerySet(GeoQuerySet):

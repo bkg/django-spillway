@@ -1,5 +1,3 @@
-import math
-
 from django.contrib.gis import gdal, forms
 from greenwich import tile
 from rest_framework import renderers
@@ -188,18 +186,10 @@ class RasterTileForm(TileForm):
 
 
 class VectorTileForm(TileForm):
-    clip = forms.BooleanField(required=False, initial=False)
+    clip = forms.BooleanField(required=False, initial=True)
     format = forms.CharField(required=False)
-    # Geometry simplification tolerances based on tile zlevel, see
-    # http://wiki.openstreetmap.org/wiki/Slippy_map_tilenames.
-    tolerances = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
-                  for zoom in range(20)]
 
     def select(self):
         data = self.cleaned_data
-        try:
-            tolerance = self.tolerances[data['z']]
-        except IndexError:
-            tolerance = self.tolerances[-1]
         self.queryset = self.queryset.tile(
-            data['bbox'], tolerance, data['format'], data['clip'])
+            data['bbox'], data['z'], data['format'], data['clip'])

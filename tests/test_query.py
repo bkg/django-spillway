@@ -68,8 +68,8 @@ class GeoQuerySetTestCase(TestCase):
         tf = forms.VectorTileForm({'z': 6, 'x': 32, 'y': 32})
         self.assertTrue(tf.is_valid())
         qs = self.qs.tile(
-            tf.cleaned_data['bbox'], format='pbf', clip=True)
-        self.assertTrue(qs[0].pbf.startswith('POLYGON((1522.001408 4096'))
+            tf.cleaned_data['bbox'], tf.cleaned_data['z'], format='pbf')
+        self.assertTrue(qs[0].pbf.startswith('POLYGON((1523.577271 4112'))
 
     def test_transform(self):
         sql = self.qs._transform(self.srid)
