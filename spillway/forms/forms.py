@@ -1,9 +1,9 @@
 from django.contrib.gis import gdal, forms
+from django.contrib.gis.db.models.lookups import gis_lookups
 from greenwich import tile
 from rest_framework import renderers
 
 from spillway import query
-from spillway.compat import ALL_TERMS
 from spillway.renderers import CSVRenderer, GeoTIFFZipRenderer
 from . import fields
 
@@ -56,7 +56,7 @@ class SpatialQueryForm(QuerySetForm):
     def __init__(self, *args, **kwargs):
         super(SpatialQueryForm, self).__init__(*args, **kwargs)
         for lookup in self.data:
-            if lookup in ALL_TERMS:
+            if lookup in gis_lookups:
                 self.fields[lookup] = fields.GeometryField(
                     required=False, widget=forms.BaseGeometryWidget())
                 break

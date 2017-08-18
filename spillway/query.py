@@ -8,8 +8,6 @@ from django.contrib.gis import geos
 from django.contrib.gis.db.models import query
 from django.db import connection, models
 from django.utils.functional import cached_property
-import greenwich
-from greenwich.io import MemFileIO
 import numpy as np
 
 def filter_geometry(queryset, **filters):
@@ -23,21 +21,16 @@ def filter_geometry(queryset, **filters):
     return queryset.filter(**query)
 
 def geo_field(queryset):
-    # Try Django 1.8 syntax first, then fall back to 1.7 and below.
+    """Returns the GeometryField for a django or spillway GeoQuerySet."""
     try:
-        return queryset._geo_field()
+        return queryset.geo_field
     except AttributeError:
-        return queryset.query._geo_field()
+        return queryset._geo_field()
 
 def get_srid(queryset):
     """Returns the GeoQuerySet spatial reference identifier."""
-    try:
-        # Django 1.8
-        srid = queryset.query.get_context('transformed_srid')
-    except AttributeError:
-        # Django<=1.7
-        srid = queryset.query.transformed_srid
-    return srid or queryset.geo_field.srid
+    srid = queryset.query.get_context('transformed_srid')
+    return srid or geo_field(queryset).srid
 
 
 # Many GeoQuerySet methods cannot be chained as expected and extending
@@ -67,12 +60,7 @@ class GeoQuerySet(query.GeoQuerySet):
         args, geo_field = self._spatial_setup('transform')
         if not srid:
             return args['geo_col']
-        try:
-            # Django 1.8
-            self.query.add_context('transformed_srid', srid)
-        except AttributeError:
-            # Django<=1.7
-            self.query.transformed_srid = srid
+        self.query.add_context('transformed_srid', srid)
         return '%s(%s, %s)' % (args['function'], args['geo_col'], srid)
 
     def _trans_scale(self, colname, deltax, deltay, xfactor, yfactor):
@@ -115,12 +103,7 @@ class GeoQuerySet(query.GeoQuerySet):
         if not extent:
             return ()
         try:
-            try:
-                # Django<=1.7
-                return connection.ops.convert_extent(extent)
-            except TypeError:
-                # Django 1.8
-                return connection.ops.convert_extent(extent, get_srid(self))
+            return connection.ops.convert_extent(extent, get_srid(self))
         except NotImplementedError:
             return geos.GEOSGeometry(extent, srid).extent
 
@@ -131,7 +114,7 @@ class GeoQuerySet(query.GeoQuerySet):
     @property
     def geo_field(self):
         """Returns model geometry field."""
-        return geo_field(self)
+        return self._geo_field()
 
     def has_format(self, format):
         return format in self._formats
@@ -291,7 +274,7 @@ class RasterQuerySet(GeoQuerySet):
         Arguments:
         geom -- geometry for masking or spatial subsetting
         Keyword args:
-        stat -- numpy supported summary stat as str (min/max/mean/etc)
+        stat -- any numpy summary stat method as str (min/max/mean/etc)
         """
         if not hasattr(geom, 'num_coords'):
             raise TypeError('Need OGR or GEOS geometry, %s found' % type(geom))

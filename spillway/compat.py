@@ -2,13 +2,6 @@ from django.core.exceptions import ImproperlyConfigured
 from rest_framework.utils import encoders
 
 try:
-    # Django 1.8+
-    from django.contrib.gis.db.models.lookups import gis_lookups as ALL_TERMS
-except ImportError:
-    # Django<=1.7
-    from django.contrib.gis.db.models.sql.query import ALL_TERMS
-
-try:
     import simplejson as json
 except ImportError:
     import json
