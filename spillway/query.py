@@ -89,15 +89,13 @@ class GeoQuerySet(query.GeoQuerySet):
         if not srid and not connection.ops.spatialite:
             return super(GeoQuerySet, self).extent()
         transform = self._transform(srid)
-        # Spatialite extent() is supported post-1.7.
+        sql = '%s(%s)' % (connection.ops.extent, transform)
         if connection.ops.spatialite:
-            ext = {'extent': 'AsText(%s(%s))' % ('Extent', transform)}
-        else:
-            ext = {'extent': '%s(%s)' % (connection.ops.extent, transform)}
+            sql = ''.join(('AsText(', sql, ')'))
         # The bare order_by() is needed to remove the default sort field which
         # is not present in this aggregation. Empty querysets will return
         # [None] here.
-        extent = (self.extra(select=ext)
+        extent = (self.extra(select={'extent': sql})
                       .values_list('extent', flat=True)
                       .order_by()[0])
         if not extent:
