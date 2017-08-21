@@ -5,7 +5,7 @@ import zipfile
 
 from django.core import exceptions
 from django.contrib.gis import geos
-from django.contrib.gis.db.models import query
+from django.contrib.gis.db.models import query, Extent
 from django.db import connection, models
 from django.utils.functional import cached_property
 import numpy as np
@@ -79,31 +79,15 @@ class GeoQuerySet(query.GeoQuerySet):
     def extent(self, srid=None):
         """Returns the GeoQuerySet extent as a 4-tuple.
 
-        The method chaining approach of
-        geoqset.objects.transform(srid).extent() returns the extent in the
-        original coordinate system, this method allows for transformation.
-
         Keyword args:
         srid -- EPSG id for for transforming the output geometry.
         """
-        if not srid and not connection.ops.spatialite:
-            return super(GeoQuerySet, self).extent()
-        transform = self._transform(srid)
-        sql = '%s(%s)' % (connection.ops.extent, transform)
-        if connection.ops.spatialite:
-            sql = ''.join(('AsText(', sql, ')'))
-        # The bare order_by() is needed to remove the default sort field which
-        # is not present in this aggregation. Empty querysets will return
-        # [None] here.
-        extent = (self.extra(select={'extent': sql})
-                      .values_list('extent', flat=True)
-                      .order_by()[0])
-        if not extent:
-            return ()
-        try:
-            return connection.ops.convert_extent(extent, get_srid(self))
-        except NotImplementedError:
-            return geos.GEOSGeometry(extent, srid).extent
+        fieldname = self.geo_field.name
+        ext = Extent(fieldname)
+        key = '%s__extent' % fieldname
+        clone = self.all()
+        qs = clone.transform(srid) if srid else clone
+        return qs.aggregate(ext)[key]
 
     def filter_geometry(self, **kwargs):
         """Convenience method for spatial lookup filters."""
