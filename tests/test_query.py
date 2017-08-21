@@ -22,10 +22,12 @@ class GeoQuerySetTestCase(TestCase):
         ex = self.qs.extent(self.srid)
         self.assertEqual(len(ex), 4)
         self.assertLess(ex[0], -180)
+        ex2 = self.qs.extent()
+        self.assertNotEqual(ex, ex2)
 
     def test_empty_extent(self):
         self.qs.delete()
-        self.assertEqual(self.qs.extent(self.srid), ())
+        self.assertEqual(self.qs.extent(self.srid), None)
 
     def test_filter_geometry(self):
         qs = self.qs.filter_geometry(contains=self.qs[0].geom.centroid)
