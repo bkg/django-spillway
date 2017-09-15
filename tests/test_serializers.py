@@ -191,7 +191,7 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
         self.assertEqual(len(serializer.data), len(self.qs))
         self.assertEqual(len(serializer.data[0]['image']), periods)
-        self.assertEqual(serializer.data[0]['image'], qs[0].image)
+        self.assertEqual(list(serializer.data[0]['image']), list(qs[0].image))
 
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)

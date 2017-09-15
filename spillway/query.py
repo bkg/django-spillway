@@ -224,7 +224,7 @@ class RasterQuerySet(GeoQuerySet):
         try:
             means = marr.reshape((periods, -1)).mean(axis=1)
         except ValueError:
-            means = [a.mean() for a in np.array_split(marr, periods)]
+            means = np.array([a.mean() for a in np.array_split(marr, periods)])
         obj = self[0]
         setattr(obj, fieldname, means)
         return [obj]
