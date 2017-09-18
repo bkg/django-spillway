@@ -281,8 +281,10 @@ class RasterQuerySet(GeoQuerySet):
             if arr is not None:
                 if stat:
                     arr = aggregate1d(arr, stat)
-                if arr.size == 1:
-                    arr = arr.item()
+                try:
+                    arr = arr.squeeze()
+                except ValueError:
+                    pass
             obj.image = arr
         return clone
 
