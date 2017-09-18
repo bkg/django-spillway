@@ -32,6 +32,21 @@ def get_srid(queryset):
     srid = queryset.query.get_context('transformed_srid')
     return srid or geo_field(queryset).srid
 
+def aggregate1d(arr, stat):
+    """Returns a 1D array with higher dimensions aggregated using stat fn.
+
+    Arguments:
+    arr -- ndarray
+    stat -- np or np.ma function as str to call
+    """
+    axis = None
+    if arr.ndim > 2:
+        axis = 1
+        arr = arr.reshape(arr.shape[0], -1)
+    module = np.ma if hasattr(arr, 'mask') else np
+    arr = getattr(module, stat)(arr, axis)
+    return arr
+
 
 # Many GeoQuerySet methods cannot be chained as expected and extending
 # GeoQuerySet to work properly with serialization calls like
@@ -265,11 +280,7 @@ class RasterQuerySet(GeoQuerySet):
             arr = obj.array(geom)
             if arr is not None:
                 if stat:
-                    axis = None
-                    if arr.ndim > 2:
-                        axis = 1
-                        arr = arr.reshape(arr.shape[0], -1)
-                    arr = getattr(np.ma, stat)(arr, axis)
+                    arr = aggregate1d(arr, stat)
                 if arr.size == 1:
                     arr = arr.item()
             obj.image = arr
