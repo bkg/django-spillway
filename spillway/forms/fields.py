@@ -5,11 +5,13 @@ import tempfile
 import zipfile
 
 from django.contrib.gis import forms, gdal
+from django.contrib.gis.db.models import functions
 from django.contrib.gis.gdal.srs import SpatialReference, SRSException
 from django.utils.translation import ugettext_lazy as _
 from greenwich.geometry import Envelope
+from rest_framework import renderers
 
-import spillway.collections as sc
+from spillway import query, collections as sc
 from spillway.compat import json
 
 
@@ -49,6 +51,35 @@ class BoundingBoxField(CommaSepFloatField):
             return []
         bbox.srid = self.srid
         return bbox
+
+
+class GeoFormatField(forms.CharField):
+    default_error_messages = {
+        'invalid_geofunc': _('%(value)s is not a supported function.'),
+    }
+    funcs = {'centroid': 'Centroid',
+             'pointonsurface': 'PointOnSurface',
+             'geojson': 'AsGeoJSON',
+             'gml': 'AsGML',
+             'kml': 'AsKML',
+             'svg': 'AsSVG'}
+
+    def to_python(self, value):
+        if value in self.empty_values + [renderers.JSONRenderer.format]:
+            return None
+        # Skip known DRF renderer formats.
+        formats = [renderers.BrowsableAPIRenderer.format,
+                   renderers.TemplateHTMLRenderer.format]
+        if value in formats:
+            return query.AsText
+        try:
+            fn = getattr(functions, self.funcs[value])
+        except (KeyError, AttributeError):
+            raise forms.ValidationError(self.error_messages['invalid_geofunc'],
+                                        code='invalid_geofunc')
+        if fn.arity > 1:
+            raise forms.ValidationError('Not yet supported')
+        return fn
 
 
 class GeometryField(forms.GeometryField):

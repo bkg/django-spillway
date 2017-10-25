@@ -1,8 +1,10 @@
+import re
 import json
 import io
 import zipfile
 
 from django.contrib.gis import geos
+import django.contrib.gis.db.models.functions as sqlfn
 from django.test import TestCase
 from greenwich.raster import Raster
 from rest_framework import status
@@ -25,7 +27,7 @@ class PaginatedGeoListView(generics.GeoListView):
 PaginatedGeoListView.pagination_class.page_size = 10
 
 
-class GeoDetailViewTestCase(TestCase):
+class BaseGeoDetailViewTestCase(TestCase):
     model = GeoLocation
     precision = 4
 
@@ -37,17 +39,21 @@ class GeoDetailViewTestCase(TestCase):
         self.qs = self.model.objects.all()
         self.view = generics.GeoDetailView.as_view(queryset=self.qs)
 
+
+class GeoDetailViewTestCase(BaseGeoDetailViewTestCase):
     def test_api_response(self):
         request = factory.get('/', HTTP_ACCEPT='text/html')
         response = self.view(request, pk=self.pk).render()
-        self.assertContains(response, self.qs[0].geom.wkt)
+        wkt = re.search('POLYGON[^&]+', response.content).group()
+        g = geos.GEOSGeometry(wkt)
+        self.assertEqual(g, self.qs[0].geom.wkt)
 
     def test_json_response(self):
         expected = json.loads(self.qs[0].geom.geojson)
         response = self.view(factory.get('/'), pk=self.pk).render()
         self.assertEqual(response.status_code, 200)
         feature = json.loads(response.content)
-        self.assertEqual(feature['geometry'], expected)
+        self.assertAlmostEqual(feature['geometry'], expected)
         self.assertEqual(feature['type'], 'Feature')
 
     def test_geojson_response(self):
@@ -72,7 +78,7 @@ class GeoDetailViewTestCase(TestCase):
         self.assertInHTML(part, response.content, count=1)
 
 
-class GeoManagerDetailViewTestCase(GeoDetailViewTestCase):
+class GeoManagerDetailViewTestCase(BaseGeoDetailViewTestCase):
     model = Location
 
     def test_simplify(self):

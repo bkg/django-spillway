@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.gis import geos
+from django.contrib.gis.db.models import functions
 from django.test import TestCase
 from rest_framework import renderers
 from rest_framework.serializers import Serializer
@@ -8,7 +9,7 @@ from rest_framework.test import APIRequestFactory
 from greenwich.raster import Raster
 from greenwich.srs import SpatialReference
 
-from spillway import fields, generics, serializers
+from spillway import fields, generics, query, serializers
 from spillway.collections import Feature, FeatureCollection
 from spillway.renderers import GeoTIFFRenderer
 from .models import Location, RasterStore, _geom
@@ -38,6 +39,10 @@ class LocationFeatureSerializer(serializers.FeatureSerializer):
         model = Location
         fields = '__all__'
         geom_field = 'geom'
+
+
+class SimplifyLocationSerializer(LocationFeatureSerializer):
+    geom = fields.GeometryField(source='simplify')
 
 
 class RasterStoreSerializer(serializers.RasterModelSerializer):
@@ -153,10 +158,18 @@ class FeatureSerializerTestCase(ModelTestCase):
         self.assertEqual(serializer.data['crs'], crs)
 
     def test_serialize_queryset_simplify(self):
-        # Too high of simplification tolerance should return empty geometry.
-        serializer = LocationFeatureSerializer(
-            Location.objects.simplify(10, srid=4269)[0])
-        self.assertEqual(serializer.data['geometry'], {})
+        fn = query.Simplify(functions.Transform('geom', 4269), 1.01)
+        qs = Location.objects.all()
+        for obj in qs:
+            obj.geom = obj.geom.buffer(1.5)
+            obj.save()
+        qs = qs.annotate(simplify=fn)
+        obj = qs[0]
+        serializer = SimplifyLocationSerializer(obj)
+        g = geos.GEOSGeometry(json.dumps(serializer.data['geometry']),
+                              srid=obj.simplify.srid)
+        self.assertEqual(g, obj.simplify)
+        self.assertEqual(obj.simplify.srid, 4269)
 
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)

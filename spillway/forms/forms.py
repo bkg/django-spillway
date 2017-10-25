@@ -1,4 +1,5 @@
 from django.contrib.gis import gdal, forms
+from django.contrib.gis.db.models import functions
 from django.contrib.gis.db.models.lookups import gis_lookups
 from greenwich import tile
 from rest_framework import renderers
@@ -78,7 +79,8 @@ class SpatialQueryForm(QuerySetForm):
 
 class GeometryQueryForm(QuerySetForm):
     """A form providing GeoQuerySet method arguments."""
-    format = forms.CharField(required=False)
+    format = fields.GeoFormatField(required=False)
+    op = fields.GeoFormatField(required=False)
     precision = forms.IntegerField(required=False)
     # Tolerance value for geometry simplification
     simplify = forms.FloatField(required=False)
@@ -87,22 +89,23 @@ class GeometryQueryForm(QuerySetForm):
     def select(self):
         kwargs = {}
         data = self.cleaned_data
+        tolerance, srs, format = map(data.get, ('simplify', 'srs', 'format'))
+        expr = field = query.geo_field(self.queryset).name
+        srid = getattr(srs, 'srid', None)
+        if srid:
+            expr = functions.Transform(expr, srid)
+            self.queryset.query.add_context('transformed_srid', srid)
+        if data['op']:
+            expr = data['op'](expr)
         if data['precision'] is not None:
             kwargs.update(precision=data['precision'])
-        tolerance, srs, format = map(data.get, ('simplify', 'srs', 'format'))
-        srid = getattr(srs, 'srid', None)
-        try:
-            has_format = self.queryset.has_format(format)
-        except AttributeError:
-            # Handle default GeoQuerySet.
-            try:
-                self.queryset = getattr(self.queryset, format)(**kwargs)
-            except AttributeError:
-                pass
-        else:
-            if has_format:
-                kwargs.update(format=format)
-            self.queryset = self.queryset.simplify(tolerance, srid, **kwargs)
+        if tolerance:
+            expr = query.Simplify(expr, tolerance)
+        if format:
+            expr = format(expr, **kwargs)
+        if expr != field:
+            attrname = self.data.get('format')
+            self.queryset = self.queryset.annotate(**{attrname: expr})
 
 
 class RasterQueryForm(QuerySetForm):

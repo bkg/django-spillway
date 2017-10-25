@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import collections
 
 from django.contrib.gis import geos, forms
+from django.contrib.gis.db.models.query import GeoQuerySet
 from rest_framework import renderers
 from rest_framework.fields import Field, FileField
 
@@ -12,18 +13,19 @@ from spillway.forms import fields
 
 class GeometryField(Field):
     def bind(self, field_name, parent):
-        # Alter field source based on the requested format.
         try:
             renderer = parent.context['request'].accepted_renderer
         except (AttributeError, KeyError):
             pass
         else:
-            obj = getattr(parent.context.get('view'), 'queryset',
-                          parent.instance)
+            obj = parent.root.instance
+            if not isinstance(obj, GeoQuerySet):
+                try:
+                    obj = obj[0]
+                except (IndexError, TypeError):
+                    pass
             if hasattr(obj, renderer.format):
                 self.source = renderer.format
-            elif isinstance(renderer, renderers.BrowsableAPIRenderer):
-                self.source = '%s.wkt' % field_name
         super(GeometryField, self).bind(field_name, parent)
 
     def get_attribute(self, instance):

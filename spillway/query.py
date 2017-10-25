@@ -6,6 +6,7 @@ import zipfile
 from django.core import exceptions
 from django.contrib.gis import geos
 from django.contrib.gis.db.models import query, Extent
+import django.contrib.gis.db.models.functions as geofn
 from django.db import connection, models
 from django.utils.functional import cached_property
 import numpy as np
@@ -48,48 +49,36 @@ def aggregate1d(arr, stat):
     return arr
 
 
-# Many GeoQuerySet methods cannot be chained as expected and extending
-# GeoQuerySet to work properly with serialization calls like
-# .simplify(100).svg() will require patching
-# django.contrib.gis.db.models.query. Work around this with a custom
-# GeoQuerySet for now.
+class AsText(geofn.GeoFunc):
+    output_field_class = models.TextField
+
+
+class Simplify(geofn.GeoFunc):
+    arity = 2
+
+
+class SimplifyPreserveTopology(geofn.GeoFunc):
+    arity = 2
+
+
+class TransScale(geofn.GeoFunc):
+    pass
+
+
 class GeoQuerySet(query.GeoQuerySet):
     """Extends the default GeoQuerySet with some unimplemented PostGIS
     functionality.
     """
-    _scale = '%s(%%s, %%s, %%s)' % connection.ops.scale
-    # Geometry outputs
-    _formats = {'geojson': '%s(%%s, %%s)' % connection.ops.geojson,
-                'kml': '%s(%%s, %%s)' % connection.ops.kml,
-                'svg': '%s(%%s, 0, %%s)' % connection.ops.svg}
     # Geometry simplification tolerances based on tile width (m) per zoom
     # level, see http://wiki.openstreetmap.org/wiki/Zoom_levels
     tilewidths = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
                   for zoom in range(20)]
 
-    def _as_format(self, sql, format=None, precision=8):
-        val = self._formats.get(format, self._formats['geojson'])
-        return self.extra(select={format: val % (sql, precision)})
-
-    def _transform(self, srid=None):
-        args, geo_field = self._spatial_setup('transform')
-        if not srid:
-            return args['geo_col']
-        self.query.add_context('transformed_srid', srid)
-        return '%s(%s, %s)' % (args['function'], args['geo_col'], srid)
-
     def _trans_scale(self, colname, deltax, deltay, xfactor, yfactor):
         if connection.ops.spatialite:
-            sql = 'ScaleCoords(ShiftCoords(%s, %.12f, %.12f), %.12f, %.12f)'
+            return geofn.Scale(geofn.Translate(colname, deltax, deltay), xfactor, yfactor)
         else:
-            sql = 'ST_TransScale(%s, %.12f, %.12f, %.12f, %.12f)'
-        return sql % (colname, deltax, deltay, xfactor, yfactor)
-
-    def _simplify(self, colname, tolerance=0.0, preserve=False):
-        # connection.ops does not have simplify available for PostGIS.
-        fn = 'ST_Simplify' if not preserve else 'ST_SimplifyPreserveTopology'
-        return ('%s(%s, %s)' % (fn, colname, tolerance)
-                if tolerance else colname)
+            return TransScale(colname, deltax, deltay, xfactor, yfactor)
 
     def extent(self, srid=None):
         """Returns the GeoQuerySet extent as a 4-tuple.
@@ -113,49 +102,17 @@ class GeoQuerySet(query.GeoQuerySet):
         """Returns model geometry field."""
         return self._geo_field()
 
-    def has_format(self, format):
-        return format in self._formats
-
     def pbf(self, bbox, geo_col=None, scale=4096):
         """Returns tranlated and scaled geometries suitable for Mapbox vector
         tiles.
         """
-        col = geo_col or self._transform()
+        col = geo_col or self.geo_field.name
         w, s, e, n = bbox.extent
         trans = self._trans_scale(col, -w, -s,
                                   scale / (e - w),
                                   scale / (n - s))
-        return self.extra(select={'pbf': 'ST_AsText(%s)' % trans})
-
-    def scale(self, x, y, z=0.0, tolerance=0.0, precision=8, srid=None,
-              format=None, **kwargs):
-        """Returns a GeoQuerySet with scaled and optionally reprojected and
-        simplified geometries, serialized to a supported format.
-        """
-        if not any((tolerance, srid, format)):
-            return super(GeoQuerySet, self).scale(x, y, z, **kwargs)
-        transform = self._transform(srid)
-        scale = self._scale % (transform, x, y)
-        simplify = self._simplify(scale, tolerance)
-        return self._as_format(simplify, format, precision)
-
-    def simplify(self, tolerance=0.0, srid=None, format=None, precision=8):
-        """Returns a GeoQuerySet with simplified geometries serialized to
-        a supported geometry format.
-        """
-        # Transform first, then simplify.
-        transform = self._transform(srid)
-        simplify = self._simplify(transform, tolerance)
-        if format:
-            return self._as_format(simplify, format, precision)
-        # TODO: EWKB bug is fixed in spatialite 4.2+ so this can be removed.
-        if connection.ops.spatialite:
-            # Spatialite returns additional precision when converting to wkt,
-            # so avoid the call unless we are simplifying geometries.
-            if not (tolerance or srid):
-                return self
-            simplify = 'AsEWKT(%s)' % simplify
-        return self.extra(select={self.geo_field.name: simplify})
+        g = AsText(trans)
+        return self.annotate(pbf=g)
 
     def tile(self, bbox, z=0, format=None, clip=True):
         """Returns a GeoQuerySet intersecting a tile boundary.
@@ -171,8 +128,9 @@ class GeoQuerySet(query.GeoQuerySet):
         tile_srid = 3857
         bbox = getattr(bbox, 'geos', bbox)
         clone = filter_geometry(self, intersects=bbox)
-        srid = clone.geo_field.srid
-        sql = clone._transform()
+        field = clone.geo_field
+        srid = field.srid
+        sql = field.name
         try:
             tilew = self.tilewidths[z]
         except IndexError:
@@ -186,16 +144,12 @@ class GeoQuerySet(query.GeoQuerySet):
             tilew = p.x
         if clip:
             bufbox = bbox.buffer(tilew)
-            envfn = ('BuildMbr' if connection.ops.spatialite
-                     else 'ST_MakeEnvelope')
-            envelope = '%s(%s, %s, %s, %s, %s)' % (
-                (envfn,) + bufbox.extent + (bufbox.srid,))
-            sql = 'ST_Intersection(%s, %s)' % (sql, envelope)
-        sql = clone._simplify(sql, tilew, preserve=True)
+            sql = geofn.Intersection(sql, bufbox.envelope)
+        sql = SimplifyPreserveTopology(sql, tilew)
         if format == 'pbf':
             return clone.pbf(bbox, geo_col=sql)
-        sql = 'ST_Transform(%s, %s)' % (sql, 4326)
-        return clone._as_format(sql, format)
+        sql = geofn.Transform(sql, 4326)
+        return clone.annotate(**{format: sql})
 
 
 class RasterQuerySet(GeoQuerySet):
