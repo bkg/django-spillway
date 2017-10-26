@@ -11,7 +11,8 @@ from django.contrib.gis.gdal import OGRGeometry
 from django.test import SimpleTestCase, TestCase
 from osgeo import ogr, osr
 
-from spillway.forms.fields import OGRGeometryField, GeometryFileField
+from spillway.forms.fields import (OGRGeometryField, GeometryFileField,
+    GeoFormatField, SpatialReferenceField)
 from spillway.collections import Feature, NamedCRS
 from spillway.validators import GeometrySizeValidator
 from .models import _geom
@@ -79,6 +80,8 @@ class GeometryFileFieldTestCase(SimpleTestCase):
 
     def test_to_python(self):
         self.assertIsInstance(self.field.to_python(self.fp), OGRGeometry)
+        fp = SimpleUploadedFile('empty.json', '{}')
+        self.assertRaises(forms.ValidationError, self.field.to_python, fp)
 
     def test_feature_to_python(self):
         feature = Feature(geometry=_geom)
@@ -116,3 +119,9 @@ class GeometryFileFieldTestCase(SimpleTestCase):
 
     def tearDown(self):
         self.fp.close()
+
+
+class GeoFormatFieldTestCase(SimpleTestCase):
+    def test_to_python(self):
+        field = GeoFormatField()
+        self.assertRaises(forms.ValidationError, field.to_python, 'invalid')

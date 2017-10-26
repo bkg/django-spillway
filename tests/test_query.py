@@ -72,6 +72,8 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
     def test_summarize_point(self):
         qs = self.qs.summarize(geos.Point(-9999, -9999))
         self.assertEqual(list(qs[0].image), [])
+        self.assertEqual(list(qs.get(pk=1).image), [])
+        self.assertRaises(TypeError, qs.summarize, (1, 1))
 
     def test_summarize_polygon(self):
         geom = self.object.geom.buffer(-3)
