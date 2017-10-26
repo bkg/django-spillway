@@ -170,6 +170,7 @@ class FeatureSerializerTestCase(ModelTestCase):
                               srid=obj.simplify.srid)
         self.assertEqual(g, obj.simplify)
         self.assertEqual(obj.simplify.srid, 4269)
+        self.assertEqual(serializer.data['crs']['properties']['name'][-4:], '4269')
 
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)

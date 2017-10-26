@@ -75,7 +75,8 @@ class FeatureSerializer(GeoModelSerializer):
             self._data = super(FeatureSerializer, self).data
             if 'crs' not in self._data:
                 try:
-                    srid = getattr(self.instance, self.Meta.geom_field).srid
+                    field = self.fields[self.Meta.geom_field]
+                    srid = getattr(self.instance, field.source).srid
                 except (AttributeError, geos.GEOSException):
                     pass
                 else:
