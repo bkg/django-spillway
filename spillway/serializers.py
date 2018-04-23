@@ -50,7 +50,7 @@ class FeatureListSerializer(serializers.ListSerializer):
         return super(serializers.ListSerializer, self).data
 
     def to_representation(self, data):
-        data = map(self.child.to_representation, data)
+        data = [self.child.to_representation(item) for item in data]
         try:
             srid = query.get_srid(self.instance)
         except AttributeError:

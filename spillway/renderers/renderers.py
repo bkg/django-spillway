@@ -13,6 +13,7 @@ class GeoJSONRenderer(JSONRenderer):
     """
     media_type = 'application/vnd.geo+json'
     format = 'geojson'
+    charset = 'utf-8'
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         """Returns *data* encoded as GeoJSON."""

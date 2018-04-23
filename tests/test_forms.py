@@ -29,7 +29,7 @@ class RasterQueryFormTestCase(SimpleTestCase):
 
     def test_upload_field(self):
         geom = geos.GEOSGeometry(json.dumps(_geom))
-        fp = SimpleUploadedFile('up.json', geom.geojson)
+        fp = SimpleUploadedFile('up.json', geom.geojson.encode('ascii'))
         form = forms.RasterQueryForm({}, files={'upload': fp})
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['g'], geom.ogr)

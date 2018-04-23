@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import collections
 
+from django.utils import six
 from greenwich.srs import SpatialReference
 
 from spillway.compat import json, JSONEncoder
@@ -49,7 +50,7 @@ def is_featurelike(feature):
 
 def has_layer(fcollection):
     """Returns true for a multi-layer dict of FeatureCollections."""
-    for val in fcollection.itervalues():
+    for val in six.viewvalues(fcollection):
         if has_features(val):
             return True
     return False
@@ -96,7 +97,7 @@ class AbstractFeature(dict):
         raise NotImplementedError
 
     def is_serialized(self, key):
-        return isinstance(self[key], basestring)
+        return isinstance(self[key], six.string_types)
 
     def copy(self):
         return self.__class__(**super(AbstractFeature, self).copy())
@@ -129,7 +130,7 @@ class Feature(AbstractFeature):
         if not self.is_serialized('geometry'):
             return self._dumps()
         geom = self['geometry'] or '{}'
-        keys = self.viewkeys() - {'geometry'}
+        keys = six.viewkeys(self) - {'geometry'}
         props = json.dumps({k: self[k] for k in keys}, cls=JSONEncoder)[1:-1]
         return '{"geometry": %s, %s}' % (str(geom), props)
 
@@ -142,7 +143,7 @@ class FeatureCollection(AbstractFeature):
         self['type'] = self.__class__.__name__
         if crs:
             self['crs'] = NamedCRS(crs)
-        if features and not isinstance(features[0], Feature):
+        if features and not isinstance(next(iter(features)), Feature):
             self['features'] = [Feature(**feat) for feat in features]
         else:
             self['features'] = features or []
@@ -153,7 +154,7 @@ class FeatureCollection(AbstractFeature):
         if not self.has_serialized_geom:
             return self._dumps()
         features = ','.join(map(str, self['features']))
-        keys = self.viewkeys() - {'features'}
+        keys = six.viewkeys(self) - {'features'}
         collection = '%s, "features": [' % json.dumps(
             {k: self[k] for k in keys}, cls=JSONEncoder)[:-1]
         return ''.join([collection, features, ']}'])
@@ -169,12 +170,12 @@ class LayerCollection(AbstractFeature):
     def __init__(self, iterable=(), **kwargs):
         super(LayerCollection, self).__init__()
         self.update(iterable, **kwargs)
-        for key, val in self.iteritems():
+        for key, val in six.viewitems(self):
             if not isinstance(val, FeatureCollection):
                 self[key] = FeatureCollection(**val)
 
     @property
     def geojson(self):
         layers = ','.join(['"%s": %s' % (k, v.geojson)
-                           for k, v in self.iteritems()])
+                           for k, v in six.viewitems(self)])
         return '{%s}' % layers

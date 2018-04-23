@@ -42,7 +42,7 @@ class FeatureTestCase(SimpleTestCase):
 
     def test_str(self):
         feat = Feature(properties={'event': datetime.date(1899, 1, 1)})
-        self.assertIn('"properties": {"event": "1899-01-01"}}', str(feat))
+        self.assertIn('"properties": {"event": "1899-01-01"}', str(feat))
 
 
 class LayerCollectionTestCase(SimpleTestCase):

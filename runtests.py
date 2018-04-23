@@ -63,11 +63,9 @@ def runtests():
     try:
         status = runner_class(
             verbosity=1, interactive=True, failfast=False).run_tests(['tests'])
-    except:
-        status = 1
     finally:
         teardown()
-    sys.exit(status)
+    sys.exit()
 
 if __name__ == '__main__':
     runtests()

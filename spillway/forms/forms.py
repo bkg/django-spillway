@@ -117,7 +117,7 @@ class RasterQueryForm(QuerySetForm):
     periods = forms.IntegerField(required=False)
     stat = forms.ChoiceField(
         choices=[(choice,) * 2 for choice in
-                 'count', 'max', 'mean', 'median', 'min', 'std', 'sum', 'var'],
+                 ('count', 'max', 'mean', 'median', 'min', 'std', 'sum', 'var')],
         required=False)
 
     def clean(self):

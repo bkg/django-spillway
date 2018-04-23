@@ -38,7 +38,10 @@ class BaseRasterView(mixins.ModelSerializerMixin,
                      mixins.ResponseExceptionMixin):
     """Base view for raster models."""
     model_serializer_class = serializers.RasterModelSerializer
-    filter_backends = _default_filters + (filters.RasterQuerySetFilter,)
+    filter_backends = _default_filters + (
+        filters.SpatialLookupFilter,
+        filters.RasterQuerySetFilter,
+    )
     renderer_classes = _default_renderers + (
         renderers.GeoTIFFZipRenderer,
         renderers.HFAZipRenderer,
@@ -81,6 +84,7 @@ class BaseRasterView(mixins.ModelSerializerMixin,
 
 class RasterDetailView(BaseRasterView, RetrieveAPIView):
     """View providing access to a Raster model instance."""
+    filter_backends = _default_filters + (filters.RasterQuerySetFilter,)
     renderer_classes = _default_renderers + (
         renderers.GeoTIFFRenderer,
         renderers.HFARenderer,
@@ -89,7 +93,3 @@ class RasterDetailView(BaseRasterView, RetrieveAPIView):
 
 class RasterListView(BaseRasterView, ListAPIView):
     """View providing access to a Raster model QuerySet."""
-    filter_backends = _default_filters + (
-        filters.SpatialLookupFilter,
-        filters.RasterQuerySetFilter,
-    )

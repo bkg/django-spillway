@@ -1,14 +1,21 @@
-import json
 from io import BytesIO
+import unittest
 
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files import File
 from django.contrib.gis import geos
 from rest_framework.test import APIRequestFactory, APITestCase
 from PIL import Image
 
 from spillway import urls, views
+from spillway.compat import mapnik
 from .models import Location
 from .test_models import RasterStoreTestBase
+
+try:
+    has_mapnik = bool(mapnik.Map)
+except ImproperlyConfigured:
+    has_mapnik = False
 
 
 class TileViewTestCase(APITestCase):
@@ -30,7 +37,7 @@ class TileViewTestCase(APITestCase):
 
     def test_clipped_response(self):
         response = self.client.get('%s/?clip=true' % self.url)
-        d = json.loads(response.content)
+        d = response.json()
         self.assertFalse(self.is_polygon_equal(d))
         # This particular geometry clipped to a tile should have +1 coords.
         self.assertEqual(len(d['features'][0]['geometry']['coordinates'][0]),
@@ -38,10 +45,9 @@ class TileViewTestCase(APITestCase):
 
     def test_unclipped_response(self):
         response = self.client.get('%s.geojson' % self.url)
-        d = json.loads(response.content)
-        self.assertTrue(self.is_polygon_equal(d))
-        # self.assertNotIn('crs', d)
+        self.assertTrue(self.is_polygon_equal(response.json()))
 
+    @unittest.skipUnless(has_mapnik, 'requires mapnik')
     def test_png_response(self):
         response = self.client.get('%s.png' % self.url)
         self.assertEqual(response.status_code, 200)
@@ -49,6 +55,7 @@ class TileViewTestCase(APITestCase):
         im = Image.open(BytesIO(response.content))
         self.assertEqual(im.size, (256, 256))
 
+    @unittest.skipUnless(has_mapnik, 'requires mapnik')
     def test_tile_outside_extent(self):
         response = self.client.get('/vectiles/4/7/8.png')
         self.assertEqual(response.status_code, 404)
@@ -61,6 +68,7 @@ class TileViewTestCase(APITestCase):
 
 
 class RasterTileViewTestCase(RasterStoreTestBase, APITestCase):
+    @unittest.skipUnless(has_mapnik, 'requires mapnik')
     def test_response(self):
         response = self.client.get('/maptiles/1/11/342/790/')
         self.assertEqual(response['content-type'], 'image/png')
@@ -80,11 +88,13 @@ class RasterTileViewTestCase(RasterStoreTestBase, APITestCase):
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response['content-type'], 'text/html')
 
+    @unittest.skipUnless(has_mapnik, 'requires mapnik')
     def test_invalid_tile_coords(self):
         response = self.client.get('/maptiles/1/2/0/100/')
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response['content-type'], 'application/json')
 
+    @unittest.skipUnless(has_mapnik, 'requires mapnik')
     def test_tile_outside_extent(self):
         response = self.client.get('/maptiles/1/5/16/10.png')
         self.assertEqual(response.status_code, 404)

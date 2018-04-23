@@ -4,7 +4,7 @@ from rest_framework.test import APIRequestFactory
 
 from spillway import viewsets
 from spillway.renderers import GeoJSONRenderer, GeoTIFFZipRenderer
-from .models import Location, RasterStore
+from .models import GeoLocation, Location, RasterStore
 from .test_serializers import LocationFeatureSerializer, RasterStoreSerializer
 
 factory = APIRequestFactory()
@@ -19,9 +19,17 @@ class SimpleQueryTestCase(SimpleTestCase):
     allow_database_queries = True
 
 
+class GeoLocationViewSet(viewsets.GeoModelViewSet):
+    queryset = GeoLocation.objects.all()
+    serializer_class = LocationFeatureSerializer
+
+
 class LocationViewSet(viewsets.GeoModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationFeatureSerializer
+
+# Enable pagination for this view
+LocationViewSet.pagination_class.page_size = 10
 
 
 class RasterViewSet(viewsets.ReadOnlyRasterModelViewSet):

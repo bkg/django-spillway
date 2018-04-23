@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import zipfile
 
+from django.utils.six.moves import reduce
 from django.contrib.gis import forms, gdal
 from django.contrib.gis.db.models import functions
 from django.contrib.gis.gdal.srs import SpatialReference, SRSException
@@ -18,13 +19,13 @@ from spillway.compat import json
 class CommaSepFloatField(forms.FloatField):
     """A form Field for parsing a comma separated list of numeric values."""
     default_error_messages = {
-        'invalid': _(u'Enter a comma separated list of numbers.'),
-        'max_value': _(u'Ensure each value is less than or equal to %(limit_value)s.'),
-        'min_value': _(u'Ensure each value is greater than or equal to %(limit_value)s.'),
+        'invalid': _('Enter a comma separated list of numbers.'),
+        'max_value': _('Ensure each value is less than or equal to %(limit_value)s.'),
+        'min_value': _('Ensure each value is greater than or equal to %(limit_value)s.'),
     }
 
     def to_python(self, value):
-        "Normalize data to a list of floats."
+        """Normalize data to a list of floats."""
         if not value:
             return []
         return map(super(CommaSepFloatField, self).to_python, value.split(','))
@@ -77,7 +78,7 @@ class GeoFormatField(forms.CharField):
         except (KeyError, AttributeError):
             raise forms.ValidationError(self.error_messages['invalid_geofunc'],
                                         code='invalid_geofunc')
-        if fn.arity > 1:
+        if fn.arity and fn.arity > 1:
             raise forms.ValidationError('Not yet supported')
         return fn
 
@@ -148,7 +149,7 @@ class OGRGeometryField(forms.GeometryField):
             return None
         sref = None
         # Work with a single GeoJSON geometry or a Feature.
-        value = json.loads(value) if '"Feature",' in value else value
+        value = json.loads(value) if '"Feature"' in value else value
         if isinstance(value, collections.Mapping):
             feat = sc.as_feature(value)
             value = json.dumps(feat.get('geometry') or value)

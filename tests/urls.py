@@ -4,9 +4,11 @@ from spillway import views
 from spillway.urls import tilepath
 
 from .models import Location, RasterStore
-from .test_viewsets import RasterViewSet
+from .test_viewsets import GeoLocationViewSet, LocationViewSet, RasterViewSet
 
 router = DefaultRouter()
+router.register(r'glocations', GeoLocationViewSet)
+router.register(r'locations', LocationViewSet)
 router.register(r'rasters', RasterViewSet)
 
 urlpatterns = [

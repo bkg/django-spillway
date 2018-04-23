@@ -8,7 +8,7 @@ import zipfile
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, TestCase
-from greenwich import driver_for_path, Raster
+from greenwich import driver_for_path, ImageDriver, Raster
 from greenwich.io import MemFileIO
 
 from spillway import carto, forms, renderers
@@ -57,7 +57,7 @@ class KMLRendererTestCase(SimpleTestCase):
         stream = io.BytesIO(rkmz.render(self.data))
         self.assertTrue(zipfile.is_zipfile(stream))
         zf = zipfile.ZipFile(stream)
-        self.assertIn(self.data['geometry'], zf.read('doc.kml'))
+        self.assertIn(self.data['geometry'], zf.read('doc.kml').decode('ascii'))
 
 
 class SVGRendererTestCase(TestCase):
@@ -103,7 +103,7 @@ class RasterRendererTestCase(RasterStoreTestBase):
         if rend.format.endswith('.zip'):
             ext = os.path.splitext(rend.format)[0]
         pat = 'tmin_.+(?<!\.{0})\.{0}$'.format(ext)
-        driver = driver_for_path(ext)
+        driver = driver_for_path(ext, ImageDriver.filter_copyable())
         qs = self.qs.warp(format=driver.ext)
         rs = RasterStoreSerializer(qs.zipfiles(), many=True)
         fp = rend.render(rs.data)
@@ -129,7 +129,7 @@ class RasterRendererTestCase(RasterStoreTestBase):
     def test_render_jpeg(self):
         fp = renderers.JPEGRenderer().render(self._save('JPEG'))
         imgdata = fp.read()
-        self.assertEqual(imgdata[:10], '\xff\xd8\xff\xe0\x00\x10JFIF')
+        self.assertEqual(imgdata[:10], b'\xff\xd8\xff\xe0\x00\x10JFIF')
         self.assert_format(imgdata, 'JPEG')
 
     def test_render_jpegzip(self):
@@ -146,6 +146,7 @@ class RasterRendererTestCase(RasterStoreTestBase):
         self.assert_member_formats(renderers.GeoTIFFZipRenderer())
 
 
+@unittest.skipUnless('mapnik' in sys.modules, 'requires mapnik')
 class MapnikRendererTestCase(RasterStoreTestBase):
     ctx = {'y': 51, 'x': 23, 'z': 7}
 

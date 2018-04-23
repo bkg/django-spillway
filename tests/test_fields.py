@@ -75,17 +75,18 @@ class OGRGeometryFieldTestCase(SimpleTestCase):
 class GeometryFileFieldTestCase(SimpleTestCase):
     def setUp(self):
         self.field = GeometryFileField()
-        self.fp = SimpleUploadedFile('geom.json', json.dumps(_geom))
+        self.fp = SimpleUploadedFile(
+            'geom.json', json.dumps(_geom).encode('ascii'))
         self.fp.seek(0)
 
     def test_to_python(self):
         self.assertIsInstance(self.field.to_python(self.fp), OGRGeometry)
-        fp = SimpleUploadedFile('empty.json', '{}')
+        fp = SimpleUploadedFile('empty.json', b'{}')
         self.assertRaises(forms.ValidationError, self.field.to_python, fp)
 
     def test_feature_to_python(self):
         feature = Feature(geometry=_geom)
-        self.fp.write(str(feature))
+        self.fp.write(str(feature).encode('ascii'))
         self.fp.seek(0)
         v = self.field.to_python(self.fp)
         self.assertIsInstance(v, OGRGeometry)

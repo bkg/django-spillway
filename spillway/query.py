@@ -204,7 +204,7 @@ class RasterQuerySet(GeoQuerySet):
         if self._result_cache is not None:
             for obj in self._result_cache:
                 for attr, val in kwargs.items():
-                    if getattr(obj, attr) == val:
+                    if str(getattr(obj, attr)) == str(val):
                         return obj
             raise self.model.DoesNotExist(
                 '%s matching query does not exist.' %

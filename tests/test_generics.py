@@ -32,7 +32,6 @@ class BaseGeoDetailViewTestCase(TestCase):
     precision = 4
 
     def setUp(self):
-        self.pk = 1
         self.radius = 5
         self.model.add_buffer((10, -10), self.radius)
         self.model.create()
@@ -41,30 +40,30 @@ class BaseGeoDetailViewTestCase(TestCase):
 
 
 class GeoDetailViewTestCase(BaseGeoDetailViewTestCase):
+    url = '/glocations/1/'
+
     def test_api_response(self):
-        request = factory.get('/', HTTP_ACCEPT='text/html')
-        response = self.view(request, pk=self.pk).render()
-        wkt = re.search('POLYGON[^&]+', response.content).group()
+        response = self.client.get(self.url, HTTP_ACCEPT='text/html')
+        wkt = re.search('POLYGON[^&]+', response.content.decode('utf-8')).group()
         g = geos.GEOSGeometry(wkt)
         self.assertEqual(g, self.qs[0].geom.wkt)
 
     def test_json_response(self):
         expected = json.loads(self.qs[0].geom.geojson)
-        response = self.view(factory.get('/'), pk=self.pk).render()
+        response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        feature = json.loads(response.content)
+        feature = response.json()
         self.assertAlmostEqual(feature['geometry'], expected)
         self.assertEqual(feature['type'], 'Feature')
 
     def test_geojson_response(self):
         expected = json.loads(
             self.qs.geojson(precision=self.precision)[0].geojson)
-        request = factory.get('/', {'format': 'geojson',
-                                    'precision': self.precision})
         with self.assertNumQueries(1):
-            response = self.view(request, pk=self.pk).render()
+            response = self.client.get(
+                self.url, {'format': 'geojson', 'precision': self.precision})
         self.assertEqual(response.status_code, 200)
-        feature = json.loads(response.content)
+        feature = response.json()
         self.assertEqual(feature['geometry'], expected)
         self.assertEqual(feature['type'], 'Feature')
         # Be sure we get geojson returned from SQL function call, not GEOS.
@@ -72,22 +71,22 @@ class GeoDetailViewTestCase(BaseGeoDetailViewTestCase):
         self.assertContains(response, 'geometry": %s' % sqlformat)
 
     def test_kml_response(self):
-        request = factory.get('/', {'format': 'kml', 'precision': self.precision})
-        response = self.view(request, pk=self.pk).render()
+        response = self.client.get(
+            self.url, {'format': 'kml', 'precision': self.precision})
         part = self.qs.kml(precision=self.precision)[0].kml
-        self.assertInHTML(part, response.content, count=1)
+        self.assertInHTML(part, response.content.decode('utf-8'), count=1)
 
 
 class GeoManagerDetailViewTestCase(BaseGeoDetailViewTestCase):
     model = Location
+    url = '/locations/1/'
 
     def test_simplify(self):
-        request = factory.get(
-            '/', {'simplify': self.radius, 'format': 'geojson'})
-        response = self.view(request, pk=self.pk).render()
-        orig = self.qs.get(pk=self.pk).geom
+        response = self.client.get(
+            self.url, {'simplify': self.radius, 'format': 'geojson'})
+        orig = self.qs.get(pk=1).geom
         serializer = LocationFeatureSerializer(
-            data=json.loads(response.content))
+            data=response.json())
         self.assertTrue(serializer.is_valid())
         object = serializer.save()
         self.assertLess(object.geom.num_coords, orig.num_coords)
@@ -96,10 +95,10 @@ class GeoManagerDetailViewTestCase(BaseGeoDetailViewTestCase):
 
 
 class GeoListViewTestCase(TestCase):
+    url = '/locations/'
+
     def setUp(self):
         self.srid = Location.geom._field.srid
-        self.view = generics.GeoListView.as_view(
-            queryset=Location.objects.all())
         records = [{'name': 'Banff', 'coordinates': [-115.554, 51.179]},
                    {'name': 'Jasper', 'coordinates': [-118.081, 52.875]}]
         for record in records:
@@ -107,7 +106,7 @@ class GeoListViewTestCase(TestCase):
         self.qs = Location.objects.all()
 
     def _parse_collection(self, response, srid=None):
-        data = json.loads(response.content)
+        data = response.json()
         self.assertEqual(data['type'], 'FeatureCollection')
         self.assertEqual(len(data['features']), len(self.qs))
         for feature in data['features']:
@@ -115,50 +114,44 @@ class GeoListViewTestCase(TestCase):
                 json.dumps(feature['geometry']), srid or self.srid)
 
     def test_list(self):
-        request = factory.get('/')
-        response = self.view(request)
+        response = self.client.get(self.url)
         self.assertEqual(len(response.data['features']), len(self.qs))
 
     def test_bounding_box(self):
         bbox = self.qs[0].geom.extent
-        request = factory.get('/', {'bbox': ','.join(map(str, bbox))})
-        response = self.view(request)
+        response = self.client.get(self.url, {'bbox': ','.join(map(str, bbox))})
         self.assertEqual(len(response.data['features']), 1)
 
     def test_spatial_lookup(self):
         centroid = self.qs[0].geom.centroid.geojson
-        request = factory.get('/', {'intersects': centroid})
-        response = self.view(request)
+        response = self.client.get(self.url, {'intersects': centroid})
         self.assertEqual(len(response.data['features']), 1)
 
     def test_spatial_lookup_notfound(self):
-        request = factory.get('/', {'intersects': 'POINT(0 0)'})
-        response = self.view(request)
+        response = self.client.get(self.url, {'intersects': 'POINT(0 0)'})
         self.assertEqual(len(response.data['features']), 0)
 
     def test_geojson(self):
-        request = factory.get('/', {'format': 'geojson'})
-        self.assertIsInstance(self.view(request).accepted_renderer,
-                              GeoJSONRenderer)
-        request = factory.get('/', HTTP_ACCEPT=GeoJSONRenderer.media_type)
-        response = self.view(request).render()
+        response = self.client.get(self.url, {'format': 'geojson'})
+        self.assertIsInstance(response.accepted_renderer, GeoJSONRenderer)
+        response = self.client.get(self.url, HTTP_ACCEPT=GeoJSONRenderer.media_type)
         self.assertIsInstance(response.accepted_renderer, GeoJSONRenderer)
         for geom, obj in zip(self._parse_collection(response), self.qs):
             self.assertTrue(geom.equals_exact(obj.geom, 0.0001))
 
     def test_geojson_exception(self):
-        request = factory.get('/', {'intersects': 'POINT(null+null)'},
-                              HTTP_ACCEPT=GeoJSONRenderer.media_type)
-        response = self.view(request)
+        # Resetting renderers on exception with ResponseExceptionMixin throws
+        # NotAcceptable.
+        response = self.client.get(self.url, {'intersects': 'POINT(null+null)'},
+                                   HTTP_ACCEPT=GeoJSONRenderer.media_type)
         self.assertTrue(response.status_code, 400)
         self.assertTrue(response.accepted_renderer, GeoJSONRenderer)
 
     def test_simplify(self):
         srid = 3857
         for format in 'json', 'geojson':
-            request = factory.get('/', {'simplify': 10000, 'srs': srid,
-                                        'format': format})
-            response = self.view(request).render()
+            response = self.client.get(
+                self.url, {'simplify': 10000, 'srs': srid, 'format': format})
             for geom, obj in zip(self._parse_collection(response, srid), self.qs):
                 orig = obj.geom.transform(srid, clone=True)
                 self.assertNotEqual(geom, orig)
@@ -186,19 +179,17 @@ class GeoListCreateAPIView(TestCase):
 
 class PaginatedGeoListViewTestCase(TestCase):
     def setUp(self):
-        self.view = PaginatedGeoListView.as_view(
-            queryset=Location.objects.all())
         for i in range(20): Location.create()
         self.qs = Location.objects.all()
 
     def _test_paginate(self, params, **kwargs):
-        request = factory.get('/', params, **kwargs)
-        response = self.view(request).render()
-        data = json.loads(response.content)
+        response = self.client.get('/locations/', params, **kwargs)
+        data = response.json()
         self.assertEqual(len(data['features']),
                          PaginatedGeoListView.pagination_class.page_size)
         self.assertEqual(data['count'], len(self.qs))
-        self.assertTrue(*map(data.has_key, ('previous', 'next')))
+        for k in 'previous', 'next':
+            self.assertIn(k, data)
         return data
 
     def test_paginate(self):
@@ -212,22 +203,16 @@ class PaginatedGeoListViewTestCase(TestCase):
 
 
 class RasterListViewTestCase(RasterStoreTestBase):
-    def setUp(self):
-        super(RasterListViewTestCase, self).setUp()
-        self.view = generics.RasterListView.as_view(queryset=self.qs)
-
     def test_list_apidoc(self):
-        request = factory.get('/', {'format': 'api'})
-        response = self.view(request).render()
-        self.assertRegexpMatches(response.content, 'image.+?http://.*\.tif')
+        response = self.client.get('/rasters/', {'format': 'api'})
+        self.assertRegexpMatches(response.content.decode('utf-8'),
+                                 'image.+?http://.*\.tif')
         point = self.object.geom.centroid
-        request = factory.get('/', {'format': 'api', 'g': point.wkt})
-        response = self.view(request)
+        response = self.client.get('/rasters/', {'format': 'api', 'g': point.wkt})
         self.assertEqual(response.data[0]['image'], 12)
 
     def test_list_json(self):
-        request = factory.get('/')
-        d = json.loads(self.view(request).render().content)
+        d = self.client.get('/rasters/').json()
         self.assertRegexpMatches(d[0]['image'], '^http://.*\.tif$')
 
     def test_list_json_array(self):
@@ -236,27 +221,22 @@ class RasterListViewTestCase(RasterStoreTestBase):
             g = r.envelope.polygon.__geo_interface__
             sref_wkt = str(r.sref)
             point = r.envelope.polygon.Centroid()
-        request = factory.get('/', {'g': json.dumps(g)})
-        response = self.view(request).render()
-        d = json.loads(response.content)
+        d = self.client.get('/rasters/', {'g': json.dumps(g)}).json()
         expected = [{'image': imdata, 'geom': g, 'srs': sref_wkt}]
         self.assertEqual(*map(len, (d, expected)))
         self.assertDictContainsSubset(expected[0], d[0])
         # Test point geometry type.
-        request = factory.get('/', {'g': point.ExportToJson()})
-        response = self.view(request).render()
-        d = json.loads(response.content)
-        idx = len(imdata) / 2
+        d = self.client.get('/rasters/', {'g': point.ExportToJson()}).json()
+        idx = int(len(imdata) / 2)
         expected[0]['image'] = imdata[idx][idx]
         self.assertDictContainsSubset(expected[0], d[0])
 
     def test_list_zip(self):
-        request = factory.get('/', {'format': 'img.zip'})
-        response = self.view(request)
+        response = self.client.get('/rasters/', {'format': 'img.zip'})
         self.assertTrue(response.streaming)
         self.assertEqual(response['content-disposition'].split('=')[1],
                          'data.img.zip')
-        bio = io.BytesIO(''.join(response.streaming_content))
+        bio = io.BytesIO(b''.join(response.streaming_content))
         zf = zipfile.ZipFile(bio)
         self.assertEqual(len(zf.filelist), len(self.qs))
 
@@ -277,8 +257,7 @@ class RasterListViewTestCase(RasterStoreTestBase):
         corner = self.object.geom.extent[:2]
         point = self.object.geom.centroid
         point.x = corner[0] - 10
-        request = factory.get('/', {'intersects': point.wkt})
-        response = self.view(request)
+        response = self.client.get('/rasters/', {'intersects': point.wkt})
         self.assertEqual(len(response.data), 0)
 
     def test_404(self):

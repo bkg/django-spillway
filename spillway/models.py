@@ -1,6 +1,9 @@
 import os
 import datetime
 
+from django.utils import six
+if six.PY3:
+    buffer = memoryview
 from django.contrib.gis.db import models
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
@@ -9,6 +12,8 @@ from greenwich.io import MemFileIO
 import numpy as np
 
 from spillway.query import RasterQuerySet
+
+_imgdrivers = greenwich.ImageDriver.filter_copyable()
 
 
 # Workaround for migrations and FileField upload_to, see:
@@ -55,7 +60,7 @@ class AbstractRasterStore(models.Model):
         # save() *or* manager methods like RasterStore.objects.create().
         if not self.image.storage.exists(self.image):
             self.image.save(self.image.name, self.image, save=False)
-        with greenwich.Raster(self.image.path) as r:
+        with self.raster() as r:
             band = r[-1]
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
             if bmin is None or bmax is None:
@@ -111,7 +116,8 @@ class AbstractRasterStore(models.Model):
         # is requested.
         if not geom and imgpath.endswith(ext):
             return
-        driver = greenwich.driver_for_path('base.%s' % ext)
+        driver = greenwich.driver_for_path(ext, _imgdrivers)
+        # Allow overriding of default driver settings.
         settings = self.driver_settings.get(ext)
         if settings:
             driver.settings = settings
