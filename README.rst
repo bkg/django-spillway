@@ -158,12 +158,14 @@ Tests
 -----
 Create a `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
 `virtualenvwrapper <https://virtualenvwrapper.readthedocs.org/en/latest/>`_,
-install dependencies, and run the tests. Running tests with SpatiaLite requires
-a build of pysqlite with extension loading enabled.
+install dependencies, and run the tests. On Python 2.7, running tests with
+SpatiaLite requires a build of pysqlite with extension loading enabled. On 3.x,
+all is well without it.
 
 .. code-block:: shell
 
     mkvirtualenv spillway
+    # Only the following when testing on 2.7, not needed with 3.x.
     pip install --global-option=build_ext --global-option='-USQLITE_OMIT_LOAD_EXTENSION' pysqlite
-    pip install -r requirements.txt
+    pip install -r requirements.txt Pillow
     make check
