@@ -1,6 +1,7 @@
 language: python
 python:
   - 2.7
+  - 3.6
 
 env:
   - CFLAGS=-I/usr/include/gdal
@@ -13,9 +14,9 @@ before_install:
 
 install:
   - pip install --global-option=build_ext --global-option='-USQLITE_OMIT_LOAD_EXTENSION' pysqlite
-  - pip install GDAL==2.1.0
+  - pip install coveralls GDAL==2.1.0
+  - pip install mapnik==0.1 || echo 'optional'
   - pip install -r requirements.txt
-  - pip install coveralls
 
 script: make coverage
 after_success: coveralls
