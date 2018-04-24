@@ -3,6 +3,7 @@ import os
 import sys
 import shutil
 import tempfile
+import traceback
 
 from django.conf import settings
 import django
@@ -63,9 +64,12 @@ def runtests():
     try:
         status = runner_class(
             verbosity=1, interactive=True, failfast=False).run_tests(['tests'])
+    except Exception:
+        traceback.print_exc()
+        status = 1
     finally:
         teardown()
-    sys.exit()
+    sys.exit(status)
 
 if __name__ == '__main__':
     runtests()
