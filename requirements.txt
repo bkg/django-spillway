@@ -1,4 +1,3 @@
 Django==1.11.11
 djangorestframework==3.7.7
-mapnik==0.1
-greenwich==0.7.0
+greenwich==0.8.0
