@@ -6,6 +6,7 @@ import unittest
 import zipfile
 
 from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.db.models.functions import AsSVG
 from django.core.exceptions import ImproperlyConfigured
 from django.test import SimpleTestCase, TestCase
 from greenwich import driver_for_path, ImageDriver, Raster
@@ -63,7 +64,7 @@ class KMLRendererTestCase(SimpleTestCase):
 class SVGRendererTestCase(TestCase):
     def setUp(self):
         Location.create()
-        self.qs = Location.objects.svg()
+        self.qs = Location.objects.annotate(svg=AsSVG('geom'))
         self.svg = self.qs[0].svg
         self.data = {'id': 1,
                      'properties': {'name': 'playground',
@@ -74,12 +75,6 @@ class SVGRendererTestCase(TestCase):
         rsvg = renderers.SVGRenderer()
         svgdoc = rsvg.render(self.data)
         self.assertIn(self.data['geometry'], svgdoc)
-
-        #serializer = FeatureSerializer(self.qs)
-        ##serializer.opts.model = self.qs.model
-        #svgdoc = rsvg.render(serializer.data)
-        #print svgdoc
-        #self.assertIn(self.data['geometry'], svgdoc)
 
 
 class RasterRendererTestCase(RasterStoreTestBase):

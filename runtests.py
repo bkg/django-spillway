@@ -26,7 +26,7 @@ DEFAULT_SETTINGS = {
         }
     },
     'MEDIA_ROOT': TMPDIR,
-    'MIDDLEWARE_CLASSES': (
+    'MIDDLEWARE': (
         'django.middleware.common.CommonMiddleware',
         'django.middleware.csrf.CsrfViewMiddleware',
     ),

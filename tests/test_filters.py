@@ -1,31 +1,27 @@
 from django.test import TestCase
 from rest_framework import serializers
-from rest_framework.test import APIRequestFactory
 
-from spillway import generics, filters
+from spillway import filters
 from .models import Location
-
-factory = APIRequestFactory()
 
 
 class FilterTestCase(TestCase):
     def setUp(self):
         self.filter = filters.SpatialLookupFilter()
-        self.view = generics.GeoListView.as_view(
-            queryset=Location.objects.all())
         Location.create()
-        self.centroid = Location.objects.centroid()[0].centroid
         self.queryset = Location.objects.all()
 
     def test_spatial_lookup(self):
-        request = factory.get('/', {'contains': self.centroid.wkt})
-        ctx = self.view(request).renderer_context
-        qcontain = self.filter.filter_queryset(ctx['request'],
-                                               self.queryset, self.view)
+        centroid = self.queryset[0].geom.centroid
+        response = self.client.get('/locations/', {'contains': centroid.wkt})
+        req = response.renderer_context['request']
+        view = response.renderer_context['view']
+        qcontain = self.filter.filter_queryset(req, self.queryset, view)
         self.assertQuerysetEqual(qcontain, map(repr, self.queryset))
 
     def test_invalid_value(self):
-        request = factory.get('/', {'contains': 2})
-        ctx = self.view(request).renderer_context
+        response = self.client.get('/locations/', {'contains': 2})
+        req = response.renderer_context['request']
+        view = response.renderer_context['view']
         self.assertRaises(serializers.ValidationError, self.filter.filter_queryset,
-                          ctx['request'], self.queryset, self.view)
+                          req, self.queryset, view)

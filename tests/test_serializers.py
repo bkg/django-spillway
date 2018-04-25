@@ -5,7 +5,6 @@ from django.contrib.gis.db.models import functions
 from django.test import TestCase
 from rest_framework import renderers
 from rest_framework.serializers import Serializer
-from rest_framework.test import APIRequestFactory
 from greenwich.raster import Raster
 from greenwich.srs import SpatialReference
 
@@ -14,8 +13,6 @@ from spillway.collections import Feature, FeatureCollection
 from spillway.renderers import GeoTIFFRenderer
 from .models import Location, RasterStore, _geom
 from .test_models import RasterStoreTestBase
-
-factory = APIRequestFactory()
 
 
 class RequestMock(object):
@@ -124,12 +121,12 @@ class FeatureSerializerTestCase(ModelTestCase):
         self.expected = Feature(**attrs)
 
     def test_geometry_field_source(self):
-        request = factory.get('/', {'format': 'geojson', 'page': 1})
-        response = PaginatedGeoListView.as_view()(request)
-        context = {'request': response,
-                   'view': response.renderer_context['view']}
+        response = self.client.get('/locations/', {'format': 'geojson', 'page': 1})
+        context = {k: v for k, v in response.renderer_context.items()
+                   if k in ('request', 'view')}
         serializer = LocationFeatureSerializer(
-            Location.objects.geojson(), many=True, context=context)
+            Location.objects.annotate(geojson=functions.AsGeoJSON('geom')),
+            many=True, context=context)
         fields = serializer.child.fields
         self.assertEqual(fields['geom'].source, 'geojson')
         # Test serializing paginated objects.

@@ -57,8 +57,9 @@ class GeoDetailViewTestCase(BaseGeoDetailViewTestCase):
         self.assertEqual(feature['type'], 'Feature')
 
     def test_geojson_response(self):
-        expected = json.loads(
-            self.qs.geojson(precision=self.precision)[0].geojson)
+        gj = self.qs.annotate(
+            geojson=sqlfn.AsGeoJSON('geom', precision=self.precision))[0].geojson
+        expected = json.loads(gj)
         with self.assertNumQueries(1):
             response = self.client.get(
                 self.url, {'format': 'geojson', 'precision': self.precision})
@@ -73,7 +74,8 @@ class GeoDetailViewTestCase(BaseGeoDetailViewTestCase):
     def test_kml_response(self):
         response = self.client.get(
             self.url, {'format': 'kml', 'precision': self.precision})
-        part = self.qs.kml(precision=self.precision)[0].kml
+        part = self.qs.annotate(
+            kml=sqlfn.AsKML('geom', precision=self.precision))[0].kml
         self.assertInHTML(part, response.content.decode('utf-8'), count=1)
 
 
