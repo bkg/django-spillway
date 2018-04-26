@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 setup(name='django-spillway',
-      version='0.7.0',
+      version='0.8.0',
       description='Geodata extensions for Django REST Framework',
       long_description=open('README.rst').read(),
       author='Brian Galey',
