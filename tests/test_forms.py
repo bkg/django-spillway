@@ -4,9 +4,13 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.forms import fields
 from django.test import SimpleTestCase, TestCase
 from django.contrib.gis import geos
+from rest_framework.views import APIView
+from rest_framework.test import APIRequestFactory
 
 from spillway import forms
 from .models import _geom, Location
+
+factory = APIRequestFactory()
 
 
 class PKeyQuerySetForm(forms.QuerySetForm):
@@ -34,6 +38,17 @@ class RasterQueryFormTestCase(SimpleTestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['g'], geom.ogr)
         self.assertEqual(form.cleaned_data['g'].srs.srid, 4326)
+
+    def test_from_request(self):
+        request = factory.post('/', json.dumps({'g': _geom}),
+                               content_type='application/json')
+        view = APIView()
+        request = view.initialize_request(request)
+        view.initial(request)
+        form = forms.RasterQueryForm.from_request(request)
+        self.assertTrue(form.is_valid())
+        geom = geos.GEOSGeometry(json.dumps(_geom))
+        self.assertEqual(form.cleaned_data['g'], geom.ogr)
 
 
 class SpatialQueryFormTestCase(SimpleTestCase):

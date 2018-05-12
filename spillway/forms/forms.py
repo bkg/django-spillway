@@ -19,8 +19,11 @@ class QuerySetForm(forms.Form):
 
     @classmethod
     def from_request(cls, request, queryset=None, view=None):
-        data = (request.query_params.dict() or
-                request.data and request.data.dict())
+        data = request.query_params or request.data
+        try:
+            data = data.dict()
+        except AttributeError:
+            pass
         params = dict(data, **getattr(view, 'kwargs', {}))
         params['format'] = request.accepted_renderer.format
         return cls(params, queryset, files=request.FILES)
