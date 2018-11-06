@@ -4,10 +4,11 @@ import tempfile
 import zipfile
 
 from django.core import exceptions
+from django.db import connection
+from django.db.models import query
 from django.contrib.gis import geos
-from django.contrib.gis.db.models import query, Extent
 import django.contrib.gis.db.models.functions as geofn
-from django.db import connection, models
+from django.contrib.gis.db import models
 from django.utils.functional import cached_property
 import numpy as np
 
@@ -23,14 +24,17 @@ def filter_geometry(queryset, **filters):
 
 def geo_field(queryset):
     """Returns the GeometryField for a django or spillway GeoQuerySet."""
-    try:
-        return queryset.geo_field
-    except AttributeError:
-        return queryset._geo_field()
+    for field in queryset.model._meta.fields:
+        if isinstance(field, models.GeometryField):
+            return field
+    raise exceptions.FieldDoesNotExist('No GeometryField found')
 
 def get_srid(queryset):
     """Returns the GeoQuerySet spatial reference identifier."""
-    srid = queryset.query.get_context('transformed_srid')
+    try:
+        srid = queryset.query.annotations.values()[0].srid
+    except (AttributeError, IndexError):
+        srid = None
     return srid or geo_field(queryset).srid
 
 def aggregate1d(arr, stat):
@@ -50,7 +54,7 @@ def aggregate1d(arr, stat):
 
 
 class AsText(geofn.GeoFunc):
-    output_field_class = models.TextField
+    output_field = models.TextField()
 
 
 class Simplify(geofn.GeoFunc):
@@ -65,7 +69,7 @@ class TransScale(geofn.GeoFunc):
     pass
 
 
-class GeoQuerySet(query.GeoQuerySet):
+class GeoQuerySet(query.QuerySet):
     """Extends the default GeoQuerySet with some unimplemented PostGIS
     functionality.
     """
@@ -86,21 +90,22 @@ class GeoQuerySet(query.GeoQuerySet):
         Keyword args:
         srid -- EPSG id for for transforming the output geometry.
         """
-        fieldname = self.geo_field.name
-        ext = Extent(fieldname)
-        key = '%s__extent' % fieldname
+        expr = self.geo_field.name
+        if srid:
+            expr = geofn.Transform(expr, srid)
+        expr = models.Extent(expr)
         clone = self.all()
-        qs = clone.transform(srid) if srid else clone
-        return qs.aggregate(ext)[key]
+        name, val = clone.aggregate(expr).popitem()
+        return val
 
     def filter_geometry(self, **kwargs):
         """Convenience method for spatial lookup filters."""
         return filter_geometry(self, **kwargs)
 
-    @property
+    @cached_property
     def geo_field(self):
         """Returns model geometry field."""
-        return self._geo_field()
+        return geo_field(self)
 
     def pbf(self, bbox, geo_col=None, scale=4096):
         """Returns tranlated and scaled geometries suitable for Mapbox vector
