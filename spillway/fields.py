@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import collections
 
 from django.contrib.gis import geos, forms
-from django.contrib.gis.db.models.query import GeoQuerySet
+from django.db.models.query import QuerySet
 from rest_framework import renderers
 from rest_framework.fields import Field, FileField
 
@@ -19,12 +19,16 @@ class GeometryField(Field):
             pass
         else:
             obj = parent.root.instance
-            if not isinstance(obj, GeoQuerySet):
-                try:
-                    obj = obj[0]
-                except (IndexError, TypeError):
-                    pass
-            if hasattr(obj, renderer.format):
+            try:
+                has_format = renderer.format in obj.query.annotations
+            except AttributeError:
+                if not isinstance(obj, QuerySet):
+                    try:
+                        obj = obj[0]
+                    except (IndexError, TypeError):
+                        pass
+                has_format = hasattr(obj, renderer.format)
+            if has_format:
                 self.source = renderer.format
         super(GeometryField, self).bind(field_name, parent)
 
