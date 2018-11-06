@@ -61,7 +61,7 @@ class Map(object):
         Keyword args:
         stylename -- str name of style to apply
         """
-        cls = VectorLayer if hasattr(queryset, 'geojson') else RasterLayer
+        cls = RasterLayer if hasattr(queryset, 'image') else VectorLayer
         layer = cls(queryset, style=stylename)
         try:
             style = self.map.find_style(layer.stylename)
