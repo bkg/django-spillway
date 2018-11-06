@@ -1,6 +1,5 @@
 from django.contrib.gis import gdal, forms
-from django.contrib.gis.db.models import functions
-from django.contrib.gis.db.models.lookups import gis_lookups
+from django.contrib.gis.db.models import functions, GeometryField
 from greenwich import tile
 from rest_framework import renderers
 
@@ -59,8 +58,9 @@ class SpatialQueryForm(QuerySetForm):
 
     def __init__(self, *args, **kwargs):
         super(SpatialQueryForm, self).__init__(*args, **kwargs)
+        lookups = GeometryField.get_lookups()
         for lookup in self.data:
-            if lookup in gis_lookups:
+            if lookup in lookups:
                 self.fields[lookup] = fields.GeometryField(
                     required=False, widget=forms.BaseGeometryWidget())
                 break
@@ -97,7 +97,6 @@ class GeometryQueryForm(QuerySetForm):
         srid = getattr(srs, 'srid', None)
         if srid:
             expr = functions.Transform(expr, srid)
-            self.queryset.query.add_context('transformed_srid', srid)
         if data['op']:
             expr = data['op'](expr)
         if data['precision'] is not None:
