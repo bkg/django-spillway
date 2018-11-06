@@ -47,11 +47,12 @@ class AbstractLocation(models.Model):
 
 
 class Location(AbstractLocation):
+    """Test location."""
     objects = GeoQuerySet.as_manager()
 
 
 class GeoLocation(AbstractLocation):
-    objects = models.GeoManager()
+    """Test geo location."""
 
 
 class RasterStore(AbstractRasterStore):
