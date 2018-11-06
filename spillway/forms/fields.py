@@ -123,8 +123,8 @@ class GeometryFileField(forms.FileField):
             geoms = gdal.DataSource(fname)[0].get_geoms()
             geom = reduce(lambda g1, g2: g1.union(g2), geoms)
             if not geom.srs:
-                raise gdal.OGRException('Cannot determine SRS')
-        except (gdal.OGRException, gdal.OGRIndexError):
+                raise gdal.GDALException('Cannot determine SRS')
+        except (gdal.GDALException, IndexError):
             raise forms.ValidationError(
                 GeometryField.default_error_messages['invalid_geom'],
                 code='invalid_geom')
@@ -159,7 +159,7 @@ class OGRGeometryField(forms.GeometryField):
             value = Envelope(value.split(',')).polygon.ExportToWkt()
         try:
             geom = gdal.OGRGeometry(value, srs=getattr(sref, 'wkt', None))
-        except (gdal.OGRException, TypeError, ValueError):
+        except (gdal.GDALException, TypeError, ValueError):
             raise forms.ValidationError(self.error_messages['invalid_geom'],
                                         code='invalid_geom')
         if not geom.srs:
