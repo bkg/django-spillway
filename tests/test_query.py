@@ -1,3 +1,5 @@
+import os
+
 from django.test import TestCase
 from django.contrib.gis import geos
 from django.contrib.gis.db.models import functions
@@ -5,8 +7,8 @@ import greenwich
 
 from spillway import forms, query
 from spillway.query import GeoQuerySet
-from .models import Location
-from .test_models import RasterStoreTestBase
+from .models import Location, RasterStore
+from .test_models import RasterStoreTestBase, create_image
 
 
 class GeoQuerySetTestCase(TestCase):
@@ -63,6 +65,27 @@ class GeoQuerySetTestCase(TestCase):
 
 class RasterQuerySetTestCase(RasterStoreTestBase):
     use_multiband = True
+
+    def setUp(self):
+        for fp in self._files:
+            RasterStore.objects.create(image=os.path.basename(fp.name))
+        self.qs = RasterStore.objects.all()
+        self.object = self.qs[0]
+
+    @classmethod
+    def setUpClass(cls):
+        super(RasterQuerySetTestCase, cls).setUpClass()
+        cls._files = [cls.f, create_image(cls.use_multiband)]
+
+    @classmethod
+    def tearDownClass(cls):
+        for fp in cls._files:
+            fp.close()
+        super(RasterQuerySetTestCase, cls).tearDownClass()
+
+    def test_aggregate_periods(self):
+        qs = self.qs.aggregate_periods(3)
+        self.assertEqual(qs[0].image.tolist(), [24.5, 37, 49.5])
 
     def test_summarize(self):
         qs = self.qs.summarize(self.object.geom.centroid)
