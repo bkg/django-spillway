@@ -38,20 +38,19 @@ def get_srid(queryset):
         srid = None
     return srid or geo_field(queryset).srid
 
-def aggregate1d(arr, stat):
+def agg_dims(arr, stat):
     """Returns a 1D array with higher dimensions aggregated using stat fn.
 
     Arguments:
     arr -- ndarray
-    stat -- np or np.ma function as str to call
+    stat -- numpy or numpy.ma function as str to call
     """
     axis = None
     if arr.ndim > 2:
         axis = 1
         arr = arr.reshape(arr.shape[0], -1)
     module = np.ma if hasattr(arr, 'mask') else np
-    arr = getattr(module, stat)(arr, axis)
-    return arr
+    return getattr(module, stat)(arr, axis)
 
 
 class AsText(geofn.GeoFunc):
@@ -238,7 +237,7 @@ class RasterQuerySet(GeoQuerySet):
             arr = obj.array(geom)
             if arr is not None:
                 if stat:
-                    arr = aggregate1d(arr, stat)
+                    arr = agg_dims(arr, stat)
                 try:
                     arr = arr.squeeze()
                 except ValueError:
