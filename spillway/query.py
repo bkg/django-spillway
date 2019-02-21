@@ -274,8 +274,8 @@ class RasterQuerySet(GeoQuerySet):
                 img = obj.image
                 arcname = os.path.join(arcdirname, os.path.basename(img.name))
                 try:
-                    zf.write(img, arcname=arcname)
-                except TypeError:
+                    zf.write(img.path, arcname=arcname)
+                except OSError:
                     img.seek(0)
                     zf.writestr(arcname, img.read())
                     img.close()
