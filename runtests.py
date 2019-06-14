@@ -32,6 +32,7 @@ DEFAULT_SETTINGS = {
     ),
     'ROOT_URLCONF': 'tests.urls',
     'STATIC_URL': '/static/',
+    'SPATIALITE_LIBRARY_PATH': 'mod_spatialite.so',
     'TEMPLATES': [{
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'APP_DIRS': True,
