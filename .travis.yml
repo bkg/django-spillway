@@ -8,7 +8,7 @@ env:
   - CFLAGS=-I/usr/include/gdal
 
 before_install:
-  - sudo add-apt-repository -y
+  - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
   - sudo apt-get -qq update
   - sudo apt-get -y install libgdal-dev
 
