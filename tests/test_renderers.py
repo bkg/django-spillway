@@ -93,19 +93,26 @@ class RasterRendererTestCase(RasterStoreTestBase):
         self.assertEqual(r.driver.format, format)
         r.close()
 
-    def assert_member_formats(self, rend):
+    def assert_member_formats(self, rend, geom=None):
         ext = rend.format
         if rend.format.endswith('.zip'):
             ext = os.path.splitext(rend.format)[0]
         pat = 'tmin_.+(?<!\.{0})\.{0}$'.format(ext)
         driver = driver_for_path(ext, ImageDriver.filter_copyable())
-        qs = self.qs.warp(format=driver.ext)
+        qs = self.qs.warp(format=driver.ext, geom=geom)
+        lst = [obj.raster() for obj in qs]
         rs = RasterStoreSerializer(qs.zipfiles(), many=True)
         fp = rend.render(rs.data)
         with zipfile.ZipFile(fp) as zf:
-            for name in zf.namelist():
+            for r, name in zip(lst, zf.namelist()):
                 self.assertRegexpMatches(name, pat)
-                self.assert_format(zf.read(name), driver.format)
+                imgdata = zf.read(name)
+                self.assert_format(imgdata, driver.format)
+                memio = MemFileIO()
+                memio.write(imgdata)
+                r2 = Raster(memio)
+                self.assertTrue((r.array() == r2.array()).all())
+                r2.close()
             filecount = len(zf.filelist)
         self.assertEqual(filecount, len(qs))
         fp.close()
@@ -139,6 +146,8 @@ class RasterRendererTestCase(RasterStoreTestBase):
 
     def test_render_tifzip(self):
         self.assert_member_formats(renderers.GeoTIFFZipRenderer())
+        geom = self.object.geom.buffer(-3)
+        self.assert_member_formats(renderers.GeoTIFFZipRenderer(), geom)
 
 
 @unittest.skipUnless('mapnik' in sys.modules, 'requires mapnik')

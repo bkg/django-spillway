@@ -11,10 +11,14 @@ from django.test import SimpleTestCase, TestCase
 from greenwich import raster
 from PIL import Image
 
+from spillway.models import upload_to
+
 from .models import RasterStore
 
 def create_image(multiband=False):
-    tmpname = os.path.basename(tempfile.mktemp(prefix='tmin_', suffix='.tif'))
+    tmpname = os.path.join(
+        upload_to.path,
+        os.path.basename(tempfile.mktemp(prefix='tmin_', suffix='.tif')))
     fp = default_storage.open(tmpname, 'w+b')
     shape = (5, 5)
     if multiband:
@@ -33,8 +37,8 @@ class RasterTestBase(SimpleTestCase):
     use_multiband = False
 
     def setUp(self):
-        ff = FieldFile(None, RasterStore._meta.get_field('image'),
-                       os.path.basename(self.f.name))
+        name = self.f.name.replace('%s/' % default_storage.location, '')
+        ff = FieldFile(None, RasterStore._meta.get_field('image'), name)
         self.data = {'image': ff}
 
     @classmethod
@@ -55,8 +59,7 @@ class RasterTestBase(SimpleTestCase):
 class RasterStoreTestBase(RasterTestBase, TestCase):
     def setUp(self):
         super(RasterStoreTestBase, self).setUp()
-        self.object = RasterStore.objects.create(
-            image=os.path.basename(self.f.name))
+        self.object = RasterStore.objects.create(image=self.data['image'].name)
         self.qs = RasterStore.objects.all()
 
 

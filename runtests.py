@@ -54,6 +54,8 @@ def runtests():
     if not settings.configured:
         settings.configure(**DEFAULT_SETTINGS)
     django.setup()
+    from spillway.models import upload_to
+    os.mkdir(os.path.join(TMPDIR, upload_to.path))
     parent = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, parent)
     try:

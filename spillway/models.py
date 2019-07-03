@@ -1,5 +1,6 @@
 import os
 import datetime
+import tempfile
 
 from django.utils import six
 if six.PY3:
@@ -101,8 +102,11 @@ class AbstractRasterStore(models.Model):
     def raster(self):
         imfield = self.image
         # Check _file attr to avoid opening a file handle.
-        if isinstance(getattr(imfield, '_file', None), MemFileIO):
+        fileobj = getattr(imfield, '_file', None)
+        if isinstance(fileobj, MemFileIO):
             path = imfield.file.name
+        elif fileobj and fileobj.name.startswith(tempfile.gettempdir()):
+            path = fileobj.name
         else:
             path = self.image.path
         return greenwich.Raster(path)

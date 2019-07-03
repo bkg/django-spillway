@@ -1,8 +1,7 @@
-import os
-
 from django.test import TestCase
 from django.contrib.gis import geos
 from django.contrib.gis.db.models import functions
+from django.core.files.storage import default_storage
 import greenwich
 
 from spillway import forms, query
@@ -68,7 +67,8 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
 
     def setUp(self):
         for fp in self._files:
-            RasterStore.objects.create(image=os.path.basename(fp.name))
+            relpath = fp.name.replace('%s/' % default_storage.location, '')
+            RasterStore.objects.create(image=relpath)
         self.qs = RasterStore.objects.all()
         self.object = self.qs[0]
 
@@ -106,8 +106,11 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
 
     def test_warp(self):
         srid = 3857
+        obj = self.qs[0]
         qs = self.qs.warp(srid, format='img')
-        memio = qs[0].image.file
-        r = greenwich.open(memio.name)
+        r = qs[0].raster()
         self.assertEqual(r.driver.ext, 'img')
         self.assertIn('proj=merc', r.sref.proj4)
+        self.assertEqual(r.sref.srid, srid)
+        source = obj.raster()
+        self.assertNotEqual(r.sref.srid, source.sref.srid)
