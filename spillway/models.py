@@ -127,7 +127,7 @@ class AbstractRasterStore(models.Model):
             driver.settings = settings
         memio = MemFileIO()
         if geom:
-            with greenwich.Raster(imgpath) as r, r.clip(geom) as clipped:
+            with self.raster() as r, r.clip(geom) as clipped:
                 clipped.save(memio, driver)
         else:
             driver.copy(imgpath, memio.name)
