@@ -131,6 +131,6 @@ class AbstractRasterStore(models.Model):
                 clipped.save(memio, driver)
         else:
             driver.copy(imgpath, memio.name)
-        self.image.name = os.extsep.join(
-            (os.path.splitext(os.path.basename(imgpath))[0], ext))
+        name = os.extsep.join((os.path.splitext(self.image.name)[0], ext))
+        self.image.name = self.image.storage.get_available_name(name)
         self.image.file = memio
