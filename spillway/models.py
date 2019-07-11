@@ -57,10 +57,9 @@ class AbstractRasterStore(models.Model):
         return unicode(self.image)
 
     def clean_fields(self, *args, **kwargs):
-        # Override this instead of save() so that fields are populated on
-        # save() *or* manager methods like RasterStore.objects.create().
-        if not self.image.storage.exists(self.image):
-            self.image.save(self.image.name, self.image, save=False)
+        imgfield = self.image
+        if not imgfield.storage.exists(imgfield):
+            imgfield.save(imgfield.name, imgfield, save=False)
         with self.raster() as r:
             band = r[-1]
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
@@ -132,6 +131,8 @@ class AbstractRasterStore(models.Model):
         else:
             driver.copy(imgpath, memio.name)
         self.pk = None
-        name = os.extsep.join((os.path.splitext(self.image.name)[0], ext))
-        self.image.name = self.image.storage.get_available_name(name)
-        self.image.file = memio
+        imgfield = self.image
+        name = os.extsep.join((os.path.splitext(imgfield.name)[0], ext))
+        name = imgfield.storage.get_available_name(name)
+        imgfield.name = os.path.basename(name)
+        imgfield.file = memio

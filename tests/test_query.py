@@ -1,3 +1,5 @@
+import os
+
 from django.test import TestCase
 from django.contrib.gis import geos
 from django.contrib.gis.db.models import functions
@@ -5,6 +7,7 @@ from django.core.files.storage import default_storage
 import greenwich
 
 from spillway import forms, query
+from spillway.models import upload_to
 from spillway.query import GeoQuerySet
 from .models import Location, RasterStore
 from .test_models import RasterStoreTestBase, create_image
@@ -108,9 +111,16 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
         srid = 3857
         obj = self.qs[0]
         qs = self.qs.warp(srid, format='img')
-        r = qs[0].raster()
+        newobj = qs[0]
+        r = newobj.raster()
         self.assertEqual(r.driver.ext, 'img')
         self.assertIn('proj=merc', r.sref.proj4)
         self.assertEqual(r.sref.srid, srid)
         source = obj.raster()
         self.assertNotEqual(r.sref.srid, source.sref.srid)
+        self.assertIsNone(newobj.pk)
+        expected = os.path.join(upload_to.path, newobj.image.name)
+        newobj.save()
+        self.assertIsNotNone(newobj.pk)
+        self.assertEqual(newobj.image.name, expected)
+        self.assertTrue(default_storage.exists(newobj.image))
