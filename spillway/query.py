@@ -108,7 +108,7 @@ class GeoQuerySet(query.QuerySet):
         return geo_field(self)
 
     def pbf(self, bbox, geo_col=None, scale=4096):
-        """Returns tranlated and scaled geometries suitable for Mapbox vector
+        """Returns translated and scaled geometries suitable for Mapbox vector
         tiles.
         """
         col = geo_col or self.geo_field.name
