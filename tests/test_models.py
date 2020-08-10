@@ -45,12 +45,12 @@ class RasterTestBase(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
         cls.f = create_image(cls.use_multiband)
-        super(RasterTestBase, cls).setUpClass()
+        super().setUpClass()
 
     @classmethod
     def tearDownClass(cls):
         cls.f.close()
-        super(RasterTestBase, cls).tearDownClass()
+        super().tearDownClass()
 
     def _image(self, imgdata):
         return Image.open(io.BytesIO(imgdata))
@@ -59,7 +59,7 @@ class RasterTestBase(SimpleTestCase):
 
 class RasterStoreTestBase(RasterTestBase, TestCase):
     def setUp(self):
-        super(RasterStoreTestBase, self).setUp()
+        super().setUp()
         self.object = RasterStore.objects.create(image=self.data["image"].name)
         self.qs = RasterStore.objects.all()
 

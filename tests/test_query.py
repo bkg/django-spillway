@@ -76,14 +76,14 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
 
     @classmethod
     def setUpClass(cls):
-        super(RasterQuerySetTestCase, cls).setUpClass()
+        super().setUpClass()
         cls._files = [cls.f, create_image(cls.use_multiband)]
 
     @classmethod
     def tearDownClass(cls):
         for fp in cls._files:
             fp.close()
-        super(RasterQuerySetTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     def test_aggregate_periods(self):
         qs = self.qs.aggregate_periods(3)
