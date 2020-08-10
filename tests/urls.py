@@ -7,16 +7,20 @@ from .models import Location, RasterStore
 from .test_viewsets import GeoLocationViewSet, LocationViewSet, RasterViewSet
 
 router = DefaultRouter()
-router.register(r'glocations', GeoLocationViewSet)
-router.register(r'locations', LocationViewSet)
-router.register(r'rasters', RasterViewSet)
+router.register(r"glocations", GeoLocationViewSet)
+router.register(r"locations", LocationViewSet)
+router.register(r"rasters", RasterViewSet)
 
 urlpatterns = [
-    url(r'^', include(router.urls)),
-    url(tilepath('^vectiles/'),
+    url(r"^", include(router.urls)),
+    url(
+        tilepath("^vectiles/"),
         views.TileView.as_view(queryset=Location.objects.all()),
-        name='location-tiles'),
-    url(tilepath('^maptiles/(?P<pk>\d+)/'),
+        name="location-tiles",
+    ),
+    url(
+        tilepath("^maptiles/(?P<pk>\d+)/"),
         views.RasterTileView.as_view(queryset=RasterStore.objects.all()),
-        name='map-tiles'),
+        name="map-tiles",
+    ),
 ]

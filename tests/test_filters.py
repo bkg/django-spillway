@@ -13,15 +13,20 @@ class FilterTestCase(TestCase):
 
     def test_spatial_lookup(self):
         centroid = self.queryset[0].geom.centroid
-        response = self.client.get('/locations/', {'contains': centroid.wkt})
-        req = response.renderer_context['request']
-        view = response.renderer_context['view']
+        response = self.client.get("/locations/", {"contains": centroid.wkt})
+        req = response.renderer_context["request"]
+        view = response.renderer_context["view"]
         qcontain = self.filter.filter_queryset(req, self.queryset, view)
         self.assertQuerysetEqual(qcontain, map(repr, self.queryset))
 
     def test_invalid_value(self):
-        response = self.client.get('/locations/', {'contains': 2})
-        req = response.renderer_context['request']
-        view = response.renderer_context['view']
-        self.assertRaises(serializers.ValidationError, self.filter.filter_queryset,
-                          req, self.queryset, view)
+        response = self.client.get("/locations/", {"contains": 2})
+        req = response.renderer_context["request"]
+        view = response.renderer_context["view"]
+        self.assertRaises(
+            serializers.ValidationError,
+            self.filter.filter_queryset,
+            req,
+            self.queryset,
+            view,
+        )

@@ -2,9 +2,6 @@ import os
 import datetime
 import tempfile
 
-from django.utils import six
-if six.PY3:
-    buffer = memoryview
 from django.contrib.gis.db import models
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
@@ -27,34 +24,36 @@ class UploadDir(object):
     def __call__(self, instance, filename):
         return os.path.join(self.path, filename)
 
-upload_to = UploadDir('data')
+
+upload_to = UploadDir("data")
 
 
 class AbstractRasterStore(models.Model):
     """Abstract model for raster data storage."""
-    image = models.FileField(_('raster file'), upload_to=upload_to)
-    width = models.IntegerField(_('width in pixels'))
-    height = models.IntegerField(_('height in pixels'))
-    geom = models.PolygonField(_('raster bounding polygon'))
+
+    image = models.FileField(_("raster file"), upload_to=upload_to)
+    width = models.IntegerField(_("width in pixels"))
+    height = models.IntegerField(_("height in pixels"))
+    geom = models.PolygonField(_("raster bounding polygon"))
     event = models.DateField()
-    srs = models.TextField(_('spatial reference system'))
-    minval = models.FloatField(_('minimum value'))
-    maxval = models.FloatField(_('maximum value'))
-    nodata = models.FloatField(_('nodata value'), blank=True, null=True)
+    srs = models.TextField(_("spatial reference system"))
+    minval = models.FloatField(_("minimum value"))
+    maxval = models.FloatField(_("maximum value"))
+    nodata = models.FloatField(_("nodata value"), blank=True, null=True)
     # Spatial resolution
-    xpixsize = models.FloatField(_('West to East pixel resolution'))
-    ypixsize = models.FloatField(_('North to South pixel resolution'))
+    xpixsize = models.FloatField(_("West to East pixel resolution"))
+    ypixsize = models.FloatField(_("North to South pixel resolution"))
     objects = RasterQuerySet()
     driver_settings = greenwich.ImageDriver.defaults
 
     class Meta:
-        unique_together = ('image', 'event')
-        ordering = ['image']
-        get_latest_by = 'event'
+        unique_together = ("image", "event")
+        ordering = ["image"]
+        get_latest_by = "event"
         abstract = True
 
-    def __unicode__(self):
-        return unicode(self.image)
+    def __str__(self):
+        return str(self.image)
 
     def clean_fields(self, *args, **kwargs):
         imgfield = self.image
@@ -65,7 +64,7 @@ class AbstractRasterStore(models.Model):
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
             if bmin is None or bmax is None:
                 bmin, bmax = band.ComputeRasterMinMax()
-            self.geom = buffer(r.envelope.polygon.ExportToWkb())
+            self.geom = memoryview(r.envelope.polygon.ExportToWkb())
             if r.sref.srid:
                 self.geom.srid = r.sref.srid
             self.xpixsize, self.ypixsize = r.affine.scale
@@ -76,7 +75,7 @@ class AbstractRasterStore(models.Model):
             self.srs = r.sref.wkt
         if self.event is None:
             self.event = datetime.date.today()
-        super(AbstractRasterStore, self).clean_fields(*args, **kwargs)
+        super().clean_fields(*args, **kwargs)
 
     def linear(self, limits=None, k=5):
         """Returns an ndarray of linear breaks."""
@@ -91,7 +90,7 @@ class AbstractRasterStore(models.Model):
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        super(AbstractRasterStore, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def array(self, geom=None):
         with self.raster() as r:
@@ -101,7 +100,7 @@ class AbstractRasterStore(models.Model):
     def raster(self):
         imfield = self.image
         # Check _file attr to avoid opening a file handle.
-        fileobj = getattr(imfield, '_file', None)
+        fileobj = getattr(imfield, "_file", None)
         if isinstance(fileobj, MemFileIO):
             path = imfield.file.name
         elif fileobj and fileobj.name.startswith(tempfile.gettempdir()):

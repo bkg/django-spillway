@@ -18,11 +18,13 @@ class FormFilterBackend(BaseFilterBackend):
 
 class GeoQuerySetFilter(FormFilterBackend):
     """A Filter for calling GeoQuerySet methods."""
+
     queryset_form = forms.GeometryQueryForm
 
 
 class RasterQuerySetFilter(FormFilterBackend):
     """A Filter for calling RasterQuerySet methods."""
+
     queryset_form = forms.RasterQueryForm
 
 
@@ -30,6 +32,7 @@ class SpatialLookupFilter(FormFilterBackend):
     """A Filter providing backend supported spatial lookups like intersects,
     overlaps, etc.
     """
+
     queryset_form = forms.SpatialQueryForm
 
 

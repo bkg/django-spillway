@@ -22,8 +22,7 @@ from .test_serializers import RasterStoreSerializer
 
 class GeoJSONRendererTestCase(SimpleTestCase):
     def setUp(self):
-        self.data = Feature(id=1, properties={'name': 'San Francisco'},
-                            geometry=_geom)
+        self.data = Feature(id=1, properties={"name": "San Francisco"}, geometry=_geom)
         self.collection = FeatureCollection(features=[self.data])
         self.r = renderers.GeoJSONRenderer()
 
@@ -44,37 +43,39 @@ class GeoJSONRendererTestCase(SimpleTestCase):
 
 class KMLRendererTestCase(SimpleTestCase):
     def setUp(self):
-        self.data = {'id': 1,
-                     'properties': {'name': 'playground',
-                                    'notes': 'epic slide'},
-                     'geometry': GEOSGeometry(json.dumps(_geom)).kml}
+        self.data = {
+            "id": 1,
+            "properties": {"name": "playground", "notes": "epic slide"},
+            "geometry": GEOSGeometry(json.dumps(_geom)).kml,
+        }
 
     def test_render(self):
         rkml = renderers.KMLRenderer()
-        self.assertIn(self.data['geometry'], rkml.render(self.data))
+        self.assertIn(self.data["geometry"], rkml.render(self.data))
 
     def test_render_kmz(self):
         rkmz = renderers.KMZRenderer()
         stream = io.BytesIO(rkmz.render(self.data))
         self.assertTrue(zipfile.is_zipfile(stream))
         zf = zipfile.ZipFile(stream)
-        self.assertIn(self.data['geometry'], zf.read('doc.kml').decode('ascii'))
+        self.assertIn(self.data["geometry"], zf.read("doc.kml").decode("ascii"))
 
 
 class SVGRendererTestCase(TestCase):
     def setUp(self):
         Location.create()
-        self.qs = Location.objects.annotate(svg=AsSVG('geom'))
+        self.qs = Location.objects.annotate(svg=AsSVG("geom"))
         self.svg = self.qs[0].svg
-        self.data = {'id': 1,
-                     'properties': {'name': 'playground',
-                                    'notes': 'epic slide'},
-                     'geometry': self.svg}
+        self.data = {
+            "id": 1,
+            "properties": {"name": "playground", "notes": "epic slide"},
+            "geometry": self.svg,
+        }
 
     def test_render(self):
         rsvg = renderers.SVGRenderer()
         svgdoc = rsvg.render(self.data)
-        self.assertIn(self.data['geometry'], svgdoc)
+        self.assertIn(self.data["geometry"], svgdoc)
 
 
 class RasterRendererTestCase(RasterStoreTestBase):
@@ -83,8 +84,8 @@ class RasterRendererTestCase(RasterStoreTestBase):
         with self.object.raster() as r:
             r.save(memio, drivername)
         # Mimic a FieldFile.
-        memio.path = self.data['image'].path
-        return {'image': memio}
+        memio.path = self.data["image"].path
+        return {"image": memio}
 
     def assert_format(self, data, format):
         memio = MemFileIO()
@@ -95,9 +96,9 @@ class RasterRendererTestCase(RasterStoreTestBase):
 
     def assert_member_formats(self, rend, geom=None):
         ext = rend.format
-        if rend.format.endswith('.zip'):
+        if rend.format.endswith(".zip"):
             ext = os.path.splitext(rend.format)[0]
-        pat = 'tmin_.+(?<!\.{0})\.{0}$'.format(ext)
+        pat = "tmin_.+(?<!\.{0})\.{0}$".format(ext)
         driver = driver_for_path(ext, ImageDriver.filter_copyable())
         qs = self.qs.warp(format=driver.ext, geom=geom)
         lst = [obj.raster() for obj in qs]
@@ -122,24 +123,24 @@ class RasterRendererTestCase(RasterStoreTestBase):
         self.assertEqual(fp.read(), self.f.read())
 
     def test_render_hfa(self):
-        fp = renderers.HFARenderer().render(self._save('HFA'))
-        self.assert_format(fp.read(), 'HFA')
+        fp = renderers.HFARenderer().render(self._save("HFA"))
+        self.assert_format(fp.read(), "HFA")
 
     def test_render_hfazip(self):
         self.assert_member_formats(renderers.HFAZipRenderer())
 
     def test_render_jpeg(self):
-        fp = renderers.JPEGRenderer().render(self._save('JPEG'))
+        fp = renderers.JPEGRenderer().render(self._save("JPEG"))
         imgdata = fp.read()
-        self.assertEqual(imgdata[:10], b'\xff\xd8\xff\xe0\x00\x10JFIF')
-        self.assert_format(imgdata, 'JPEG')
+        self.assertEqual(imgdata[:10], b"\xff\xd8\xff\xe0\x00\x10JFIF")
+        self.assert_format(imgdata, "JPEG")
 
     def test_render_jpegzip(self):
         self.assert_member_formats(renderers.JPEGZipRenderer())
 
     def test_render_png(self):
-        fp = renderers.PNGRenderer().render(self._save('PNG'))
-        self.assert_format(fp.read(), 'PNG')
+        fp = renderers.PNGRenderer().render(self._save("PNG"))
+        self.assert_format(fp.read(), "PNG")
 
     def test_render_pngzip(self):
         self.assert_member_formats(renderers.PNGZipRenderer())
@@ -150,14 +151,15 @@ class RasterRendererTestCase(RasterStoreTestBase):
         self.assert_member_formats(renderers.GeoTIFFZipRenderer(), geom)
 
 
-@unittest.skipUnless('mapnik' in sys.modules, 'requires mapnik')
+@unittest.skipUnless("mapnik" in sys.modules, "requires mapnik")
 class MapnikRendererTestCase(RasterStoreTestBase):
-    ctx = {'y': 51, 'x': 23, 'z': 7}
+    ctx = {"y": 51, "x": 23, "z": 7}
 
     def test_compat(self):
         from spillway import compat
+
         paths = sys.path
-        sys.modules.pop('mapnik')
+        sys.modules.pop("mapnik")
         sys.path = []
         reload(compat)
         with self.assertRaises(ImproperlyConfigured):
@@ -175,10 +177,10 @@ class MapnikRendererTestCase(RasterStoreTestBase):
 
     def test_stylesheet(self):
         m = carto.Map()
-        layer = m.layer(self.object, 'green')
+        layer = m.layer(self.object, "green")
         layer._symbolizer.colorizer.default_color = mapnik.Color(0, 255, 0)
         mapnik.save_map(m.map, str(m.mapfile))
-        form = forms.RasterTileForm(dict(self.ctx, style='green'))
+        form = forms.RasterTileForm(dict(self.ctx, style="green"))
         r = renderers.MapnikRenderer()
         imgdata = carto.build_map([self.object], form).render(r.format)
         im = self._image(r.render(imgdata))

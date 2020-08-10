@@ -27,30 +27,31 @@ class RequestMock(object):
 class LocationSerializer(serializers.GeoModelSerializer):
     class Meta:
         model = Location
-        fields = '__all__'
-        geom_field = 'geom'
+        fields = "__all__"
+        geom_field = "geom"
 
 
 class LocationFeatureSerializer(serializers.FeatureSerializer):
     class Meta:
         model = Location
-        fields = '__all__'
-        geom_field = 'geom'
+        fields = "__all__"
+        geom_field = "geom"
 
 
 class SimplifyLocationSerializer(LocationFeatureSerializer):
-    geom = fields.GeometryField(source='simplify')
+    geom = fields.GeometryField(source="simplify")
 
 
 class RasterStoreSerializer(serializers.RasterModelSerializer):
     class Meta:
         model = RasterStore
-        fields = '__all__'
+        fields = "__all__"
 
 
 class PaginatedGeoListView(generics.GeoListView):
     queryset = Location.objects.all()
     serializer_class = LocationFeatureSerializer
+
 
 # Enable pagination for this view
 PaginatedGeoListView.pagination_class.page_size = 10
@@ -58,20 +59,19 @@ PaginatedGeoListView.pagination_class.page_size = 10
 
 class ModelTestCase(TestCase):
     def setUp(self):
-        self.data = {'id': 1,
-                     'name': 'Argentina',
-                     'geom': json.dumps(_geom)}
+        self.data = {"id": 1, "name": "Argentina", "geom": json.dumps(_geom)}
         self.obj = Location(**self.data)
         # GEOSGeometry is not instantiated until save() is called.
         self.obj.save()
         Location.create()
         self.coords = ()
-        for poly in _geom['coordinates']:
+        for poly in _geom["coordinates"]:
             self.coords += (tuple(map(tuple, poly)),)
-        self.expected = {'id': 1,
-                         'name': 'Argentina',
-                         'geom': {'type': 'Polygon',
-                                  'coordinates': self.coords}}
+        self.expected = {
+            "id": 1,
+            "name": "Argentina",
+            "geom": {"type": "Polygon", "coordinates": self.coords},
+        }
 
 
 class GeoModelSerializerTestCase(ModelTestCase):
@@ -92,10 +92,10 @@ class GeoModelSerializerTestCase(ModelTestCase):
     def test_queryset(self):
         qs = Location.objects.all()
         serializer = LocationSerializer(qs, many=True)
-        expected = [self.expected,
-                    {'name': 'Vancouver',
-                     'id': 2,
-                     'geom': self.expected['geom']}]
+        expected = [
+            self.expected,
+            {"name": "Vancouver", "id": 2, "geom": self.expected["geom"]},
+        ]
         self.assertEqual(serializer.data, expected)
 
     def test_save(self):
@@ -113,28 +113,33 @@ class GeoModelSerializerTestCase(ModelTestCase):
 class FeatureSerializerTestCase(ModelTestCase):
     def setUp(self):
         super(FeatureSerializerTestCase, self).setUp()
-        attrs = {'id': 1,
-                 'crs': 4326,
-                 'geometry': {'type': 'Polygon',
-                              'coordinates': self.coords},
-                 'properties': {'name': 'Argentina'}}
+        attrs = {
+            "id": 1,
+            "crs": 4326,
+            "geometry": {"type": "Polygon", "coordinates": self.coords},
+            "properties": {"name": "Argentina"},
+        }
         self.expected = Feature(**attrs)
 
     def test_geometry_field_source(self):
-        response = self.client.get('/locations/', {'format': 'geojson', 'page': 1})
-        context = {k: v for k, v in response.renderer_context.items()
-                   if k in ('request', 'view')}
+        response = self.client.get("/locations/", {"format": "geojson", "page": 1})
+        context = {
+            k: v
+            for k, v in response.renderer_context.items()
+            if k in ("request", "view")
+        }
         serializer = LocationFeatureSerializer(
-            Location.objects.annotate(geojson=functions.AsGeoJSON('geom')),
-            many=True, context=context)
+            Location.objects.annotate(geojson=functions.AsGeoJSON("geom")),
+            many=True,
+            context=context,
+        )
         fields = serializer.child.fields
-        self.assertEqual(fields['geom'].source, 'geojson')
+        self.assertEqual(fields["geom"].source, "geojson")
         # Test serializing paginated objects.
-        page = response.renderer_context['view'].paginator.page
-        serializer = LocationFeatureSerializer(
-            page, many=True, context=context)
+        page = response.renderer_context["view"].paginator.page
+        serializer = LocationFeatureSerializer(page, many=True, context=context)
         fields = serializer.child.fields
-        self.assertEqual(fields['geom'].source, 'geojson')
+        self.assertEqual(fields["geom"].source, "geojson")
 
     def test_serialize(self):
         serializer = LocationFeatureSerializer(self.obj)
@@ -143,19 +148,18 @@ class FeatureSerializerTestCase(ModelTestCase):
     def test_serialize_list(self):
         serializer = LocationFeatureSerializer([self.obj], many=True)
         feat = self.expected.copy()
-        feat.pop('crs')
+        feat.pop("crs")
         self.assertEqual(serializer.data, FeatureCollection([feat]))
 
     def test_serialize_queryset(self):
-        serializer = LocationFeatureSerializer(
-            Location.objects.all(), many=True)
+        serializer = LocationFeatureSerializer(Location.objects.all(), many=True)
         feat = self.expected.copy()
-        crs = feat.pop('crs')
-        self.assertEqual(serializer.data['features'][0], feat)
-        self.assertEqual(serializer.data['crs'], crs)
+        crs = feat.pop("crs")
+        self.assertEqual(serializer.data["features"][0], feat)
+        self.assertEqual(serializer.data["crs"], crs)
 
     def test_serialize_queryset_simplify(self):
-        fn = query.Simplify(functions.Transform('geom', 4269), 1.01)
+        fn = query.Simplify(functions.Transform("geom", 4269), 1.01)
         qs = Location.objects.all()
         for obj in qs:
             obj.geom = obj.geom.buffer(1.5)
@@ -163,11 +167,12 @@ class FeatureSerializerTestCase(ModelTestCase):
         qs = qs.annotate(simplify=fn)
         obj = qs[0]
         serializer = SimplifyLocationSerializer(obj)
-        g = geos.GEOSGeometry(json.dumps(serializer.data['geometry']),
-                              srid=obj.simplify.srid)
+        g = geos.GEOSGeometry(
+            json.dumps(serializer.data["geometry"]), srid=obj.simplify.srid
+        )
         self.assertEqual(g, obj.simplify)
         self.assertEqual(obj.simplify.srid, 4269)
-        self.assertEqual(serializer.data['crs']['properties']['name'][-4:], '4269')
+        self.assertEqual(serializer.data["crs"]["properties"]["name"][-4:], "4269")
 
     def test_deserialize(self):
         serializer = LocationFeatureSerializer(data=self.expected)
@@ -194,27 +199,38 @@ class RasterSerializerTestCase(RasterStoreTestBase):
     def setUp(self):
         super(RasterSerializerTestCase, self).setUp()
         self.request = RequestMock()
-        self.ctx = {'request': self.request}
+        self.ctx = {"request": self.request}
 
     def test_odd_periods(self):
         periods = 3
         qs = self.qs.aggregate_periods(periods)
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
         self.assertEqual(len(serializer.data), len(self.qs))
-        self.assertEqual(len(serializer.data[0]['image']), periods)
-        self.assertEqual(list(serializer.data[0]['image']), list(qs[0].image))
+        self.assertEqual(len(serializer.data[0]["image"]), periods)
+        self.assertEqual(list(serializer.data[0]["image"]), list(qs[0].image))
 
     def test_serialize_queryset(self):
         serializer = RasterStoreSerializer(self.qs, many=True)
         data = serializer.data[0]
-        self.assertEqual(data['image'], self.qs[0].image.name)
+        self.assertEqual(data["image"], self.qs[0].image.name)
         expected = {
-          'geom': {'type': 'Polygon',
-                   'coordinates': (((-120.0, 28.0), (-110.0, 28.0),
-                                    (-110.0, 38.0), (-120.0, 38.0), (-120.0, 28.0)),)},
-          'minval': 0.0, 'maxval': 24.0, 'nodata': None
+            "geom": {
+                "type": "Polygon",
+                "coordinates": (
+                    (
+                        (-120.0, 28.0),
+                        (-110.0, 28.0),
+                        (-110.0, 38.0),
+                        (-120.0, 38.0),
+                        (-120.0, 28.0),
+                    ),
+                ),
+            },
+            "minval": 0.0,
+            "maxval": 24.0,
+            "nodata": None,
         }
-        self.assertEqual(SpatialReference(data['srs']), SpatialReference(4326))
+        self.assertEqual(SpatialReference(data["srs"]), SpatialReference(4326))
         self.assertDictContainsSubset(expected, data)
 
     def test_serialize_context(self):
@@ -222,26 +238,24 @@ class RasterSerializerTestCase(RasterStoreTestBase):
         qs = self.qs.summarize(geom=geom).aggregate_periods(3)
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
         self.assertEqual(len(serializer.data), len(self.qs))
-        self.assertEqual(serializer.data[0]['image'].tolist(), [4, 11.5, 16.5])
+        self.assertEqual(serializer.data[0]["image"].tolist(), [4, 11.5, 16.5])
         self.request.accepted_renderer = GeoTIFFRenderer()
-        qs = self.qs.warp(format=self.request.accepted_renderer.format,
-                          geom=geom)
+        qs = self.qs.warp(format=self.request.accepted_renderer.format, geom=geom)
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
         content = self.f.read()
-        self.assertNotEqual(serializer.data[0]['image'].read(), content)
+        self.assertNotEqual(serializer.data[0]["image"].read(), content)
 
     def test_serialize_bbox(self):
         geom = self.object.geom.buffer(-3)
         qs = self.qs.summarize(geom=geom.envelope)
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
-        self.assertEqual(serializer.data[0]['image'].tolist(),
-                         [[6, 7], [11, 12]])
+        self.assertEqual(serializer.data[0]["image"].tolist(), [[6, 7], [11, 12]])
 
     def test_serialize_point_context(self):
         qs = self.qs.summarize(geom=self.object.geom.centroid)
         serializer = RasterStoreSerializer(qs, many=True, context=self.ctx)
         self.assertEqual(len(serializer.data), len(self.qs))
         expected = 12
-        self.assertEqual(serializer.data[0]['image'], expected)
+        self.assertEqual(serializer.data[0]["image"], expected)
         serializer = RasterStoreSerializer(qs[0], context=self.ctx)
-        self.assertEqual(serializer.data['image'], expected)
+        self.assertEqual(serializer.data["image"], expected)

@@ -40,8 +40,9 @@ class GeoQuerySetTestCase(TestCase):
 
     def test_simplify_geojson(self):
         fn = functions.AsGeoJSON(
-            query.Simplify(functions.Transform('geom', self.srid), self.tol),
-            precision=2)
+            query.Simplify(functions.Transform("geom", self.srid), self.tol),
+            precision=2,
+        )
         sqs = self.qs.all().annotate(geojson=fn)
         geom = geos.GEOSGeometry(sqs[0].geojson, self.srid)
         source = self.qs[0].geom
@@ -50,19 +51,17 @@ class GeoQuerySetTestCase(TestCase):
         self.assertLess(geom.num_coords, source.num_coords)
 
     def test_simplify_kml(self):
-        fn = functions.AsKML(query.Simplify('geom', self.radius))
+        fn = functions.AsKML(query.Simplify("geom", self.radius))
         sqs = self.qs.all().annotate(kml=fn)
-        self.assertTrue(sqs[0].kml.startswith('<Polygon>'))
-        self.assertNotIn('<coordinates></coordinates>', sqs[0].kml)
+        self.assertTrue(sqs[0].kml.startswith("<Polygon>"))
+        self.assertNotIn("<coordinates></coordinates>", sqs[0].kml)
         self.assertXMLNotEqual(sqs[0].kml, self.qs[0].geom.kml)
 
     def test_tile_pbf(self):
-        tf = forms.VectorTileForm({'z': 6, 'x': 32, 'y': 32})
+        tf = forms.VectorTileForm({"z": 6, "x": 32, "y": 32})
         self.assertTrue(tf.is_valid())
-        qs = self.qs.tile(
-            tf.cleaned_data['bbox'], tf.cleaned_data['z'], format='pbf')
-        self.assertTrue(qs[0].pbf.startswith('POLYGON((1523.577271 4112'))
-
+        qs = self.qs.tile(tf.cleaned_data["bbox"], tf.cleaned_data["z"], format="pbf")
+        self.assertTrue(qs[0].pbf.startswith("POLYGON((1523.577271 4112"))
 
 
 class RasterQuerySetTestCase(RasterStoreTestBase):
@@ -70,21 +69,21 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
 
     def setUp(self):
         for fp in self._files:
-            relpath = fp.name.replace('%s/' % default_storage.location, '')
+            relpath = fp.name.replace("%s/" % default_storage.location, "")
             RasterStore.objects.create(image=relpath)
         self.qs = RasterStore.objects.all()
         self.object = self.qs[0]
 
     @classmethod
     def setUpClass(cls):
-        super(RasterQuerySetTestCase, cls).setUpClass()
+        super().setUpClass()
         cls._files = [cls.f, create_image(cls.use_multiband)]
 
     @classmethod
     def tearDownClass(cls):
         for fp in cls._files:
             fp.close()
-        super(RasterQuerySetTestCase, cls).tearDownClass()
+        super().tearDownClass()
 
     def test_aggregate_periods(self):
         qs = self.qs.aggregate_periods(3)
@@ -103,18 +102,18 @@ class RasterQuerySetTestCase(RasterStoreTestBase):
 
     def test_summarize_polygon(self):
         geom = self.object.geom.buffer(-3)
-        qs = self.qs.summarize(geom, 'mean')
+        qs = self.qs.summarize(geom, "mean")
         means = [9, 34, 59]
         self.assertEqual(qs[0].image.tolist(), means)
 
     def test_warp(self):
         srid = 3857
         obj = self.qs[0]
-        qs = self.qs.warp(srid, format='img')
+        qs = self.qs.warp(srid, format="img")
         newobj = qs[0]
         r = newobj.raster()
-        self.assertEqual(r.driver.ext, 'img')
-        self.assertIn('proj=merc', r.sref.proj4)
+        self.assertEqual(r.driver.ext, "img")
+        self.assertIn("proj=merc", r.sref.proj4)
         self.assertEqual(r.sref.srid, srid)
         source = obj.raster()
         self.assertNotEqual(r.sref.srid, source.sref.srid)

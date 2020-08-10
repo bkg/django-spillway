@@ -6,13 +6,10 @@ from spillway.models import AbstractRasterStore
 from spillway.query import GeoQuerySet, RasterQuerySet
 
 _geom = {
-    'type': 'Polygon',
-    'coordinates': [[
-        [ -64.95, -31.42 ],
-        [ -61.69, -28.22 ],
-        [ -61.61, -32.39 ],
-        [ -64.95, -31.42 ]
-    ]]
+    "type": "Polygon",
+    "coordinates": [
+        [[-64.95, -31.42], [-61.69, -28.22], [-61.61, -32.39], [-64.95, -31.42]]
+    ],
 }
 
 
@@ -22,20 +19,20 @@ class AbstractLocation(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ['id']
+        ordering = ["id"]
 
     def __repr__(self):
-        return '<%s: %s %s>' % (self.__class__.__name__, self.name, self.geom)
+        return "<%s: %s %s>" % (self.__class__.__name__, self.name, self.geom)
 
     def __str__(self):
         return self.name
 
     @classmethod
     def create(cls, **data):
-        geom = data.pop('geom', _geom)
+        geom = data.pop("geom", _geom)
         if isinstance(geom, dict):
             geom = json.dumps(geom)
-        defaults = {'name': 'Vancouver', 'geom': geom}
+        defaults = {"name": "Vancouver", "geom": geom}
         defaults.update(**data)
         obj = cls(**defaults)
         obj.save()
@@ -48,6 +45,7 @@ class AbstractLocation(models.Model):
 
 class Location(AbstractLocation):
     """Test location."""
+
     objects = GeoQuerySet.as_manager()
 
 
