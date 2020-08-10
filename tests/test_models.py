@@ -3,7 +3,6 @@ import os
 import operator
 import tempfile
 
-from django.utils.six.moves import reduce
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.models.fields.files import FieldFile

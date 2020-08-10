@@ -9,7 +9,6 @@ from django.db.models import query
 from django.contrib.gis import geos
 import django.contrib.gis.db.models.functions as geofn
 from django.contrib.gis.db import models
-from django.utils import six
 from django.utils.functional import cached_property
 import numpy as np
 
@@ -33,7 +32,7 @@ def geo_field(queryset):
 def get_srid(queryset):
     """Returns the GeoQuerySet spatial reference identifier."""
     try:
-        srid = list(six.viewvalues(queryset.query.annotations))[0].srid
+        srid = list(queryset.query.annotations.values())[0].srid
     except (AttributeError, IndexError):
         srid = None
     return srid or geo_field(queryset).srid

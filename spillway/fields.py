@@ -1,5 +1,4 @@
 """Serializer fields"""
-from __future__ import absolute_import
 import collections
 
 from django.contrib.gis import geos, forms

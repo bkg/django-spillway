@@ -2,9 +2,6 @@ import os
 import datetime
 import tempfile
 
-from django.utils import six
-if six.PY3:
-    buffer = memoryview
 from django.contrib.gis.db import models
 from django.utils.deconstruct import deconstructible
 from django.utils.translation import ugettext_lazy as _
@@ -65,7 +62,7 @@ class AbstractRasterStore(models.Model):
             bmin, bmax = band.GetMinimum(), band.GetMaximum()
             if bmin is None or bmax is None:
                 bmin, bmax = band.ComputeRasterMinMax()
-            self.geom = buffer(r.envelope.polygon.ExportToWkb())
+            self.geom = memoryview(r.envelope.polygon.ExportToWkb())
             if r.sref.srid:
                 self.geom.srid = r.sref.srid
             self.xpixsize, self.ypixsize = r.affine.scale
