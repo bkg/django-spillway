@@ -29,13 +29,13 @@ class GeometryField(Field):
                 has_format = hasattr(obj, renderer.format)
             if has_format:
                 self.source = renderer.format
-        super(GeometryField, self).bind(field_name, parent)
+        super().bind(field_name, parent)
 
     def get_attribute(self, instance):
         # SpatiaLite returns empty/invalid geometries in WKT or GeoJSON with
         # exceedingly high simplification tolerances.
         try:
-            return super(GeometryField, self).get_attribute(instance)
+            return super().get_attribute(instance)
         except geos.GEOSException:
             return None
 

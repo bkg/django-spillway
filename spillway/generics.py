@@ -54,7 +54,7 @@ class BaseRasterView(mixins.ModelSerializerMixin, mixins.ResponseExceptionMixin)
     )
 
     def finalize_response(self, request, response, *args, **kwargs):
-        response = super(BaseRasterView, self).finalize_response(
+        response = super().finalize_response(
             request, response, *args, **kwargs
         )
         # Use streaming file responses for GDAL formats.
@@ -79,14 +79,14 @@ class BaseRasterView(mixins.ModelSerializerMixin, mixins.ResponseExceptionMixin)
     def options(self, request, *args, **kwargs):
         if isinstance(self.request.accepted_renderer, renderers.gdal.BaseGDALRenderer):
             raise exceptions.NotAcceptable
-        return super(BaseRasterView, self).options(request, *args, **kwargs)
+        return super().options(request, *args, **kwargs)
 
     @property
     def paginator(self):
         # Disable pagination for GDAL Renderers.
         if not isinstance(self.request.accepted_renderer, _default_renderers):
             self.pagination_class = None
-        return super(BaseRasterView, self).paginator
+        return super().paginator
 
 
 class RasterDetailView(BaseRasterView, RetrieveAPIView):

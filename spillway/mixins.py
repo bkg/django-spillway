@@ -29,7 +29,7 @@ class ResponseExceptionMixin(object):
     """
 
     def handle_exception(self, exc):
-        response = super(ResponseExceptionMixin, self).handle_exception(exc)
+        response = super().handle_exception(exc)
         renderers = tuple(api_settings.DEFAULT_RENDERER_CLASSES)
         accepted = getattr(self.request, "accepted_renderer", None)
         if response.exception and accepted and not isinstance(accepted, renderers):

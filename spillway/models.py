@@ -52,8 +52,8 @@ class AbstractRasterStore(models.Model):
         get_latest_by = "event"
         abstract = True
 
-    def __unicode__(self):
-        return unicode(self.image)
+    def __str__(self):
+        return str(self.image)
 
     def clean_fields(self, *args, **kwargs):
         imgfield = self.image
@@ -75,7 +75,7 @@ class AbstractRasterStore(models.Model):
             self.srs = r.sref.wkt
         if self.event is None:
             self.event = datetime.date.today()
-        super(AbstractRasterStore, self).clean_fields(*args, **kwargs)
+        super().clean_fields(*args, **kwargs)
 
     def linear(self, limits=None, k=5):
         """Returns an ndarray of linear breaks."""
@@ -90,7 +90,7 @@ class AbstractRasterStore(models.Model):
 
     def save(self, *args, **kwargs):
         self.full_clean()
-        super(AbstractRasterStore, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def array(self, geom=None):
         with self.raster() as r:

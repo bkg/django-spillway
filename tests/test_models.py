@@ -2,6 +2,7 @@ import io
 import os
 import operator
 import tempfile
+from functools import reduce
 
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile

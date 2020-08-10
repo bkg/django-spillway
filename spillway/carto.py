@@ -71,7 +71,7 @@ class Map(object):
         cls = RasterLayer if hasattr(queryset, "image") else VectorLayer
         layer = cls(queryset, style=stylename)
         try:
-            style = self.map.find_style(layer.stylename)
+            self.map.find_style(layer.stylename)
         except KeyError:
             self.map.append_style(layer.stylename, layer.style())
         layer.styles.append(layer.stylename)

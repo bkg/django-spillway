@@ -103,7 +103,7 @@ class AbstractFeature(dict):
         return isinstance(self[key], str)
 
     def copy(self):
-        return self.__class__(**super(AbstractFeature, self).copy())
+        return self.__class__(**super().copy())
 
     @property
     def srs(self):
@@ -119,7 +119,7 @@ class Feature(AbstractFeature):
     def __init__(
         self, id=None, geometry=None, properties=None, crs=None, iterable=(), **kwargs
     ):
-        super(Feature, self).__init__()
+        super().__init__()
         self["type"] = self.__class__.__name__
         self["geometry"] = geometry or {}
         self["properties"] = properties or kwargs or {}
@@ -143,7 +143,7 @@ class FeatureCollection(AbstractFeature):
     """GeoJSON FeatureCollection dict."""
 
     def __init__(self, features=None, crs=None, iterable=(), **kwargs):
-        super(FeatureCollection, self).__init__()
+        super().__init__()
         self["type"] = self.__class__.__name__
         if crs:
             self["crs"] = NamedCRS(crs)
@@ -174,7 +174,7 @@ class LayerCollection(AbstractFeature):
     """Layer dict of FeatureCollections."""
 
     def __init__(self, iterable=(), **kwargs):
-        super(LayerCollection, self).__init__()
+        super().__init__()
         self.update(iterable, **kwargs)
         for key, val in self.items():
             if not isinstance(val, FeatureCollection):

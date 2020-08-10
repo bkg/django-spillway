@@ -28,7 +28,7 @@ class TileView(mixins.ResponseExceptionMixin, BaseGeoView, ListAPIView):
 
     def get(self, request, *args, **kwargs):
         if isinstance(request.accepted_renderer, renderers.GeoJSONRenderer):
-            return super(TileView, self).get(request, *args, **kwargs)
+            return super().get(request, *args, **kwargs)
         form = forms.RasterTileForm.from_request(request, view=self)
         m = carto.build_map([self.get_queryset()], form)
         return Response(m.render(request.accepted_renderer.format))

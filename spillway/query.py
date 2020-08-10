@@ -215,7 +215,7 @@ class RasterQuerySet(GeoQuerySet):
             raise self.model.DoesNotExist(
                 "%s matching query does not exist." % self.model._meta.object_name
             )
-        return super(RasterQuerySet, self).get(*args, **kwargs)
+        return super().get(*args, **kwargs)
 
     @cached_property
     def raster_field(self):

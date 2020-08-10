@@ -28,13 +28,13 @@ class GeoModelSerializer(serializers.ModelSerializer):
 
     def __new__(cls, *args, **kwargs):
         cls.Meta.geom_field = getattr(cls.Meta, "geom_field", None)
-        return super(GeoModelSerializer, cls).__new__(cls, *args, **kwargs)
+        return super().__new__(cls, *args, **kwargs)
 
     def get_fields(self):
         """Returns a fields dict for this serializer with a 'geometry' field
         added.
         """
-        fields = super(GeoModelSerializer, self).get_fields()
+        fields = super().get_fields()
         # Set the geometry field name when it's undeclared.
         if not self.Meta.geom_field:
             for name, field in fields.items():
@@ -75,7 +75,7 @@ class FeatureSerializer(GeoModelSerializer):
     @property
     def data(self):
         if not hasattr(self, "_data"):
-            self._data = super(FeatureSerializer, self).data
+            self._data = super().data
             if "crs" not in self._data:
                 try:
                     field = self.fields[self.Meta.geom_field]
@@ -87,7 +87,7 @@ class FeatureSerializer(GeoModelSerializer):
         return self._data
 
     def to_representation(self, instance):
-        native = super(FeatureSerializer, self).to_representation(instance)
+        native = super().to_representation(instance)
         geometry = native.pop(self.Meta.geom_field)
         pk = native.pop(instance._meta.pk.name, None)
         return sc.Feature(pk, geometry, native)
@@ -105,7 +105,7 @@ class FeatureSerializer(GeoModelSerializer):
             raise exceptions.FieldDoesNotExist("Geometry field not found")
         record = {self.Meta.geom_field: data.get("geometry")}
         record.update(data.get("properties", {}))
-        feature = super(FeatureSerializer, self).to_internal_value(record)
+        feature = super().to_internal_value(record)
         if feature and sref:
             geom = feature[self.Meta.geom_field]
             geom.srid = sref.srid
@@ -117,10 +117,10 @@ class RasterModelSerializer(GeoModelSerializer):
 
     def __new__(cls, *args, **kwargs):
         cls.Meta.raster_field = getattr(cls.Meta, "raster_field", None)
-        return super(RasterModelSerializer, cls).__new__(cls, *args, **kwargs)
+        return super().__new__(cls, *args, **kwargs)
 
     def get_fields(self):
-        fields = super(RasterModelSerializer, self).get_fields()
+        fields = super().get_fields()
         if not self.Meta.raster_field:
             for name, field in fields.items():
                 if isinstance(field, serializers.FileField):

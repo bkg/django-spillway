@@ -3,6 +3,7 @@ import collections
 import shutil
 import tempfile
 import zipfile
+from functools import reduce
 
 from django.contrib.gis import forms, gdal
 from django.contrib.gis.db.models import functions
@@ -30,24 +31,24 @@ class CommaSepFloatField(forms.FloatField):
         """Normalize data to a list of floats."""
         if not value:
             return []
-        return map(super(CommaSepFloatField, self).to_python, value.split(","))
+        return map(super().to_python, value.split(","))
 
     def run_validators(self, values):
         """Run validators for each item separately."""
         for val in values:
-            super(CommaSepFloatField, self).run_validators(val)
+            super().run_validators(val)
 
 
 class BoundingBoxField(CommaSepFloatField):
     """A form Field for comma separated bounding box coordinates."""
 
     def __init__(self, srid=4326, *args, **kwargs):
-        super(BoundingBoxField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.srid = srid
 
     def to_python(self, value):
         """Returns a GEOS Polygon from bounding box values."""
-        value = super(BoundingBoxField, self).to_python(value)
+        value = super().to_python(value)
         try:
             bbox = gdal.OGRGeometry.from_bbox(value).geos
         except (ValueError, AttributeError):
@@ -97,7 +98,7 @@ class GeometryField(forms.GeometryField):
         # Need to catch GDALException with some invalid geometries, the
         # parent class doesn't handle all cases.
         try:
-            return super(GeometryField, self).to_python(value)
+            return super().to_python(value)
         except gdal.GDALException:
             raise forms.ValidationError(
                 self.error_messages["invalid_geom"], code="invalid_geom"
@@ -139,7 +140,7 @@ class GeometryFileField(forms.FileField):
         return geom
 
     def to_python(self, value):
-        value = super(GeometryFileField, self).to_python(value)
+        value = super().to_python(value)
         if value is None:
             return value
         try:
@@ -180,7 +181,7 @@ class SpatialReferenceField(forms.IntegerField):
     """A form Field for creating spatial reference objects."""
 
     def to_python(self, value):
-        value = super(SpatialReferenceField, self).to_python(value)
+        value = super().to_python(value)
         if value in self.empty_values:
             return None
         try:
