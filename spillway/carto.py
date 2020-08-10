@@ -7,24 +7,31 @@ from rest_framework.exceptions import NotFound
 from spillway.compat import mapnik
 from spillway import colors, query
 
+
 def make_dbsource(**kwargs):
     """Returns a mapnik PostGIS or SQLite Datasource."""
-    if 'spatialite' in connection.settings_dict.get('ENGINE'):
-        kwargs.setdefault('file', connection.settings_dict['NAME'])
-        return mapnik.SQLite(wkb_format='spatialite', **kwargs)
-    names = (('dbname', 'NAME'), ('user', 'USER'),
-             ('password', 'PASSWORD'), ('host', 'HOST'), ('port', 'PORT'))
+    if "spatialite" in connection.settings_dict.get("ENGINE"):
+        kwargs.setdefault("file", connection.settings_dict["NAME"])
+        return mapnik.SQLite(wkb_format="spatialite", **kwargs)
+    names = (
+        ("dbname", "NAME"),
+        ("user", "USER"),
+        ("password", "PASSWORD"),
+        ("host", "HOST"),
+        ("port", "PORT"),
+    )
     for mopt, dopt in names:
         val = connection.settings_dict.get(dopt)
         if val:
             kwargs.setdefault(mopt, val)
     return mapnik.PostGIS(**kwargs)
 
+
 def build_map(querysets, tileform):
     data = tileform.cleaned_data if tileform.is_valid() else {}
-    stylename = data.get('style')
+    stylename = data.get("style")
     m = Map()
-    bbox = data.get('bbox')
+    bbox = data.get("bbox")
     if bbox:
         m.zoom_bbox(bbox)
     for queryset in querysets:
@@ -33,14 +40,14 @@ def build_map(querysets, tileform):
         trans = mapnik.ProjTransform(proj, m.proj)
         env = trans.forward(layer.envelope())
         if not env.intersects(m.map.envelope()):
-            raise NotFound('Tile not found: outside layer extent')
+            raise NotFound("Tile not found: outside layer extent")
         if isinstance(layer, RasterLayer):
-            layer.add_colorizer_stops(data.get('limits'))
+            layer.add_colorizer_stops(data.get("limits"))
     return m
 
 
 class Map(object):
-    mapfile = default_storage.path('map.xml')
+    mapfile = default_storage.path("map.xml")
 
     def __init__(self, width=256, height=256):
         m = mapnik.Map(width, height)
@@ -49,7 +56,7 @@ class Map(object):
         except RuntimeError:
             pass
         m.buffer_size = 128
-        m.srs = '+init=epsg:3857'
+        m.srs = "+init=epsg:3857"
         self.proj = mapnik.Projection(m.srs)
         self.map = m
 
@@ -61,7 +68,7 @@ class Map(object):
         Keyword args:
         stylename -- str name of style to apply
         """
-        cls = RasterLayer if hasattr(queryset, 'image') else VectorLayer
+        cls = RasterLayer if hasattr(queryset, "image") else VectorLayer
         layer = cls(queryset, style=stylename)
         try:
             style = self.map.find_style(layer.stylename)
@@ -115,11 +122,10 @@ class RasterLayer(Layer):
 
     def __init__(self, obj, band=1, style=None):
         self._rstore = obj
-        layer = mapnik.Layer(
-            str(obj), srs.SpatialReference(obj.srs).proj4)
+        layer = mapnik.Layer(str(obj), srs.SpatialReference(obj.srs).proj4)
         layer.datasource = mapnik.Gdal(file=obj.image.path, band=band)
         self._layer = layer
-        self.stylename = style or 'Spectral_r'
+        self.stylename = style or "Spectral_r"
         self._symbolizer = None
 
     def add_colorizer_stops(self, limits):
@@ -133,7 +139,8 @@ class RasterLayer(Layer):
     def symbolizer(self):
         symbolizer = mapnik.RasterSymbolizer()
         symbolizer.colorizer = mapnik.RasterColorizer(
-            mapnik.COLORIZER_LINEAR, mapnik.Color(0, 0, 0, 0))
+            mapnik.COLORIZER_LINEAR, mapnik.Color(0, 0, 0, 0)
+        )
         return symbolizer
 
 
@@ -149,9 +156,8 @@ class VectorLayer(Layer):
         # During tests, the spatialite layer statistics are not updated and
         # return an invalid layer extent. Set it from the queryset.
         if not ds.envelope().valid():
-            ex = ','.join(map(str, queryset.extent()))
-            ds = make_dbsource(table=table, geometry_field=field.name,
-                               extent=ex)
+            ex = ",".join(map(str, queryset.extent()))
+            ds = make_dbsource(table=table, geometry_field=field.name, extent=ex)
         layer.datasource = ds
         self._layer = layer
         self.stylename = style or self._layer.name
@@ -161,7 +167,8 @@ class VectorLayer(Layer):
         symbolizers = {
             mapnik.DataGeometryType.Point: mapnik.PointSymbolizer,
             mapnik.DataGeometryType.LineString: mapnik.LineSymbolizer,
-            mapnik.DataGeometryType.Polygon: mapnik.PolygonSymbolizer
+            mapnik.DataGeometryType.Polygon: mapnik.PolygonSymbolizer,
         }
-        return symbolizers.get(self._layer.datasource.geometry_type(),
-                               mapnik.PolygonSymbolizer)()
+        return symbolizers.get(
+            self._layer.datasource.geometry_type(), mapnik.PolygonSymbolizer
+        )()

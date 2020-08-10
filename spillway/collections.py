@@ -4,6 +4,7 @@ from greenwich.srs import SpatialReference
 
 from spillway.compat import json, JSONEncoder
 
+
 def as_feature(data):
     """Returns a Feature or FeatureCollection.
 
@@ -25,26 +26,30 @@ def as_feature(data):
             data = Feature()
     return data
 
+
 def has_coordinates(geometry):
     """Returns true for a Geometry-like structure."""
     try:
-        return 'coordinates' in geometry
+        return "coordinates" in geometry
     except (AttributeError, TypeError):
         return False
+
 
 def has_features(fcollection):
     """Returns true for a FeatureCollection-like structure."""
     try:
-        return 'features' in fcollection
+        return "features" in fcollection
     except (AttributeError, TypeError):
         return False
+
 
 def is_featurelike(feature):
     """Returns true for a Feature-like structure."""
     try:
-        return 'geometry' in feature and 'properties' in feature
+        return "geometry" in feature and "properties" in feature
     except (AttributeError, TypeError):
         return False
+
 
 def has_layer(fcollection):
     """Returns true for a multi-layer dict of FeatureCollections."""
@@ -56,11 +61,11 @@ def has_layer(fcollection):
 
 class LinkedCRS(dict):
     def __init__(self, srid=4326, iterable=(), **kwargs):
-        self['type'] = 'link'
+        self["type"] = "link"
         if isinstance(srid, int):
-            self['properties'] = {
-                'href': 'http://spatialreference.org/ref/epsg/%s/proj4/' % srid,
-                'type': 'proj4'
+            self["properties"] = {
+                "href": "http://spatialreference.org/ref/epsg/%s/proj4/" % srid,
+                "type": "proj4",
             }
         else:
             iterable = iterable or srid
@@ -69,9 +74,9 @@ class LinkedCRS(dict):
 
 class NamedCRS(dict):
     def __init__(self, srid=4326, iterable=(), **kwargs):
-        self['type'] = 'name'
+        self["type"] = "name"
         if isinstance(srid, int):
-            self['properties'] = {'name': 'urn:ogc:def:crs:EPSG::%s' % srid}
+            self["properties"] = {"name": "urn:ogc:def:crs:EPSG::%s" % srid}
         else:
             iterable = iterable or srid
         self.update(iterable, **kwargs)
@@ -103,7 +108,7 @@ class AbstractFeature(dict):
     @property
     def srs(self):
         try:
-            return SpatialReference(self['crs']['properties']['name'])
+            return SpatialReference(self["crs"]["properties"]["name"])
         except KeyError:
             return None
 
@@ -111,24 +116,25 @@ class AbstractFeature(dict):
 class Feature(AbstractFeature):
     """GeoJSON Feature dict."""
 
-    def __init__(self, id=None, geometry=None, properties=None,
-                 crs=None, iterable=(), **kwargs):
+    def __init__(
+        self, id=None, geometry=None, properties=None, crs=None, iterable=(), **kwargs
+    ):
         super(Feature, self).__init__()
-        self['type'] = self.__class__.__name__
-        self['geometry'] = geometry or {}
-        self['properties'] = properties or kwargs or {}
+        self["type"] = self.__class__.__name__
+        self["geometry"] = geometry or {}
+        self["properties"] = properties or kwargs or {}
         if id:
-            self['id'] = id
+            self["id"] = id
         if crs:
-            self['crs'] = NamedCRS(crs)
+            self["crs"] = NamedCRS(crs)
         self.update(iterable)
 
     @property
     def geojson(self):
-        if not self.is_serialized('geometry'):
+        if not self.is_serialized("geometry"):
             return self._dumps()
-        geom = self['geometry'] or '{}'
-        keys = self.keys() - {'geometry'}
+        geom = self["geometry"] or "{}"
+        keys = self.keys() - {"geometry"}
         props = json.dumps({k: self[k] for k in keys}, cls=JSONEncoder)[1:-1]
         return '{"geometry": %s, %s}' % (str(geom), props)
 
@@ -138,28 +144,30 @@ class FeatureCollection(AbstractFeature):
 
     def __init__(self, features=None, crs=None, iterable=(), **kwargs):
         super(FeatureCollection, self).__init__()
-        self['type'] = self.__class__.__name__
+        self["type"] = self.__class__.__name__
         if crs:
-            self['crs'] = NamedCRS(crs)
+            self["crs"] = NamedCRS(crs)
         if features and not isinstance(next(iter(features)), Feature):
-            self['features'] = [Feature(**feat) for feat in features]
+            self["features"] = [Feature(**feat) for feat in features]
         else:
-            self['features'] = features or []
+            self["features"] = features or []
         self.update(iterable, **kwargs)
 
     @property
     def geojson(self):
         if not self.has_serialized_geom:
             return self._dumps()
-        features = ','.join(map(str, self['features']))
-        keys = self.keys() - {'features'}
-        collection = '%s, "features": [' % json.dumps(
-            {k: self[k] for k in keys}, cls=JSONEncoder)[:-1]
-        return ''.join([collection, features, ']}'])
+        features = ",".join(map(str, self["features"]))
+        keys = self.keys() - {"features"}
+        collection = (
+            '%s, "features": ['
+            % json.dumps({k: self[k] for k in keys}, cls=JSONEncoder)[:-1]
+        )
+        return "".join([collection, features, "]}"])
 
     @property
     def has_serialized_geom(self):
-        return any(feat.is_serialized('geometry') for feat in self['features'])
+        return any(feat.is_serialized("geometry") for feat in self["features"])
 
 
 class LayerCollection(AbstractFeature):
@@ -174,6 +182,5 @@ class LayerCollection(AbstractFeature):
 
     @property
     def geojson(self):
-        layers = ','.join(['"%s": %s' % (k, v.geojson)
-                           for k, v in self.items()])
-        return '{%s}' % layers
+        layers = ",".join(['"%s": %s' % (k, v.geojson) for k, v in self.items()])
+        return "{%s}" % layers

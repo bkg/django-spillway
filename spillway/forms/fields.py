@@ -17,17 +17,20 @@ from spillway.compat import json
 
 class CommaSepFloatField(forms.FloatField):
     """A form Field for parsing a comma separated list of numeric values."""
+
     default_error_messages = {
-        'invalid': _('Enter a comma separated list of numbers.'),
-        'max_value': _('Ensure each value is less than or equal to %(limit_value)s.'),
-        'min_value': _('Ensure each value is greater than or equal to %(limit_value)s.'),
+        "invalid": _("Enter a comma separated list of numbers."),
+        "max_value": _("Ensure each value is less than or equal to %(limit_value)s."),
+        "min_value": _(
+            "Ensure each value is greater than or equal to %(limit_value)s."
+        ),
     }
 
     def to_python(self, value):
         """Normalize data to a list of floats."""
         if not value:
             return []
-        return map(super(CommaSepFloatField, self).to_python, value.split(','))
+        return map(super(CommaSepFloatField, self).to_python, value.split(","))
 
     def run_validators(self, values):
         """Run validators for each item separately."""
@@ -55,30 +58,35 @@ class BoundingBoxField(CommaSepFloatField):
 
 class GeoFormatField(forms.CharField):
     default_error_messages = {
-        'invalid_geofunc': _('%(value)s is not a supported function.'),
+        "invalid_geofunc": _("%(value)s is not a supported function."),
     }
-    funcs = {'centroid': 'Centroid',
-             'pointonsurface': 'PointOnSurface',
-             'geojson': 'AsGeoJSON',
-             'gml': 'AsGML',
-             'kml': 'AsKML',
-             'svg': 'AsSVG'}
+    funcs = {
+        "centroid": "Centroid",
+        "pointonsurface": "PointOnSurface",
+        "geojson": "AsGeoJSON",
+        "gml": "AsGML",
+        "kml": "AsKML",
+        "svg": "AsSVG",
+    }
 
     def to_python(self, value):
         if value in self.empty_values + [renderers.JSONRenderer.format]:
             return None
         # Skip known DRF renderer formats.
-        formats = [renderers.BrowsableAPIRenderer.format,
-                   renderers.TemplateHTMLRenderer.format]
+        formats = [
+            renderers.BrowsableAPIRenderer.format,
+            renderers.TemplateHTMLRenderer.format,
+        ]
         if value in formats:
             return query.AsText
         try:
             fn = getattr(functions, self.funcs[value])
         except (KeyError, AttributeError):
-            raise forms.ValidationError(self.error_messages['invalid_geofunc'],
-                                        code='invalid_geofunc')
+            raise forms.ValidationError(
+                self.error_messages["invalid_geofunc"], code="invalid_geofunc"
+            )
         if fn.arity and fn.arity > 1:
-            raise forms.ValidationError('Not yet supported')
+            raise forms.ValidationError("Not yet supported")
         return fn
 
 
@@ -91,9 +99,9 @@ class GeometryField(forms.GeometryField):
         try:
             return super(GeometryField, self).to_python(value)
         except gdal.GDALException:
-            raise forms.ValidationError(self.error_messages['invalid_geom'],
-                                        code='invalid_geom')
-
+            raise forms.ValidationError(
+                self.error_messages["invalid_geom"], code="invalid_geom"
+            )
 
 
 class GeometryFileField(forms.FileField):
@@ -109,7 +117,7 @@ class GeometryFileField(forms.FileField):
                         zf.extract(item, tmpdir)
                         extracted.append(fname)
                 for path in extracted:
-                    if path.endswith('.shp'):
+                    if path.endswith(".shp"):
                         fname = path
         else:
             # NOTE: is_zipfile() seeks to end of file or at least 110 bytes.
@@ -122,11 +130,12 @@ class GeometryFileField(forms.FileField):
             geoms = gdal.DataSource(fname)[0].get_geoms()
             geom = reduce(lambda g1, g2: g1.union(g2), geoms)
             if not geom.srs:
-                raise gdal.GDALException('Cannot determine SRS')
+                raise gdal.GDALException("Cannot determine SRS")
         except (gdal.GDALException, IndexError):
             raise forms.ValidationError(
-                GeometryField.default_error_messages['invalid_geom'],
-                code='invalid_geom')
+                GeometryField.default_error_messages["invalid_geom"],
+                code="invalid_geom",
+            )
         return geom
 
     def to_python(self, value):
@@ -151,16 +160,17 @@ class OGRGeometryField(forms.GeometryField):
         value = json.loads(value) if '"Feature"' in value else value
         if isinstance(value, collections.Mapping):
             feat = sc.as_feature(value)
-            value = json.dumps(feat.get('geometry') or value)
+            value = json.dumps(feat.get("geometry") or value)
             sref = feat.srs
         # Handle a comma delimited extent.
-        elif list(value).count(',') == 3:
-            value = Envelope(value.split(',')).polygon.ExportToWkt()
+        elif list(value).count(",") == 3:
+            value = Envelope(value.split(",")).polygon.ExportToWkt()
         try:
-            geom = gdal.OGRGeometry(value, srs=getattr(sref, 'wkt', None))
+            geom = gdal.OGRGeometry(value, srs=getattr(sref, "wkt", None))
         except (gdal.GDALException, TypeError, ValueError):
-            raise forms.ValidationError(self.error_messages['invalid_geom'],
-                                        code='invalid_geom')
+            raise forms.ValidationError(
+                self.error_messages["invalid_geom"], code="invalid_geom"
+            )
         if not geom.srs:
             geom.srid = self.srid or self.widget.map_srid
         return geom

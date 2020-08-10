@@ -12,6 +12,7 @@ from django.contrib.gis.db import models
 from django.utils.functional import cached_property
 import numpy as np
 
+
 def filter_geometry(queryset, **filters):
     """Helper function for spatial lookups filters.
 
@@ -19,15 +20,17 @@ def filter_geometry(queryset, **filters):
     usual "geometryfield__lookuptype" format.
     """
     fieldname = geo_field(queryset).name
-    query = {'%s__%s' % (fieldname, k): v for k, v in filters.items()}
+    query = {"%s__%s" % (fieldname, k): v for k, v in filters.items()}
     return queryset.filter(**query)
+
 
 def geo_field(queryset):
     """Returns the GeometryField for a django or spillway GeoQuerySet."""
     for field in queryset.model._meta.fields:
         if isinstance(field, models.GeometryField):
             return field
-    raise exceptions.FieldDoesNotExist('No GeometryField found')
+    raise exceptions.FieldDoesNotExist("No GeometryField found")
+
 
 def get_srid(queryset):
     """Returns the GeoQuerySet spatial reference identifier."""
@@ -36,6 +39,7 @@ def get_srid(queryset):
     except (AttributeError, IndexError):
         srid = None
     return srid or geo_field(queryset).srid
+
 
 def agg_dims(arr, stat):
     """Returns a 1D array with higher dimensions aggregated using stat fn.
@@ -48,7 +52,7 @@ def agg_dims(arr, stat):
     if arr.ndim > 2:
         axis = 1
         arr = arr.reshape(arr.shape[0], -1)
-    module = np.ma if hasattr(arr, 'mask') else np
+    module = np.ma if hasattr(arr, "mask") else np
     return getattr(module, stat)(arr, axis)
 
 
@@ -72,14 +76,16 @@ class GeoQuerySet(query.QuerySet):
     """Extends the default GeoQuerySet with some unimplemented PostGIS
     functionality.
     """
+
     # Geometry simplification tolerances based on tile width (m) per zoom
     # level, see http://wiki.openstreetmap.org/wiki/Zoom_levels
-    tilewidths = [6378137 * 2 * math.pi / (2 ** (zoom + 8))
-                  for zoom in range(20)]
+    tilewidths = [6378137 * 2 * math.pi / (2 ** (zoom + 8)) for zoom in range(20)]
 
     def _trans_scale(self, colname, deltax, deltay, xfactor, yfactor):
         if connection.ops.spatialite:
-            return geofn.Scale(geofn.Translate(colname, deltax, deltay), xfactor, yfactor)
+            return geofn.Scale(
+                geofn.Translate(colname, deltax, deltay), xfactor, yfactor
+            )
         else:
             return TransScale(colname, deltax, deltay, xfactor, yfactor)
 
@@ -112,9 +118,7 @@ class GeoQuerySet(query.QuerySet):
         """
         col = geo_col or self.geo_field.name
         w, s, e, n = bbox.extent
-        trans = self._trans_scale(col, -w, -s,
-                                  scale / (e - w),
-                                  scale / (n - s))
+        trans = self._trans_scale(col, -w, -s, scale / (e - w), scale / (n - s))
         g = AsText(trans)
         return self.annotate(pbf=g)
 
@@ -130,7 +134,7 @@ class GeoQuerySet(query.QuerySet):
         """
         # Tile grid uses 3857, but GeoJSON coordinates should be in 4326.
         tile_srid = 3857
-        bbox = getattr(bbox, 'geos', bbox)
+        bbox = getattr(bbox, "geos", bbox)
         clone = filter_geometry(self, intersects=bbox)
         field = clone.geo_field
         srid = field.srid
@@ -150,7 +154,7 @@ class GeoQuerySet(query.QuerySet):
             bufbox = bbox.buffer(tilew)
             sql = geofn.Intersection(sql, bufbox.envelope)
         sql = SimplifyPreserveTopology(sql, tilew)
-        if format == 'pbf':
+        if format == "pbf":
             return clone.pbf(bbox, geo_col=sql)
         sql = geofn.Transform(sql, 4326)
         return clone.annotate(**{format: sql})
@@ -182,13 +186,13 @@ class RasterQuerySet(GeoQuerySet):
         try:
             fieldname = self.raster_field.name
         except TypeError:
-            raise exceptions.FieldDoesNotExist('Raster field not found')
+            raise exceptions.FieldDoesNotExist("Raster field not found")
         arrays = self.arrays(fieldname)
         arr = arrays[0]
         if len(arrays) > 1:
-            if getattr(arr, 'ndim', 0) > 2:
+            if getattr(arr, "ndim", 0) > 2:
                 arrays = np.vstack(arrays)
-            fill = getattr(arr, 'fill_value', None)
+            fill = getattr(arr, "fill_value", None)
             arr = np.ma.masked_values(arrays, fill, copy=False)
         # Try to reshape using equal sizes first and fall back to unequal
         # splits.
@@ -209,8 +213,8 @@ class RasterQuerySet(GeoQuerySet):
                     if str(getattr(obj, attr)) == str(val):
                         return obj
             raise self.model.DoesNotExist(
-                '%s matching query does not exist.' %
-                self.model._meta.object_name)
+                "%s matching query does not exist." % self.model._meta.object_name
+            )
         return super(RasterQuerySet, self).get(*args, **kwargs)
 
     @cached_property
@@ -229,8 +233,8 @@ class RasterQuerySet(GeoQuerySet):
         Keyword args:
         stat -- any numpy summary stat method as str (min/max/mean/etc)
         """
-        if not hasattr(geom, 'num_coords'):
-            raise TypeError('Need OGR or GEOS geometry, %s found' % type(geom))
+        if not hasattr(geom, "num_coords"):
+            raise TypeError("Need OGR or GEOS geometry, %s found" % type(geom))
         clone = self._clone()
         for obj in clone:
             arr = obj.array(geom)
@@ -256,19 +260,19 @@ class RasterQuerySet(GeoQuerySet):
         for obj in clone:
             obj.convert(format, geom)
             if srid:
-                fp = tempfile.NamedTemporaryFile(suffix='.%s' % format or '')
+                fp = tempfile.NamedTemporaryFile(suffix=".%s" % format or "")
                 with obj.raster() as r, r.warp(srid, fp.name) as w:
                     obj.image.file = fp
         return clone
 
-    def zipfiles(self, path=None, arcdirname='data'):
+    def zipfiles(self, path=None, arcdirname="data"):
         """Returns a .zip archive of selected rasters."""
         if path:
-            fp = open(path, 'w+b')
+            fp = open(path, "w+b")
         else:
-            prefix = '%s-' % arcdirname
-            fp = tempfile.NamedTemporaryFile(prefix=prefix, suffix='.zip')
-        with zipfile.ZipFile(fp, mode='w') as zf:
+            prefix = "%s-" % arcdirname
+            fp = tempfile.NamedTemporaryFile(prefix=prefix, suffix=".zip")
+        with zipfile.ZipFile(fp, mode="w") as zf:
             for obj in self:
                 img = obj.image
                 arcname = os.path.join(arcdirname, os.path.basename(img.name))

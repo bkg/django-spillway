@@ -16,6 +16,7 @@ class SimpleQueryTestCase(SimpleTestCase):
     This avoids the slow fixture (re-)loading machinery of TestCase for each
     test when all we care about are simple select queries.
     """
+
     allow_database_queries = True
 
 
@@ -27,6 +28,7 @@ class GeoLocationViewSet(viewsets.GeoModelViewSet):
 class LocationViewSet(viewsets.GeoModelViewSet):
     queryset = Location.objects.all()
     serializer_class = LocationFeatureSerializer
+
 
 # Enable pagination for this view
 LocationViewSet.pagination_class.page_size = 10
@@ -40,12 +42,11 @@ class RasterViewSet(viewsets.ReadOnlyRasterModelViewSet):
 class GeoModelViewSetTestCase(SimpleQueryTestCase):
     def setUp(self):
         self.router = DefaultRouter()
-        self.router.register(r'locations', LocationViewSet)
-        self.view = LocationViewSet.as_view({'get': 'list'})
+        self.router.register(r"locations", LocationViewSet)
+        self.view = LocationViewSet.as_view({"get": "list"})
 
     def test_renderer(self):
-        request = factory.get('/locations/',
-                              HTTP_ACCEPT=GeoJSONRenderer.media_type)
+        request = factory.get("/locations/", HTTP_ACCEPT=GeoJSONRenderer.media_type)
         response = self.view(request)
         self.assertIsInstance(response.accepted_renderer, GeoJSONRenderer)
 
@@ -56,17 +57,14 @@ class GeoModelViewSetTestCase(SimpleQueryTestCase):
 class RasterViewSetTestCase(SimpleQueryTestCase):
     def setUp(self):
         self.router = DefaultRouter()
-        self.router.register(r'rasters', RasterViewSet)
-        self.view = RasterViewSet.as_view({'get': 'list'})
+        self.router.register(r"rasters", RasterViewSet)
+        self.view = RasterViewSet.as_view({"get": "list"})
 
     def test_renderer(self):
-        request = factory.get('/rasters/',
-                              HTTP_ACCEPT=GeoTIFFZipRenderer.media_type)
+        request = factory.get("/rasters/", HTTP_ACCEPT=GeoTIFFZipRenderer.media_type)
         response = self.view(request)
-        self.assertEqual(response['Content-Type'],
-                         GeoTIFFZipRenderer.media_type)
-        self.assertIn(GeoTIFFZipRenderer.format,
-                      response['Content-Disposition'])
+        self.assertEqual(response["Content-Type"], GeoTIFFZipRenderer.media_type)
+        self.assertIn(GeoTIFFZipRenderer.format, response["Content-Disposition"])
 
     def test_register(self):
         self.assertGreater(len(self.router.urls), 0)

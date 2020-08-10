@@ -23,8 +23,8 @@ class QuerySetForm(forms.Form):
             data = data.dict()
         except AttributeError:
             pass
-        params = dict(data, **getattr(view, 'kwargs', {}))
-        params['format'] = request.accepted_renderer.format
+        params = dict(data, **getattr(view, "kwargs", {}))
+        params["format"] = request.accepted_renderer.format
         return cls(params, queryset, files=request.FILES)
 
     def query(self, force=False):
@@ -35,8 +35,7 @@ class QuerySetForm(forms.Form):
             self._is_selected = False
         if not self._is_selected:
             if self.queryset is None:
-                raise TypeError('Must be QuerySet not %s' %
-                                type(self.queryset))
+                raise TypeError("Must be QuerySet not %s" % type(self.queryset))
             self.select()
             self._is_selected = True
         return self.queryset
@@ -54,6 +53,7 @@ class SpatialQueryForm(QuerySetForm):
 
     Includes 'bbox' as an alias for 'bboverlaps'.
     """
+
     bbox = fields.BoundingBoxField(required=False)
 
     def __init__(self, *args, **kwargs):
@@ -62,26 +62,27 @@ class SpatialQueryForm(QuerySetForm):
         for lookup in self.data:
             if lookup in lookups:
                 self.fields[lookup] = fields.GeometryField(
-                    required=False, widget=forms.BaseGeometryWidget())
+                    required=False, widget=forms.BaseGeometryWidget()
+                )
                 break
 
     def clean(self):
         cleaned_data = super(SpatialQueryForm, self).clean()
-        spatial_lookup = set(cleaned_data.keys()) - {'bbox'}
-        bbox = cleaned_data.pop('bbox', None)
+        spatial_lookup = set(cleaned_data.keys()) - {"bbox"}
+        bbox = cleaned_data.pop("bbox", None)
         # Look for "bbox" which is just an alias to "bboverlaps".
         if bbox:
             cleaned_data.pop(spatial_lookup, None)
-            cleaned_data['bboverlaps'] = bbox
+            cleaned_data["bboverlaps"] = bbox
         return cleaned_data
 
     def select(self):
-        self.queryset = query.filter_geometry(
-            self.queryset, **self.cleaned_data)
+        self.queryset = query.filter_geometry(self.queryset, **self.cleaned_data)
 
 
 class GeometryQueryForm(QuerySetForm):
     """A form providing GeoQuerySet method arguments."""
+
     format = fields.GeoFormatField(required=False)
     op = fields.GeoFormatField(required=False)
     precision = forms.IntegerField(required=False)
@@ -92,51 +93,57 @@ class GeometryQueryForm(QuerySetForm):
     def select(self):
         kwargs = {}
         data = self.cleaned_data
-        tolerance, srs, format = map(data.get, ('simplify', 'srs', 'format'))
+        tolerance, srs, format = map(data.get, ("simplify", "srs", "format"))
         expr = field = query.geo_field(self.queryset).name
-        srid = getattr(srs, 'srid', None)
+        srid = getattr(srs, "srid", None)
         if srid:
             expr = functions.Transform(expr, srid)
-        if data['op']:
-            expr = data['op'](expr)
-        if data['precision'] is not None:
-            kwargs.update(precision=data['precision'])
+        if data["op"]:
+            expr = data["op"](expr)
+        if data["precision"] is not None:
+            kwargs.update(precision=data["precision"])
         if tolerance:
             expr = query.Simplify(expr, tolerance)
         if format:
             expr = format(expr, **kwargs)
         if expr != field:
-            attrname = self.data.get('format')
+            attrname = self.data.get("format")
             self.queryset = self.queryset.annotate(**{attrname: expr})
 
 
 class RasterQueryForm(QuerySetForm):
     """Validates format options for raster data."""
+
     bbox = fields.BoundingBoxField(required=False)
     format = forms.CharField(required=False)
     g = fields.OGRGeometryField(srid=4326, required=False)
     upload = fields.GeometryFileField(required=False)
     periods = forms.IntegerField(required=False)
     stat = forms.ChoiceField(
-        choices=[(choice,) * 2 for choice in
-                 ('count', 'max', 'mean', 'median', 'min', 'std', 'sum', 'var')],
-        required=False)
+        choices=[
+            (choice,) * 2
+            for choice in ("count", "max", "mean", "median", "min", "std", "sum", "var")
+        ],
+        required=False,
+    )
 
     def clean(self):
         """Return cleaned fields as a dict, determine which geom takes
         precedence.
         """
         data = super(RasterQueryForm, self).clean()
-        geom = data.pop('upload', None) or data.pop('bbox', None)
+        geom = data.pop("upload", None) or data.pop("bbox", None)
         if geom:
-            data['g'] = geom
+            data["g"] = geom
         return data
 
     def select(self):
         txtformats = (renderers.JSONRenderer.format, CSVRenderer.format)
-        htmlformats = (renderers.BrowsableAPIRenderer.format,
-                       renderers.TemplateHTMLRenderer.format)
-        fields = ('format', 'g', 'stat', 'periods')
+        htmlformats = (
+            renderers.BrowsableAPIRenderer.format,
+            renderers.TemplateHTMLRenderer.format,
+        )
+        fields = ("format", "g", "stat", "periods")
         format, geom, stat, periods = map(self.cleaned_data.get, fields)
         if not geom and format in htmlformats + txtformats:
             return
@@ -155,6 +162,7 @@ class RasterQueryForm(QuerySetForm):
 
 class TileForm(QuerySetForm):
     """Validates requested map tiling parameters."""
+
     bbox = fields.OGRGeometryField(srid=4326, required=False)
     size = forms.IntegerField(required=False, initial=256)
     x = forms.IntegerField()
@@ -163,16 +171,15 @@ class TileForm(QuerySetForm):
 
     def clean(self):
         data = super(TileForm, self).clean()
-        x, y, z = map(data.get, ('x', 'y', 'z'))
+        x, y, z = map(data.get, ("x", "y", "z"))
         # Create bbox from NW and SE tile corners.
         try:
-            extent = (tile.to_lonlat(x, y, z) +
-                      tile.to_lonlat(x + 1, y + 1, z))
+            extent = tile.to_lonlat(x, y, z) + tile.to_lonlat(x + 1, y + 1, z)
         except ValueError:
             extent = (0, 0, 0, 0)
         geom = gdal.OGRGeometry.from_bbox(extent)
-        geom.srid = self.fields['bbox'].srid
-        data['bbox'] = geom
+        geom.srid = self.fields["bbox"].srid
+        data["bbox"] = geom
         return data
 
 
@@ -183,11 +190,11 @@ class RasterTileForm(TileForm):
     style = forms.CharField(required=False)
 
     def clean_band(self):
-        return self.cleaned_data['band'] or self.fields['band'].initial
+        return self.cleaned_data["band"] or self.fields["band"].initial
 
     def clean_style(self):
         # Mapnik requires string, not unicode, for style names.
-        return str(self.cleaned_data['style'])
+        return str(self.cleaned_data["style"])
 
 
 class VectorTileForm(TileForm):
@@ -197,4 +204,5 @@ class VectorTileForm(TileForm):
     def select(self):
         data = self.cleaned_data
         self.queryset = self.queryset.tile(
-            data['bbox'], data['z'], data['format'], data['clip'])
+            data["bbox"], data["z"], data["format"], data["clip"]
+        )

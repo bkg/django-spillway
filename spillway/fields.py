@@ -13,7 +13,7 @@ from spillway.forms import fields
 class GeometryField(Field):
     def bind(self, field_name, parent):
         try:
-            renderer = parent.context['request'].accepted_renderer
+            renderer = parent.context["request"].accepted_renderer
         except (AttributeError, KeyError):
             pass
         else:
@@ -50,7 +50,7 @@ class GeometryField(Field):
         # Create a dict from the GEOSGeometry when the value is not previously
         # serialized from the spatial db.
         try:
-            return {'type': value.geom_type, 'coordinates': value.coords}
+            return {"type": value.geom_type, "coordinates": value.coords}
         # Value is already serialized as geojson, kml, etc.
         except AttributeError:
             return value
