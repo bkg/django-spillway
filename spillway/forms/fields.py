@@ -8,7 +8,7 @@ from six.moves import reduce
 from django.contrib.gis import forms, gdal
 from django.contrib.gis.db.models import functions
 from django.contrib.gis.gdal.srs import SpatialReference, SRSException
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 from greenwich.geometry import Envelope
 from rest_framework import renderers
 
