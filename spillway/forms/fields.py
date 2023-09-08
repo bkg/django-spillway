@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import zipfile
 
-from django.utils.six.moves import reduce
+from six.moves import reduce
 from django.contrib.gis import forms, gdal
 from django.contrib.gis.db.models import functions
 from django.contrib.gis.gdal.srs import SpatialReference, SRSException

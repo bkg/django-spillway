@@ -2,7 +2,7 @@ import os
 import datetime
 import tempfile
 
-from django.utils import six
+import six
 if six.PY3:
     buffer = memoryview
 from django.contrib.gis.db import models

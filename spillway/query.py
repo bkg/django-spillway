@@ -9,7 +9,7 @@ from django.db.models import query
 from django.contrib.gis import geos
 import django.contrib.gis.db.models.functions as geofn
 from django.contrib.gis.db import models
-from django.utils import six
+import six
 from django.utils.functional import cached_property
 import numpy as np
 
