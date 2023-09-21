@@ -2,12 +2,12 @@ import os
 import datetime
 import tempfile
 
-from django.utils import six
+import six
 if six.PY3:
     buffer = memoryview
 from django.contrib.gis.db import models
 from django.utils.deconstruct import deconstructible
-from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import gettext_lazy as _
 import greenwich
 from greenwich.io import MemFileIO
 import numpy as np

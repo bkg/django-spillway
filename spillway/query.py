@@ -9,7 +9,7 @@ from django.db.models import query
 from django.contrib.gis import geos
 import django.contrib.gis.db.models.functions as geofn
 from django.contrib.gis.db import models
-from django.utils import six
+import six
 from django.utils.functional import cached_property
 import numpy as np
 
@@ -82,7 +82,7 @@ class GeoQuerySet(query.QuerySet):
         if connection.ops.spatialite:
             return geofn.Scale(geofn.Translate(colname, deltax, deltay), xfactor, yfactor)
         else:
-            return TransScale(colname, deltax, deltay, xfactor, yfactor)
+            return TransScale(colname, deltax, deltay, xfactor, yfactor, output_field=models.MultiPolygonField())
 
     def extent(self, srid=None):
         """Returns the GeoQuerySet extent as a 4-tuple.
@@ -150,7 +150,7 @@ class GeoQuerySet(query.QuerySet):
         if clip:
             bufbox = bbox.buffer(tilew)
             sql = geofn.Intersection(sql, bufbox.envelope)
-        sql = SimplifyPreserveTopology(sql, tilew)
+        sql = SimplifyPreserveTopology(sql, tilew, output_field=models.MultiPolygonField())
         if format == 'pbf':
             return clone.pbf(bbox, geo_col=sql)
         sql = geofn.Transform(sql, 4326)

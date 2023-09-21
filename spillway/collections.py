@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import collections
 
-from django.utils import six
+import six
 from greenwich.srs import SpatialReference
 
 from spillway.compat import json, JSONEncoder
